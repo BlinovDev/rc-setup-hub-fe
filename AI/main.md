@@ -51,11 +51,13 @@ This frontend must consume the backend contract rather than inventing its own AP
 
 The machine-readable contract is already present at `api/openapi.yaml`. Generated TypeScript transport types live in `src/api/generated/schema.ts`; regenerate them with `npm run api:generate`.
 
-FE Phases 0–3 are complete, including live authentication, `/settings` nickname-edit and owned CRUD smoke against the real local backend. API configuration uses `VITE_API_URL`; the committed contract and generated types remain the transport source of truth.
+FE Phases 0–4 are complete, including live authentication, `/settings` nickname-edit, owned CRUD and discovery/share smoke against the real local backend. API configuration uses `VITE_API_URL`; the committed contract and generated types remain the transport source of truth.
 
 FE Phase 3 is complete, including manually verified live owned CRUD smoke: realistic creation, zero/blank numeric persistence, nested edit preservation, notes clearing, chassis change to Custom and confirmed deletion.
 
-FE Phase 4 implementation and automated verification are complete: authenticated public discovery with URL filters/cursor pagination, stable setup detail/share, and safe public-owner lookup. Live discovery/share smoke is pending. Phase 5 is not started. Full navigable `/users/:userId` profiles remain Phase 6.
+FE Phase 4 is complete, including manually verified live discovery/share smoke: public discovery and text/chassis filtering, stable frontend detail/share URLs, another authenticated session opening public detail, and generic unavailable state after visibility changed to private.
+
+FE Phase 5 implementation and automated verification are complete: `/friends`, nickname search, incoming/outgoing/accepted sections, request/accept/reject/cancel/confirmed removal, and scoped setup-detail cache safety. Live two-user friendship smoke is pending. Phase 6 is not started; `/users/:userId` and another user’s visible setups remain deferred.
 
 ## Read next
 

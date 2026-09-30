@@ -24,13 +24,14 @@ https://github.com/BlinovDev/rc-setup-hub-fe
 
 ## Current repository state
 
-FE Phases 0–3 are complete, including live authentication, settings and owned CRUD
-smoke against the real local backend. Phase 4 implementation and automated
-verification are complete; live discovery/share smoke is pending. Phase 5 is not started.
+FE Phases 0–4 are complete, including live authentication, settings, owned CRUD
+and discovery/share smoke against the real local backend. Phase 5 implementation
+and automated verification are complete; live two-user friendship smoke is pending.
+Phase 6 is not started.
 
 Authenticated routes include `/` (public discovery), `/setups/:setupId`
 (detail/share), `/settings`, `/my/setups`, `/my/setups/new`, and
-`/my/setups/:setupId/edit`. Public discovery also requires a backend session.
+`/my/setups/:setupId/edit`, and `/friends`. Public discovery also requires a backend session.
 
 ## Stack
 
@@ -100,7 +101,8 @@ src/
 
 Auth, profile, chassis, owned setups, discovery and setup detail are implemented.
 The users feature provides only a public-owner lookup; its profile route remains
-Phase 6. Friendship/shared directories contain placeholders for later phases. The QueryClient is created once per
+Phase 6. The friendship workflow is implemented; shared directories contain
+placeholders for later needs. The QueryClient is created once per
 provider instance. The root shell resolves the session with `GET /api/v1/me`.
 
 ### OpenAPI workflow and API client
@@ -247,8 +249,40 @@ setup visible with an owner-unavailable fallback. A current owner gets an Edit l
 Copy link uses a testable clipboard boundary and copies only the frontend origin
 plus `/setups/{id}`. Failure exposes a selectable URL. Search/detail/owner 401
 clears the existing current-user state; other failures never imply logout.
-Phase 4 automated verification is complete; real backend/browser discovery and
-share-link smoke remains pending.
+Phase 4 live discovery/share smoke was manually verified: public discovery, text
+and chassis filtering, stable detail/frontend link copying, public access from
+another authenticated session, and generic unavailable state after making it private.
+
+### Friendships
+
+`/friends` provides Find people, Incoming requests, Outgoing requests, and Friends.
+Navigation is Home/My setups/Friends/Settings. One `GET /api/v1/friendships` query
+uses `["friendships"]`; each bucket item already contains the other participant’s
+safe public profile. No email or profile links are exposed.
+
+Explicit nickname search trims whitespace, allows at most 64 Unicode characters,
+and rejects null characters. Empty/invalid input makes no search request. Queries
+use `["users", "search", normalizedQuery]`. Result state is derived by matching
+`item.user.id` in the loaded friendship list, without additional profile requests
+or a separate relationship-state map. A failed list prevents ambiguous actions.
+
+Send uses generated `CreateFriendship`; Accept posts without a body. Reject/Cancel
+request use DELETE immediately; accepted removal requires inline confirmation.
+All mutations refetch the friendship list, avoid automatic retries, and disable
+only the relevant actions (including duplicate controls in search and sections).
+Send 409 and accept 404/409 refetch stale state with safe feedback. Delete 404 also
+refetches rather than pretending success. Generic failures permit explicit retry.
+Every search/friendship 401 clears the existing current-user state.
+
+Accept invalidates `["setups", "detail"]`. Accepted removal cancels in-flight
+detail requests and removes that family so later visits recheck backend access.
+A stale accepted deletion 404 uses the same conservative cache cleanup. Pending
+requests do not grant visibility. Auth/chassis/owned-list/public-search caches are
+not broadly cleared or invalidated by friendship changes.
+
+Phase 5 implementation and automated verification are complete. Live two-user
+request → accept → friends-only access → remove → unavailable smoke remains pending.
+`/users/:userId`, visible user setup lists and friend profile navigation remain Phase 6.
 
 ### Verification
 
@@ -273,7 +307,7 @@ Numeric/UUID/length constraints require runtime form validation later; generated
 TypeScript types do not validate values at runtime.
 
 The contract does not list `415` for setup create/patch responses despite JSON
-request bodies, while profile and friendship writes do. Unexpected setup statuses
+request bodies, while profile nickname writes do. Unexpected setup statuses
 use generic safe feedback; no undocumented status behavior is assumed. The documented 256 KiB body limit also has no explicit oversized-body
 response status. No status or backend behavior is assumed here. CORS requires the
 frontend origin in backend `ALLOWED_ORIGINS`; frontend code cannot configure that.

@@ -154,7 +154,7 @@ Verified manually against the real backend: realistic creation, explicit zero pe
 
 ## FE Phase 4 — public discovery + setup detail/share route
 
-Status: implementation and automated verification complete; live discovery/share smoke pending.
+Status: complete, including automated verification and manually verified live discovery/share smoke.
 
 Goal: browse public setups and open stable setup URLs.
 
@@ -181,13 +181,13 @@ Tests:
 
 Checkpoint:
 
-Live smoke pending: publish a setup, find it from another session, and share/open its stable client URL.
+Verified manually: public setup appeared in discovery; text and chassis filters worked; stable detail opened and share copied the frontend URL; another authenticated session opened public detail; after changing visibility to private, that session received only the generic unavailable state.
 
 ---
 
 ## FE Phase 5 — friendships
 
-Status: not started.
+Status: implementation and automated verification complete; live two-user friendship smoke pending.
 
 Goal: provide the complete social request workflow.
 
@@ -215,11 +215,13 @@ Tests:
 
 Checkpoint:
 
-Two users can complete request -> accept -> remove entirely through the React UI.
+Live smoke pending: User A searches User B and sends a request; B sees incoming and accepts; friends-only detail becomes readable; either user removes the friendship and that detail becomes unavailable again.
 
 ---
 
 ## FE Phase 6 — other user profiles and visible setups
+
+Status: not started.
 
 Goal: connect discovery/social flows to another user's visible setups.
 

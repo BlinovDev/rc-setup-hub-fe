@@ -118,4 +118,10 @@ Exact script names may be finalized in FE 0 and then must remain stable unless t
 
 MSW/RTL tests cover URL initialization and validation, explicit text submission, brand/model reset, first-page and cursor-page errors/retries, ordered pagination without duplicates, historical/Custom cards and absence of N+1 detail requests. Detail tests cover generic unavailable states, full technical display with zero, empty/null values, unsupported versions, public owner lookup/fallback, owner-only Edit links, session expiry and clipboard success/fallback. Existing create/update/delete tests verify narrow search-family invalidation.
 
-Phase 3 live owned CRUD smoke is complete. Phase 4 live backend/browser discovery and stable share-link smoke remains pending. Full user profiles and friendships are not Phase 4 tests.
+Phase 3 live owned CRUD smoke is complete. Phase 4 live backend/browser discovery and stable share-link smoke is complete, including cross-session public access and generic unavailable state after a change to private. Full user profiles and friendships are not Phase 4 tests.
+
+## Phase 5 automated coverage and live checkpoint
+
+MSW/RTL tests cover direct other-participant bucket rendering and empty groups; normalized explicit nickname search, invalid/empty suppression and public-only identity fields; relationship-derived search states with no extra profile requests; send/accept/reject/cancel/confirmed removal; stale-state 404/409 races and no automatic POST retry; per-relationship pending controls; 500/network retries; and list/search/send/accept/delete 401. Cache regressions verify accept invalidation, accepted-removal cancellation and detail removal, safe later detail refetch, and preservation of unrelated/owned/catalog/public-search caches.
+
+Phase 5 implementation and automated verification are complete; live two-user friendship smoke remains pending: A searches B → sends → B accepts → friends-only detail becomes available → either removes → detail becomes unavailable. Real Google multi-user authentication is not automated. Phase 6 profile/visible-setup routes are not started.

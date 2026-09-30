@@ -164,11 +164,14 @@ After setup create/update/delete:
 - invalidate public search if public visibility may have changed;
 - invalidate visible user setup lists as appropriate.
 
-After friendship request/accept/delete:
+After friendship mutations:
 
-- invalidate friendships;
-- invalidate affected user setup lists;
-- invalidate setup detail queries that may change visibility.
+- invalidate/refetch `["friendships"]`;
+- accept invalidates `["setups", "detail"]`;
+- accepted removal cancels in-flight detail requests and removes that family;
+- pending send/reject/cancel does not grant setup visibility;
+- do not invalidate public discovery, auth, chassis or owned lists unnecessarily;
+- user setup-list queries remain Phase 6 and do not exist yet.
 
 Do not introduce a global "invalidate everything" strategy unless temporary during early POC work and explicitly documented.
 
@@ -241,3 +244,11 @@ Setup writes use generated request types and the existing credential-enforcing c
 Discovery uses only `GET /api/v1/setups/search` with fixed limit 20 and normalized URL filters `q`, `brand_id`, `model_id`. Infinite query keys are `["setups", "search", { q, brandId, modelId, limit }]`; cursor is opaque page state and each page repeats filters. Public-only membership is backend-owned; owned/visible-user lists are never merged into discovery. Cards use historical chassis and public owner from search responses without detail requests.
 
 The stable `/setups/:setupId` route reuses the existing detail API/key. Invalid UUIDs avoid requests; 400/404 use a generic unavailable state. Schema-v1 read-only display preserves zero, and unsupported versions are not interpreted. Detail resolves owner through `GET /api/v1/users/{user_id}` using `["users", "public", userId]`, with no email and a safe non-401 failure fallback. Search/detail/owner 401 clears current-user state; other failures do not imply logout. Clipboard sharing copies the frontend route without query parameters. Full user-profile navigation remains Phase 6.
+
+## Implemented Phase 5 friendship client
+
+One friendship-list query uses `["friendships"]` and the backend’s incoming/outgoing/accepted buckets. `FriendshipItem.user` is used directly as the other participant; requester/addressee direction is never reconstructed. Explicit nickname search uses `["users", "search", normalizedQuery]`, with trimmed <=64 Unicode characters, no null bytes and no empty/invalid requests. Search results derive relationship state from the list by `item.user.id`; no extra profile requests or fabricated friendship items.
+
+Send uses generated `CreateFriendship`; accept has no request body; reject/cancel/confirmed accepted removal share DELETE. All successful mutations refetch the list. Send 409, accept 404/409 and delete 404 safely report stale/conflicting state and refetch without automatic mutation retries. Accepted-removal 404 conservatively cancels/removes detail caches as well. Non-401 failures do not clear auth; all friendship/search 401 uses the existing current-user session pattern.
+
+Accept invalidates the detail family; accepted removal cancels then removes it so older responses cannot restore stale authorized data. No public-discovery or speculative Phase 6 query invalidation is added. Full profile routes/navigation remain Phase 6.

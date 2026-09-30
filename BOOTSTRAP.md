@@ -15,9 +15,11 @@ now reused in Phase 3 setup forms.
 
 FE Phase 3 is complete, including manually verified live owned CRUD smoke.
 
-FE Phase 4 implementation and automated verification are complete. Live discovery/
-share smoke is pending. FE Phase 5 is not started; full user-profile routes remain
-Phase 6.
+FE Phase 4 is complete, including manually verified live discovery/share smoke.
+
+FE Phase 5 implementation and automated verification are complete. Live two-user
+friendship smoke is pending. FE Phase 6 is not started; user-profile routes and
+another user’s visible setup list remain deferred.
 
 Do not start the next phase until the current phase is reviewed, committed, pushed
 and its checkpoint is green.

@@ -10,6 +10,8 @@ import { EditSetupPage } from "../features/setups/EditSetupPage";
 import { DiscoveryPage } from "../features/search/DiscoveryPage";
 import { SetupDetailPage } from "../features/setups/SetupDetailPage";
 
+import { FriendsPage } from "../features/friendships/FriendsPage";
+
 export const routes: RouteObject[] = [
   {
     path: "/",
@@ -18,6 +20,10 @@ export const routes: RouteObject[] = [
   {
     path: "/setups/:setupId",
     element: <AuthGate>{(user) => <SetupDetailPage user={user} />}</AuthGate>,
+  },
+  {
+    path: "/friends",
+    element: <AuthGate>{() => <FriendsPage />}</AuthGate>,
   },
   {
     path: "/settings",

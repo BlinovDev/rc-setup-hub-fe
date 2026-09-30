@@ -70,7 +70,7 @@ Edit owned setup.
 
 ### `/friends`
 
-One screen may contain tabs/sections for:
+Implemented in Phase 5 with sections for:
 
 - accepted friends;
 - incoming requests;
@@ -195,3 +195,9 @@ Use semantic controls and labels.
 Discovery submits text explicitly, keeps filters in the URL, and clears model when brand changes. All brands/All models are distinct from Custom setup selection; no Custom filter is offered. Invalid URL filters show a Reset filters action without requests. Load more retains cards and retries additional-page failures independently.
 
 Detail uses historical chassis, safe public owner identity and only present technical values, including zero. Empty and unsupported technical data have explicit messages. Unavailable detail never distinguishes missing/private/friendship cases. Copy link reports success or exposes a selectable fallback URL. Owners have an Edit link; full user-profile pages remain Phase 6.
+
+## Implemented friendships (Phase 5)
+
+Authenticated navigation is Home/My setups/Friends/Settings. Find people uses an explicit labeled nickname form. Incoming has Accept/Reject, outgoing has Cancel request, and accepted has Remove friend with inline keyboard-accessible confirmation. Public identities show nickname/avatar without email or profile links. Search results show Incoming request / Request sent / Friends or Add friend based on the loaded friendship buckets.
+
+List failure blocks relationship actions instead of appearing empty. List/search loading, retryable errors and empty sections are explicit. Mutation errors are safe, and pending controls are disabled per relationship across both list/search renderings. Stale 404/409 refreshes list state. User-profile navigation remains Phase 6.

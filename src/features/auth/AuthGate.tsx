@@ -38,6 +38,7 @@ export function AuthGate({
           <nav className="mt-4 flex flex-wrap gap-4" aria-label="Main">
             <Link to="/">Home</Link>
             <Link to="/my/setups">My setups</Link>
+            <Link to="/friends">Friends</Link>
             <Link to="/settings">Settings</Link>
           </nav>
           <AuthenticatedShell user={session.data} />
