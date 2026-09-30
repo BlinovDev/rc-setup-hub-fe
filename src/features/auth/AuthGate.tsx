@@ -1,9 +1,16 @@
+import type { ReactNode } from "react";
+import { Link } from "react-router";
+import type { components } from "../../api/generated/schema";
 import { useQuery } from "@tanstack/react-query";
 import { currentUserOptions } from "./queries";
 import { LoginPage } from "./LoginPage";
 import { AuthenticatedShell } from "./AuthenticatedShell";
 
-export function AuthGate() {
+export function AuthGate({
+  children,
+}: {
+  children?: (user: components["schemas"]["User"]) => ReactNode;
+}) {
   const session = useQuery(currentUserOptions);
   return (
     <main className="mx-auto max-w-3xl px-6 py-12">
@@ -27,7 +34,14 @@ export function AuthGate() {
       ) : session.data === null ? (
         <LoginPage />
       ) : (
-        <AuthenticatedShell user={session.data} />
+        <>
+          <nav className="mt-4 flex gap-4" aria-label="Main">
+            <Link to="/">Home</Link>
+            <Link to="/settings">Settings</Link>
+          </nav>
+          <AuthenticatedShell user={session.data} />
+          {children?.(session.data)}
+        </>
       )}
     </main>
   );

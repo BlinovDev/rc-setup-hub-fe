@@ -24,10 +24,10 @@ https://github.com/BlinovDev/rc-setup-hub-fe
 
 ## Current repository state
 
-FE Phases 0 and 1 are implemented. The bootstrap includes an authentication-aware
+FE Phases 0, 1 and 2 are implemented. The bootstrap includes an authentication-aware
 root route and a not-found route. The shell checks the backend session, offers
 Google sign-in, displays the current nickname/avatar, and supports logout. Product
-features remain deferred to FE Phase 2 and later in `AI/roadmap.md`.
+features beyond profile/settings and active chassis selection remain deferred to FE Phase 3 and later in `AI/roadmap.md`.
 The live backend-session checkpoint still requires a locally signed-in backend.
 
 ## Stack
@@ -77,7 +77,7 @@ embedded credentials, paths, queries and fragments. All `VITE_*` values are publ
 build-time configuration; never put secrets in them. Local env files are ignored.
 
 The foundation uses React, TypeScript, Vite, React Router, TanStack Query and
-Tailwind CSS. React Hook Form and Zod are installed for later forms. Vitest,
+Tailwind CSS. React Hook Form and Zod power nickname editing. Vitest,
 React Testing Library, user-event, jest-dom, jsdom and MSW provide tests. ESLint
 and Prettier provide linting and formatting. Exact dependency versions and the npm
 lockfile make installs reproducible. TypeScript 5.9 satisfies openapi-typescript's
@@ -96,7 +96,7 @@ src/
   vite-env.d.ts
 ```
 
-The auth feature is implemented; other feature/shared directories contain only
+Auth, profile and chassis features are implemented; other feature/shared directories contain only
 placeholders until their roadmap phases. The QueryClient is created once per
 provider instance. The root shell resolves the session with `GET /api/v1/me`.
 
@@ -148,6 +148,33 @@ For the live checkpoint, configure the backend's `ALLOWED_ORIGINS` for
 click sign-in, and verify nickname/avatar after the backend redirects back. Verify
 logout replaces the profile with sign-in without a reload. Automated tests use MSW
 and do not perform real Google OAuth.
+
+### Profile and active chassis catalog
+
+`/settings` uses the same auth gate/current-user query as `/`. Authenticated users
+see avatar, nickname, email and the existing logout control, with Home/Settings
+navigation. A session 401 removes the settings form and profile data.
+
+The React Hook Form nickname form trims whitespace, rejects empty names, names
+longer than 64 Unicode characters and null characters. Unchanged normalized names
+are not submitted. Zod validates these UX rules; uniqueness remains backend-owned.
+The PATCH uses generated `PatchMe` types. Success updates only `["auth", "me"]`
+with the returned user and resets the form. Errors map statuses to safe feedback;
+PATCH 401 clears current-user state. No full-page reload is required.
+
+`src/features/chassis/` provides generated-type API/query functions and a controlled
+`ChassisSelector`, ready for a future setup form. It is not mounted as a setup page
+or persisted preference in Phase 2. Query keys are `["chassis", "brands"]` and
+`["chassis", "models", brandId]`, cached for five minutes without polling or
+automatic retries. Models are only fetched for a real brand; brand changes clear
+the selected model immediately. Loading, error/retry and empty states are explicit;
+a models 404 displays an unavailable-brand message rather than an empty list.
+
+Selection state is `{ brandId: string | null, modelId: string | null }`.
+`selectedChassisModelId` returns `null` for Custom, a model ID for a complete
+selection, and `undefined` for an incomplete brand selection. The future form must
+require a model for a selected brand before saving. No fake Custom UUID or
+historical/inactive setup-editing behavior is introduced.
 
 ### Verification
 

@@ -87,9 +87,12 @@ Do not infer friendship/private state beyond what the backend returns.
 
 POC profile settings:
 
-- nickname;
+- nickname display and edit form;
+- email (read-only, current user only);
 - current avatar if available;
-- logout.
+- logout through the shared authenticated shell.
+
+Implemented in Phase 2 with Home/Settings navigation. The reusable active chassis selector remains a component for the future setup form; no setup route is implemented yet.
 
 ## Setup form sections
 

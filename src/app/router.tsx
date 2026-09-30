@@ -1,10 +1,16 @@
 import { createBrowserRouter, Link, type RouteObject } from "react-router";
 import { AuthGate } from "../features/auth/AuthGate";
 
+import { SettingsPage } from "../features/profile/SettingsPage";
+
 export const routes: RouteObject[] = [
   {
     path: "/",
     element: <AuthGate />,
+  },
+  {
+    path: "/settings",
+    element: <AuthGate>{(user) => <SettingsPage user={user} />}</AuthGate>,
   },
   {
     path: "*",

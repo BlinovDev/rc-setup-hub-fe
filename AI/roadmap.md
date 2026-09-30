@@ -89,6 +89,8 @@ A locally signed-in backend session opens the React app and resolves `/api/v1/me
 
 ## FE Phase 2 — profile + chassis catalog
 
+Status: implemented with automated verification; live backend profile/catalog checkpoint pending. The reusable selector is tested independently and will be integrated into the setup form in Phase 3.
+
 Goal: support user profile editing and setup-selection dependencies.
 
 Tasks:

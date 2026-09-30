@@ -1,3 +1,4 @@
+import { MemoryRouter } from "react-router";
 import { act, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
@@ -30,7 +31,9 @@ function renderAuth() {
   clients.push(client);
   const view = render(
     <QueryClientProvider client={client}>
-      <AuthGate />
+      <MemoryRouter>
+        <AuthGate />
+      </MemoryRouter>
     </QueryClientProvider>,
   );
   return { client, ...view };
