@@ -37,9 +37,10 @@ export function FriendshipActions({
   bucket: FriendshipBucket;
   feedback: (message: string) => void;
 }) {
-  const accept = useAcceptRequest(item.id, feedback);
+  const accept = useAcceptRequest(item.id, item.user.id, feedback);
   const remove = useDeleteRelationship(
     item.id,
+    item.user.id,
     bucket === "accepted",
     feedback,
   );

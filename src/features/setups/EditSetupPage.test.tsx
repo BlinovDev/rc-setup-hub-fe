@@ -1,3 +1,4 @@
+import { userSetupsKey } from "./queries";
 import { fireEvent, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { http, HttpResponse } from "msw";
@@ -77,6 +78,8 @@ it("PATCHes the complete technical document, preserves historical chassis by omi
   const { client } = renderSetupRoute(route);
   const searchKey = ["setups", "search", { q: "old title" }];
   client.setQueryData(searchKey, "cached search");
+  client.setQueryData(userSetupsKey(testSetup.owner_id), [testSetup]);
+  client.setQueryData(userSetupsKey("another-owner"), []);
   client.setQueryData(["unrelated"], "keep");
   await screen.findByLabelText("Title");
   input("Front toe (degrees)", "1");
@@ -96,6 +99,12 @@ it("PATCHes the complete technical document, preserves historical chassis by omi
   expect(received).not.toHaveProperty("schema_version");
   expect(client.getQueryData(detailKey(testSetup.id))).toEqual(saved);
   expect(client.getQueryState(searchKey)?.isInvalidated).toBe(true);
+  expect(
+    client.getQueryState(userSetupsKey(testSetup.owner_id))?.isInvalidated,
+  ).toBe(true);
+  expect(
+    client.getQueryState(userSetupsKey("another-owner"))?.isInvalidated,
+  ).toBe(false);
   expect(client.getQueryState(["unrelated"])?.isInvalidated).toBe(false);
 });
 it.each(["custom", "active", "cancel"])(

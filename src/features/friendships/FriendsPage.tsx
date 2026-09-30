@@ -1,7 +1,8 @@
 import { useState } from "react";
 import { FriendshipActions } from "./FriendshipActions";
 import { useFriendships } from "./queries";
-import { PublicIdentity, UserSearch } from "./UserSearch";
+import { UserSearch } from "./UserSearch";
+import { PublicIdentity } from "../users/PublicIdentity";
 const sections = [
   {
     bucket: "incoming",

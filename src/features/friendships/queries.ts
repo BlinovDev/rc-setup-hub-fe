@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { withSession } from "../setups/queries";
+import { userSetupsKey, withSession } from "../setups/queries";
 import {
   FriendshipError,
   friendshipErrorMessage,
@@ -57,6 +57,7 @@ export function useSendRequest(
 }
 export function useAcceptRequest(
   id: string,
+  otherUserId: string,
   feedback: (message: string) => void,
 ) {
   const client = useQueryClient();
@@ -69,19 +70,36 @@ export function useAcceptRequest(
       Promise.all([
         client.invalidateQueries({ queryKey: friendshipsKey, exact: true }),
         client.invalidateQueries({ queryKey: ["setups", "detail"] }),
+        client.invalidateQueries({
+          queryKey: userSetupsKey(otherUserId),
+          exact: true,
+        }),
       ]),
-    onError: (error) => {
+    onError: async (error) => {
       feedback(friendshipErrorMessage(error, "accept"));
-      if (error instanceof FriendshipError && [404, 409].includes(error.status))
-        return client.invalidateQueries({
+      if (
+        error instanceof FriendshipError &&
+        [404, 409].includes(error.status)
+      ) {
+        await client.cancelQueries({
+          queryKey: userSetupsKey(otherUserId),
+          exact: true,
+        });
+        client.removeQueries({
+          queryKey: userSetupsKey(otherUserId),
+          exact: true,
+        });
+        await client.invalidateQueries({
           queryKey: friendshipsKey,
           exact: true,
         });
+      }
     },
   });
 }
 export function useDeleteRelationship(
   id: string,
+  otherUserId: string,
   accepted: boolean,
   feedback: (message: string) => void,
 ) {
@@ -89,7 +107,17 @@ export function useDeleteRelationship(
   async function refresh() {
     if (accepted) {
       // Cancel old requests before removal so a late response cannot restore access.
-      await client.cancelQueries({ queryKey: ["setups", "detail"] });
+      await Promise.all([
+        client.cancelQueries({ queryKey: ["setups", "detail"] }),
+        client.cancelQueries({
+          queryKey: userSetupsKey(otherUserId),
+          exact: true,
+        }),
+      ]);
+      client.removeQueries({
+        queryKey: userSetupsKey(otherUserId),
+        exact: true,
+      });
       client.removeQueries({ queryKey: ["setups", "detail"] });
     }
     await client.invalidateQueries({ queryKey: friendshipsKey, exact: true });

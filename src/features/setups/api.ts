@@ -65,3 +65,12 @@ export function chassisLabel(setup: components["schemas"]["Setup"]) {
     ? `${setup.chassis.brand_name} ${setup.chassis.model_name}`
     : "Custom / not listed";
 }
+
+export async function getUserSetups(userId: string, signal: AbortSignal) {
+  const { data, response } = await apiClient.GET(
+    "/api/v1/users/{user_id}/setups",
+    { params: { path: { user_id: userId } }, signal },
+  );
+  if (response.status !== 200 || !data) throw new SetupError(response.status);
+  return data;
+}

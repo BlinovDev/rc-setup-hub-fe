@@ -72,6 +72,10 @@ it("searches normalized literal nickname only on submission and derives states w
   expect(screen.queryByText(/@example/)).not.toBeInTheDocument();
   expect(calls).toBe(1);
   expect(profiles).toBe(0);
+  expect(results.getByRole("link", { name: driver.nickname })).toHaveAttribute(
+    "href",
+    `/users/${driver.id}`,
+  );
 });
 it.each(["", "   ", "a".repeat(65), "bad\0nickname"])(
   "does not request for empty/invalid nickname %s",

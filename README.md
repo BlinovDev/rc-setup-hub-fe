@@ -24,14 +24,14 @@ https://github.com/BlinovDev/rc-setup-hub-fe
 
 ## Current repository state
 
-FE Phases 0–4 are complete, including live authentication, settings, owned CRUD
-and discovery/share smoke against the real local backend. Phase 5 implementation
-and automated verification are complete; live two-user friendship smoke is pending.
-Phase 6 is not started.
+FE Phases 0–5 are complete, including live authentication, settings, owned CRUD,
+discovery/share and two-user friendship/access smoke. Phase 6 implementation and
+automated verification are complete; live user-profile visibility smoke is pending.
+Phase 7 is not started.
 
 Authenticated routes include `/` (public discovery), `/setups/:setupId`
 (detail/share), `/settings`, `/my/setups`, `/my/setups/new`, and
-`/my/setups/:setupId/edit`, and `/friends`. Public discovery also requires a backend session.
+`/my/setups/:setupId/edit`, `/friends`, and `/users/:userId`. Public discovery also requires a backend session.
 
 ## Stack
 
@@ -100,8 +100,7 @@ src/
 ```
 
 Auth, profile, chassis, owned setups, discovery and setup detail are implemented.
-The users feature provides only a public-owner lookup; its profile route remains
-Phase 6. The friendship workflow is implemented; shared directories contain
+The users feature provides safe public profiles and server-returned visible setups. The friendship workflow is implemented; shared directories contain
 placeholders for later needs. The QueryClient is created once per
 provider instance. The root shell resolves the session with `GET /api/v1/me`.
 
@@ -237,7 +236,7 @@ fixed limit 20. Cursors are opaque page state, never URL parameters. Load more
 retains existing cards and repeats filters; failures offer retry. Changing filters
 starts at page one, and inactive search queries are discarded so old cursors are
 not restored. Cards show title, public owner identity, chassis and timestamps,
-with no per-card detail fetch. Owner profile navigation remains Phase 6.
+with no per-card detail fetch. Owner identities link to the Phase 6 profile route.
 
 `/setups/:setupId` validates UUID syntax and reuses `["setups", "detail", id]`.
 400/404 show the same generic unavailable message. General metadata and schema-v1
@@ -258,7 +257,7 @@ another authenticated session, and generic unavailable state after making it pri
 `/friends` provides Find people, Incoming requests, Outgoing requests, and Friends.
 Navigation is Home/My setups/Friends/Settings. One `GET /api/v1/friendships` query
 uses `["friendships"]`; each bucket item already contains the other participant’s
-safe public profile. No email or profile links are exposed.
+safe public profile. Identities now link to profiles; no email is exposed.
 
 Explicit nickname search trims whitespace, allows at most 64 Unicode characters,
 and rejects null characters. Empty/invalid input makes no search request. Queries
@@ -280,9 +279,37 @@ A stale accepted deletion 404 uses the same conservative cache cleanup. Pending
 requests do not grant visibility. Auth/chassis/owned-list/public-search caches are
 not broadly cleared or invalidated by friendship changes.
 
-Phase 5 implementation and automated verification are complete. Live two-user
-request → accept → friends-only access → remove → unavailable smoke remains pending.
-`/users/:userId`, visible user setup lists and friend profile navigation remain Phase 6.
+Phase 5 live two-user request → accept → friends-only access → remove → unavailable
+smoke has been manually verified.
+
+### Public profiles and visible setups
+
+`/users/:userId` validates UUID syntax before calling the existing public-profile
+query (`["users", "public", userId]`). Only after profile success does it load
+`GET /api/v1/users/{user_id}/setups` under canonical `userSetupsKey(userId)`:
+`["setups", "user", userId]`. A missing profile has a generic unavailable state;
+an empty authorized setup list simply says No visible setups. Independent list
+errors preserve profile display and offer retry. Both endpoints’ 401 clears the
+existing session. No email/provider data or friendship action panel is shown.
+
+Cards render exactly the returned setups, including authorized friends/private
+values, with title, historical chassis or Custom, visibility, update time and a
+link to the existing detail route. No client visibility filtering, hidden counts,
+extra friendship checks, per-card requests or automatic detail-cache seeding occurs.
+Discovery owners, detail owners and friendship/search identities link to profiles.
+Own profile URLs remain valid without redirecting to My setups.
+
+Accept invalidates only the other participant’s user-setup list as well as the
+existing detail family. Accepted removal cancels then removes that user’s list
+and performs existing detail cleanup; stale accepted DELETE 404 does the same.
+Stale Accept 404/409 cancels/removes that user’s list before friendship refresh.
+Normal pending reject/cancel preserves list caches. Setup create/patch invalidate
+the returned owner’s list; delete uses cached detail owner or current-user ID.
+Unrelated user lists survive. Late canceled list responses cannot restore access.
+
+Phase 6 automated verification is complete; live profile visibility smoke remains
+pending: public-only while unrelated, public + friends after acceptance, public-only
+after removal, no other-user private items, and identity → profile → detail links.
 
 ### Verification
 

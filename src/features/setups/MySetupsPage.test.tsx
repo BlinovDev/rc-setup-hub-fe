@@ -1,3 +1,4 @@
+import { userSetupsKey } from "./queries";
 import { screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { delay, http, HttpResponse } from "msw";
@@ -89,6 +90,8 @@ it("requires delete confirmation, cancel sends nothing, and success refreshes ow
   client.setQueryData(["unrelated"], "keep");
   const searchKey = ["setups", "search", { q: "track" }];
   client.setQueryData(searchKey, "cached search");
+  client.setQueryData(userSetupsKey(testSetup.owner_id), [testSetup]);
+  client.setQueryData(userSetupsKey("another-owner"), []);
   await screen.findByText(testSetup.title);
   const events = userEvent.setup();
   await events.click(screen.getByRole("button", { name: "Delete setup" }));
@@ -103,6 +106,12 @@ it("requires delete confirmation, cancel sends nothing, and success refreshes ow
   expect(client.getQueryData(detailKey(testSetup.id))).toBeUndefined();
   expect(client.getQueryData(mineKey)).toEqual([]);
   expect(client.getQueryState(searchKey)?.isInvalidated).toBe(true);
+  expect(
+    client.getQueryState(userSetupsKey(testSetup.owner_id))?.isInvalidated,
+  ).toBe(true);
+  expect(
+    client.getQueryState(userSetupsKey("another-owner"))?.isInvalidated,
+  ).toBe(false);
   expect(client.getQueryState(["unrelated"])?.isInvalidated).toBe(false);
   expect(client.getQueryData(["unrelated"])).toBe("keep");
 });

@@ -1,3 +1,4 @@
+import { PublicIdentity } from "../users/PublicIdentity";
 import { useState } from "react";
 import { Link, useParams } from "react-router";
 import type { components } from "../../api/generated/schema";
@@ -13,16 +14,7 @@ function Owner({ id }: { id: string }) {
     <p>
       Owner:{" "}
       {owner.data ? (
-        <>
-          {owner.data.avatar_url && (
-            <img
-              src={owner.data.avatar_url}
-              alt=""
-              className="inline-block h-8 w-8 rounded-full mr-2"
-            />
-          )}
-          {owner.data.nickname}
-        </>
+        <PublicIdentity user={owner.data} />
       ) : owner.isPending ? (
         "Loading owner…"
       ) : (

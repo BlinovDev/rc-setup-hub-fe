@@ -187,7 +187,7 @@ Verified manually: public setup appeared in discovery; text and chassis filters 
 
 ## FE Phase 5 — friendships
 
-Status: implementation and automated verification complete; live two-user friendship smoke pending.
+Status: complete, including automated verification and manually verified live two-user friendship/access smoke.
 
 Goal: provide the complete social request workflow.
 
@@ -215,13 +215,13 @@ Tests:
 
 Checkpoint:
 
-Live smoke pending: User A searches User B and sends a request; B sees incoming and accepts; friends-only detail becomes readable; either user removes the friendship and that detail becomes unavailable again.
+Verified manually: User A searched B and sent a request; B saw incoming and accepted; friends-only setup became readable; removal made that setup unavailable again.
 
 ---
 
 ## FE Phase 6 — other user profiles and visible setups
 
-Status: not started.
+Status: implementation and automated verification complete; live user-profile visibility smoke pending.
 
 Goal: connect discovery/social flows to another user's visible setups.
 
@@ -243,11 +243,13 @@ Tests:
 
 Checkpoint:
 
-User can navigate from a setup/friend to another user's visible setups.
+Live smoke pending: unrelated B opens A’s profile and sees public only; after acceptance B sees public + friends, never private; after removal B sees public only again. Verify discovery/friend identity → profile → detail links.
 
 ---
 
 ## FE Phase 7 — UX and responsive polish
+
+Status: not started.
 
 Goal: make the POC comfortable for real track use.
 

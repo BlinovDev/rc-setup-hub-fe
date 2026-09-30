@@ -33,6 +33,10 @@ it("renders full historical technical data including zero and public owner, usin
   await screen.findByRole("heading", { name: testSetup.title });
   await screen.findByText(/Safe owner/);
   expect(client.getQueryData(detailKey(testSetup.id))).toEqual(testSetup);
+  expect(screen.getByRole("link", { name: "Safe owner" })).toHaveAttribute(
+    "href",
+    `/users/${testSetup.owner_id}`,
+  );
   for (const value of [
     "Historical Yokomo RD2.0",
     "Old note",

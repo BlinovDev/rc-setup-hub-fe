@@ -51,13 +51,15 @@ This frontend must consume the backend contract rather than inventing its own AP
 
 The machine-readable contract is already present at `api/openapi.yaml`. Generated TypeScript transport types live in `src/api/generated/schema.ts`; regenerate them with `npm run api:generate`.
 
-FE Phases 0–4 are complete, including live authentication, `/settings` nickname-edit, owned CRUD and discovery/share smoke against the real local backend. API configuration uses `VITE_API_URL`; the committed contract and generated types remain the transport source of truth.
+FE Phases 0–5 are complete, including live authentication, `/settings` nickname-edit, owned CRUD and discovery/share smoke against the real local backend. API configuration uses `VITE_API_URL`; the committed contract and generated types remain the transport source of truth.
 
 FE Phase 3 is complete, including manually verified live owned CRUD smoke: realistic creation, zero/blank numeric persistence, nested edit preservation, notes clearing, chassis change to Custom and confirmed deletion.
 
 FE Phase 4 is complete, including manually verified live discovery/share smoke: public discovery and text/chassis filtering, stable frontend detail/share URLs, another authenticated session opening public detail, and generic unavailable state after visibility changed to private.
 
-FE Phase 5 implementation and automated verification are complete: `/friends`, nickname search, incoming/outgoing/accepted sections, request/accept/reject/cancel/confirmed removal, and scoped setup-detail cache safety. Live two-user friendship smoke is pending. Phase 6 is not started; `/users/:userId` and another user’s visible setups remain deferred.
+FE Phase 5 is complete, including live two-user friendship/access smoke: search → request → incoming → accept → friends-only readable → remove → unavailable.
+
+FE Phase 6 implementation and automated verification are complete: `/users/:userId`, shared safe public-profile resource, backend-returned visible setups, discovery/detail/friend identity links and targeted user-list cache safety. Live user-profile visibility smoke is pending. Phase 7 is not started.
 
 ## Read next
 

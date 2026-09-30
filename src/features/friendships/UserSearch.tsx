@@ -1,26 +1,9 @@
+import { PublicIdentity } from "../users/PublicIdentity";
 import { useState } from "react";
 import type { components } from "../../api/generated/schema";
 import { FriendshipError } from "./api";
 import { AddFriend, FriendshipActions } from "./FriendshipActions";
 import { useUserSearch, validUserSearch } from "./queries";
-export function PublicIdentity({
-  user,
-}: {
-  user: components["schemas"]["PublicProfile"];
-}) {
-  return (
-    <p>
-      {user.avatar_url && (
-        <img
-          className="inline-block h-8 w-8 rounded-full mr-2"
-          src={user.avatar_url}
-          alt=""
-        />
-      )}
-      {user.nickname}
-    </p>
-  );
-}
 export function UserSearch({
   friendships,
   feedback,

@@ -53,7 +53,11 @@ it("renders other participants directly in the correct buckets with safe profile
     "href",
     "/friends",
   );
-  expect(document.querySelector('a[href^="/users/"]')).toBeNull();
+  for (const user of [alice, bob, charlie])
+    expect(screen.getByRole("link", { name: user.nickname })).toHaveAttribute(
+      "href",
+      `/users/${user.id}`,
+    );
 });
 it("shows loading followed by all successful empty sections", async () => {
   server.use(

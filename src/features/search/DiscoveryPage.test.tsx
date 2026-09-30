@@ -85,6 +85,9 @@ it("reconstructs URL filters and renders historical cards without N+1 detail req
     screen.queryByRole("option", { name: "Custom / not listed" }),
   ).not.toBeInTheDocument();
   expect(detailCalls).toBe(0);
+  expect(
+    screen.getAllByRole("link", { name: "Public driver" })[0],
+  ).toHaveAttribute("href", `/users/${item.owner.id}`);
 });
 it("paginates once per cursor, preserves page one while loading, and resets on URL text changes", async () => {
   const requests: Record<string, string>[] = [];

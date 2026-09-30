@@ -45,7 +45,7 @@ Public setup discovery/search.
 - brand/model filters;
 - newest-first results;
 - cursor pagination/load-more;
-- links to setup detail and safe public owner identity; owner profile navigation is Phase 6.
+- links to setup detail and safe public owner identity; owner identities link to profiles (Phase 6).
 
 ### `/setups/:setupId`
 
@@ -92,7 +92,7 @@ POC profile settings:
 - current avatar if available;
 - logout through the shared authenticated shell.
 
-Implemented in Phase 2. Phase 3 adds Home/My setups/Settings navigation and the owned setup list/create/edit routes. The active chassis selector is reused for new selections; edit preserves the historical chassis until Change chassis is explicitly chosen. Phase 4 now implements authenticated public discovery and the stable detail/share route. Owner identity is displayed without a user-profile link until Phase 6.
+Implemented in Phase 2. Phase 3 adds Home/My setups/Settings navigation and the owned setup list/create/edit routes. The active chassis selector is reused for new selections; edit preserves the historical chassis until Change chassis is explicitly chosen. Phase 4 now implements authenticated public discovery and the stable detail/share route. Phase 6 adds owner identity links to the profile route.
 
 ## Setup form sections
 
@@ -194,10 +194,14 @@ Use semantic controls and labels.
 
 Discovery submits text explicitly, keeps filters in the URL, and clears model when brand changes. All brands/All models are distinct from Custom setup selection; no Custom filter is offered. Invalid URL filters show a Reset filters action without requests. Load more retains cards and retries additional-page failures independently.
 
-Detail uses historical chassis, safe public owner identity and only present technical values, including zero. Empty and unsupported technical data have explicit messages. Unavailable detail never distinguishes missing/private/friendship cases. Copy link reports success or exposes a selectable fallback URL. Owners have an Edit link; full user-profile pages remain Phase 6.
+Detail uses historical chassis, safe public owner identity and only present technical values, including zero. Empty and unsupported technical data have explicit messages. Unavailable detail never distinguishes missing/private/friendship cases. Copy link reports success or exposes a selectable fallback URL. Owners have an Edit link; user-profile pages are implemented in Phase 6.
 
 ## Implemented friendships (Phase 5)
 
-Authenticated navigation is Home/My setups/Friends/Settings. Find people uses an explicit labeled nickname form. Incoming has Accept/Reject, outgoing has Cancel request, and accepted has Remove friend with inline keyboard-accessible confirmation. Public identities show nickname/avatar without email or profile links. Search results show Incoming request / Request sent / Friends or Add friend based on the loaded friendship buckets.
+Authenticated navigation is Home/My setups/Friends/Settings. Find people uses an explicit labeled nickname form. Incoming has Accept/Reject, outgoing has Cancel request, and accepted has Remove friend with inline keyboard-accessible confirmation. Public identities show nickname/avatar without email, with profile links separate from action buttons. Search results show Incoming request / Request sent / Friends or Add friend based on the loaded friendship buckets.
 
-List failure blocks relationship actions instead of appearing empty. List/search loading, retryable errors and empty sections are explicit. Mutation errors are safe, and pending controls are disabled per relationship across both list/search renderings. Stale 404/409 refreshes list state. User-profile navigation remains Phase 6.
+List failure blocks relationship actions instead of appearing empty. List/search loading, retryable errors and empty sections are explicit. Mutation errors are safe, and pending controls are disabled per relationship across both list/search renderings. Stale 404/409 refreshes list state. User-profile navigation is implemented in Phase 6.
+
+## Implemented profiles (Phase 6)
+
+The authenticated `/users/:userId` route shows nickname/avatar, then a visible-setup list with title, historical chassis, returned visibility, update timestamp and detail link. Own profile URLs use the same route. No email, hidden counts, friendship inference or inline friend actions. Invalid/missing profiles are generic unavailable; profile and list loading/errors are independent. Discovery/detail/friendship/search identities use reusable user links with actions outside the link.
