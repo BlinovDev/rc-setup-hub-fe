@@ -51,6 +51,8 @@ Do not implement login, profile, setups, friendships, or search yet.
 
 ## FE Phase 1 — authentication foundation
 
+Status: implemented with automated verification; live signed-in backend checkpoint pending.
+
 Prerequisite:
 
 Phase 0 already provides the committed OpenAPI contract, generation workflow, generated types, typed API client, `VITE_API_URL` configuration and enforced cookie credentials. Reuse this foundation. Authentication integration must follow the current contract for backend login redirects and CORS/cookie behavior.

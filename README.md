@@ -24,11 +24,11 @@ https://github.com/BlinovDev/rc-setup-hub-fe
 
 ## Current repository state
 
-FE Phase 0 is complete. The React/TypeScript/Vite bootstrap, router, TanStack Query
-provider, testing stack, OpenAPI generation and typed API client are implemented.
-Only bootstrap and not-found routes exist; authentication and product flows remain
-unimplemented. FE Phase 1 — authentication foundation — is the next implementation
-phase in `AI/roadmap.md`.
+FE Phases 0 and 1 are implemented. The bootstrap includes an authentication-aware
+root route and a not-found route. The shell checks the backend session, offers
+Google sign-in, displays the current nickname/avatar, and supports logout. Product
+features remain deferred to FE Phase 2 and later in `AI/roadmap.md`.
+The live backend-session checkpoint still requires a locally signed-in backend.
 
 ## Stack
 
@@ -96,8 +96,9 @@ src/
   vite-env.d.ts
 ```
 
-Feature/shared directories contain only placeholders until their roadmap phases.
-The QueryClient is created once per provider instance. The shell makes no API calls.
+The auth feature is implemented; other feature/shared directories contain only
+placeholders until their roadmap phases. The QueryClient is created once per
+provider instance. The root shell resolves the session with `GET /api/v1/me`.
 
 ### OpenAPI workflow and API client
 
@@ -108,8 +109,8 @@ npm run api:generate
 This runs `openapi-typescript api/openapi.yaml -o src/api/generated/schema.ts`.
 Commit the generated file with contract changes; never edit it manually. Generated
 files are excluded from lint/format rewrites. The OpenAPI source is preserved.
-Generation and the generic client foundation are complete in Phase 0. Phase 1
-will use them for current-user queries, authentication state, Google login browser
+Generation and the generic client foundation were completed in Phase 0. Phase 1
+uses them for current-user queries, authentication state, Google login browser
 navigation, logout, session-expired behavior and loading/error states.
 
 `src/api/client.ts` uses `openapi-fetch` parameterized with generated `paths`, so
@@ -121,6 +122,32 @@ should consume this client. HTTP errors remain available as typed `error` plus
 `response.status`; network failures reject. Feature modules must handle these
 deliberately rather than turn failures into empty data. OAuth routes require browser
 navigation, as the contract specifies, rather than this fetch client.
+
+### Authentication foundation
+
+`src/features/auth/` contains API functions, query/mutation configuration, the auth
+shell, login action and browser-navigation boundary. Current-user state uses the
+query key `["auth", "me"]`, a one-minute freshness window, no polling and no
+automatic retries. Stale queries recheck on window focus/reconnection. Explicit
+Retry handles server/network failures without treating them as signed-out sessions.
+See [TanStack Query focus behavior](https://tanstack.com/query/latest/docs/framework/react/guides/window-focus-refetching).
+
+A `/me` 401 replaces cached user data with `null`, removing stale nickname/avatar
+and showing sign-in. Clicking sign-in uses `window.location.assign` to navigate to
+`{VITE_API_URL}/auth/google`. The backend handles OAuth and redirects to its trusted
+`APP_URL`; React only resolves the session afterward.
+
+Logout posts through the existing typed client. Only a 204 clears current-user
+state, after cancelling any older in-flight `/me` request. No reload or broad cache
+invalidation is required. Failures preserve authenticated state and offer retry.
+Pending logout disables the action. Authentication uses no browser storage, tokens,
+persistence or frontend OAuth callback handling.
+
+For the live checkpoint, configure the backend's `ALLOWED_ORIGINS` for
+`http://localhost:5173` and `APP_URL` for the frontend root. Start both servers,
+click sign-in, and verify nickname/avatar after the backend redirects back. Verify
+logout replaces the profile with sign-in without a reload. Automated tests use MSW
+and do not perform real Google OAuth.
 
 ### Verification
 

@@ -1,14 +1,10 @@
 import { createBrowserRouter, Link, type RouteObject } from "react-router";
+import { AuthGate } from "../features/auth/AuthGate";
 
 export const routes: RouteObject[] = [
   {
     path: "/",
-    element: (
-      <main className="mx-auto max-w-3xl px-6 py-12">
-        <h1 className="text-3xl font-semibold">RC Setup Hub</h1>
-        <p className="mt-4">Application foundation is ready.</p>
-      </main>
-    ),
+    element: <AuthGate />,
   },
   {
     path: "*",
