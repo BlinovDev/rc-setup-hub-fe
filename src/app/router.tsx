@@ -3,6 +3,10 @@ import { AuthGate } from "../features/auth/AuthGate";
 
 import { SettingsPage } from "../features/profile/SettingsPage";
 
+import { MySetupsPage } from "../features/setups/MySetupsPage";
+import { NewSetupPage } from "../features/setups/NewSetupPage";
+import { EditSetupPage } from "../features/setups/EditSetupPage";
+
 export const routes: RouteObject[] = [
   {
     path: "/",
@@ -11,6 +15,18 @@ export const routes: RouteObject[] = [
   {
     path: "/settings",
     element: <AuthGate>{(user) => <SettingsPage user={user} />}</AuthGate>,
+  },
+  {
+    path: "/my/setups",
+    element: <AuthGate>{() => <MySetupsPage />}</AuthGate>,
+  },
+  {
+    path: "/my/setups/new",
+    element: <AuthGate>{() => <NewSetupPage />}</AuthGate>,
+  },
+  {
+    path: "/my/setups/:setupId/edit",
+    element: <AuthGate>{(user) => <EditSetupPage user={user} />}</AuthGate>,
   },
   {
     path: "*",

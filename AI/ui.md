@@ -92,7 +92,7 @@ POC profile settings:
 - current avatar if available;
 - logout through the shared authenticated shell.
 
-Implemented in Phase 2 with Home/Settings navigation. The reusable active chassis selector remains a component for the future setup form; no setup route is implemented yet.
+Implemented in Phase 2. Phase 3 adds Home/My setups/Settings navigation and the owned setup list/create/edit routes. The active chassis selector is reused for new selections; edit preserves the historical chassis until Change chassis is explicitly chosen. The public/share detail route and discovery remain Phase 4.
 
 ## Setup form sections
 

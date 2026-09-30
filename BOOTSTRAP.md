@@ -9,11 +9,12 @@ including manually verified live backend/browser smoke: Google login through the
 backend, callback redirect to the frontend, authenticated `/api/v1/me`, and Sign out
 returning the UI to Sign in without a page reload.
 
-FE Phase 2 implementation and automated verification are complete. Live `/settings`
-nickname-edit smoke remains pending. Chassis selector automated tests suffice for
-Phase 2 implementation review; no standalone live selector smoke is required
-because it is intentionally not mounted into a product route until Phase 3.
-FE Phase 3 is not started.
+FE Phase 2 is complete, including manually verified live `/settings` nickname-edit
+smoke. Chassis selector automated tests were sufficient for Phase 2 review; it is
+now reused in Phase 3 setup forms.
+
+FE Phase 3 implementation and automated verification are complete. Live owned
+setup CRUD smoke remains pending. FE Phase 4 is not started.
 
 Do not start the next phase until the current phase is reviewed, committed, pushed
 and its checkpoint is green.

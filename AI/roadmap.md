@@ -89,7 +89,7 @@ Verified manually at `http://localhost:5173` with the real local backend: Google
 
 ## FE Phase 2 — profile + chassis catalog
 
-Status: implementation and automated verification complete; live `/settings` nickname-edit smoke pending. Chassis selector automated tests are sufficient for Phase 2 implementation review. No standalone live selector smoke is required because the reusable selector is intentionally not mounted into a product route until Phase 3.
+Status: complete, including automated verification and manually verified live `/settings` nickname-edit smoke. Chassis selector automated tests were sufficient for Phase 2 implementation review; the selector is now integrated into the Phase 3 setup form.
 
 Goal: support user profile editing and setup-selection dependencies.
 
@@ -112,13 +112,13 @@ Tests:
 
 Checkpoint:
 
-Live `/settings` nickname-edit smoke remains pending. Automated tests verify selection of Yokomo -> RD2.0 or Custom in the reusable selector; its product-route integration remains in Phase 3.
+Live `/settings` nickname-edit smoke was manually verified against the real backend. Automated tests verify Yokomo -> RD2.0 and Custom selection; no standalone live selector route was required in Phase 2.
 
 ---
 
 ## FE Phase 3 — owned setups CRUD
 
-Status: not started.
+Status: implementation and automated verification complete; live CRUD smoke pending.
 
 Goal: complete the primary setup-management workflow.
 
@@ -153,6 +153,8 @@ A real logged-in user can create, edit, inspect, and delete a realistic drift se
 ---
 
 ## FE Phase 4 — public discovery + setup detail/share route
+
+Status: not started.
 
 Goal: browse public setups and open stable setup URLs.
 

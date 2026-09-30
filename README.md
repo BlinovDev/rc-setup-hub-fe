@@ -24,13 +24,14 @@ https://github.com/BlinovDev/rc-setup-hub-fe
 
 ## Current repository state
 
-FE Phases 0, 1 and 2 are implemented. The bootstrap includes an authentication-aware
-root route and a not-found route. The shell checks the backend session, offers
-Google sign-in, displays the current nickname/avatar, and supports logout. Product
-features beyond profile/settings and active chassis selection remain deferred to FE Phase 3 and later in `AI/roadmap.md`.
-FE Phases 0 and 1 are complete, including Phase 1 live backend/browser smoke.
-Phase 2 implementation and automated verification are complete; live `/settings`
-nickname-edit smoke remains pending. FE Phase 3 is not started.
+FE Phases 0–2 are complete, including live authentication and `/settings`
+nickname-edit smoke against the real local backend. Phase 3 implementation and
+automated verification are complete; live owned-setup CRUD smoke remains pending.
+Phase 4 is not started.
+
+Authenticated routes include `/`, `/settings`, `/my/setups`, `/my/setups/new`,
+and `/my/setups/:setupId/edit`. The root remains the minimal auth shell; public
+search and `/setups/:setupId` detail/share routes are deferred to Phase 4.
 
 ## Stack
 
@@ -98,7 +99,7 @@ src/
   vite-env.d.ts
 ```
 
-Auth, profile and chassis features are implemented; other feature/shared directories contain only
+Auth, profile, chassis and owned setup features are implemented; other feature/shared directories contain only
 placeholders until their roadmap phases. The QueryClient is created once per
 provider instance. The root shell resolves the session with `GET /api/v1/me`.
 
@@ -165,8 +166,8 @@ with the returned user and resets the form. Errors map statuses to safe feedback
 PATCH 401 clears current-user state. No full-page reload is required.
 
 `src/features/chassis/` provides generated-type API/query functions and a controlled
-`ChassisSelector`, ready for a future setup form. It is not mounted as a setup page
-or persisted preference in Phase 2. Query keys are `["chassis", "brands"]` and
+`ChassisSelector`, now reused by Phase 3 setup forms. It does not persist a profile
+preference. Query keys are `["chassis", "brands"]` and
 `["chassis", "models", brandId]`, cached for five minutes without polling or
 automatic retries. Models are only fetched for a real brand; brand changes clear
 the selected model immediately. Loading, error/retry and empty states are explicit;
@@ -174,14 +175,51 @@ a models 404 displays an unavailable-brand message rather than an empty list.
 
 Selection state is `{ brandId: string | null, modelId: string | null }`.
 `selectedChassisModelId` returns `null` for Custom, a model ID for a complete
-selection, and `undefined` for an incomplete brand selection. The future form must
-require a model for a selected brand before saving. No fake Custom UUID or
-historical/inactive setup-editing behavior is introduced.
+selection, and `undefined` for an incomplete brand selection. The setup form
+requires a model for a selected brand before saving. No fake Custom UUID is used.
 
-Phase 2 implementation and automated verification are complete. Live `/settings`
-nickname-edit smoke remains pending. Chassis selector automated tests are sufficient
-for Phase 2 implementation review. No standalone live selector smoke is required;
-the reusable selector is intentionally not mounted into a product route until Phase 3.
+Phase 2 is complete, including manually verified live `/settings` nickname editing.
+Chassis selector automated tests verified the reusable component before it was
+integrated into Phase 3; no standalone live selector route was required.
+
+### Owned setup CRUD
+
+`src/features/setups/` contains API functions, query/mutation hooks, list/create/edit
+pages, inline delete confirmation, and a setup-specific React Hook Form. Form
+sections cover General, front/rear suspension and link arrays, front/rear shocks
+and springs, and electronics. Zod provides UX validation; the backend remains
+authoritative. Inputs have accessible labels and work on small screens.
+
+`setupToForm` maps the generated `Setup` into explicit input strings. Optional
+numbers use empty strings; numeric zero becomes `"0"`. `parseOptionalNumber`
+converts blank to omitted and `"0"` to numeric zero, rejecting non-finite values.
+Oil and link lengths must be positive. Serialization trims technical text, prunes
+empty nested sections and arrays, and permits an empty `data: {}` document. Empty
+notes become `null`, including when clearing previously saved notes.
+
+Create sends the required title/visibility/data, notes and Custom/null or an active
+model ID. A selected brand without a model blocks submission. Successful creation
+returns to My setups with confirmation. Edit sends the complete technical document
+because PATCH replaces `data` rather than deep-merging. Owner/schema/chassis display
+metadata are never sent. Unsupported schema versions and non-owner edit results
+show safe states without editable controls.
+
+Historical chassis display comes from `setup.chassis`, never the active catalog.
+Edit initially keeps the current reference and omits `chassis_model_id` from PATCH.
+Only Change chassis opens the active selector. It can send an active ID or explicit
+Custom/null; Cancel chassis change returns to keeping the current reference.
+
+Query keys are `["setups", "mine"]` and `["setups", "detail", id]`. Create invalidates
+only the owned list. Update replaces the affected detail cache and invalidates the
+owned list. Delete requires confirmation, removes affected detail/list data and
+refetches the owned list; deletion from edit returns to My setups. Automatic retries
+are disabled. A setup 401 clears the existing current-user cache and protected UI;
+other failures show safe feedback. PATCH 409 keeps the form and requires explicit
+Reload setup, labeled as discarding unsaved changes, before another save.
+
+Phase 3 live smoke is pending: create a realistic setup with zero and blank angles,
+verify the owned list, reopen/edit it while retaining other technical fields, clear
+notes, exercise chassis change/cancel, and confirm deletion against the local backend.
 
 ### Verification
 
@@ -205,8 +243,8 @@ profile endpoint and historical chassis display. All `/api/v1` endpoints, includ
 Numeric/UUID/length constraints require runtime form validation later; generated
 TypeScript types do not validate values at runtime.
 
-Before setup writes are implemented, clarify why create/patch setup responses do
-not list `415` despite having JSON request bodies, while profile and friendship
-writes do. The documented 256 KiB body limit also has no explicit oversized-body
+The contract does not list `415` for setup create/patch responses despite JSON
+request bodies, while profile and friendship writes do. Unexpected setup statuses
+use generic safe feedback; no undocumented status behavior is assumed. The documented 256 KiB body limit also has no explicit oversized-body
 response status. No status or backend behavior is assumed here. CORS requires the
 frontend origin in backend `ALLOWED_ORIGINS`; frontend code cannot configure that.

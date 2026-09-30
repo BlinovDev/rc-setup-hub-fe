@@ -227,3 +227,11 @@ Use one shared typed client.
 Phase 0 already provides `src/api/client.ts`, using `openapi-fetch` with generated OpenAPI `paths`. Its base URL comes from `src/api/config.ts` and `VITE_API_URL`. The final fetch wrapper enforces `credentials: "include"`, even if a caller supplies a different option. Build feature queries and mutations on this existing foundation.
 
 Components should consume feature-level query/mutation functions rather than call raw fetch directly.
+
+## Implemented Phase 3 setup client behavior
+
+Owned setup queries use `["setups", "mine"]` and `["setups", "detail", id]`. Mutations update/remove affected detail data and invalidate only the owned list; no discovery queries exist yet. Setup query/mutation 401 clears the existing `["auth", "me"]` state. Other statuses do not imply logout.
+
+The schema-v1 form sends a complete replacement `data` document on PATCH, preserving unedited technical values. Empty nested sections are pruned; explicit numeric zero survives. Empty notes send `null` to clear. Historical chassis is displayed from `setup.chassis`, and unchanged chassis is preserved by omitting `chassis_model_id` from PATCH. Explicit chassis changes reuse the active selector.
+
+Setup writes use generated request types and the existing credential-enforcing client. Unexpected statuses use generic safe errors; no undocumented setup 415 semantics are inferred. PATCH 409 requires explicit reload before retrying.

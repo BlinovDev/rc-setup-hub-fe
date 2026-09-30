@@ -35,8 +35,9 @@ export function AuthGate({
         <LoginPage />
       ) : (
         <>
-          <nav className="mt-4 flex gap-4" aria-label="Main">
+          <nav className="mt-4 flex flex-wrap gap-4" aria-label="Main">
             <Link to="/">Home</Link>
+            <Link to="/my/setups">My setups</Link>
             <Link to="/settings">Settings</Link>
           </nav>
           <AuthenticatedShell user={session.data} />
