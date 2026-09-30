@@ -118,7 +118,7 @@ Live `/settings` nickname-edit smoke was manually verified against the real back
 
 ## FE Phase 3 — owned setups CRUD
 
-Status: implementation and automated verification complete; live CRUD smoke pending.
+Status: complete, including automated verification and manually verified live owned CRUD smoke.
 
 Goal: complete the primary setup-management workflow.
 
@@ -148,13 +148,13 @@ Tests:
 
 Checkpoint:
 
-A real logged-in user can create, edit, inspect, and delete a realistic drift setup from the browser.
+Verified manually against the real backend: realistic creation, explicit zero persistence and blank optional numbers, edit preserving shocks/electronics/links, notes clearing, chassis change to Custom, delete confirmation and deletion.
 
 ---
 
 ## FE Phase 4 — public discovery + setup detail/share route
 
-Status: not started.
+Status: implementation and automated verification complete; live discovery/share smoke pending.
 
 Goal: browse public setups and open stable setup URLs.
 
@@ -166,7 +166,7 @@ Tasks:
 - URL-synchronized search state;
 - cursor pagination/load-more;
 - public result cards;
-- owner public profile links;
+- safe public owner identity on cards and public-owner lookup on detail; full navigable `/users/:userId` profiles remain Phase 6;
 - `/setups/:setupId` detail route;
 - generic unavailable/not-found state;
 - share/copy-link action using stable route URL.
@@ -181,11 +181,13 @@ Tests:
 
 Checkpoint:
 
-User can publish a setup, find it from another session, and share/open its stable client URL.
+Live smoke pending: publish a setup, find it from another session, and share/open its stable client URL.
 
 ---
 
 ## FE Phase 5 — friendships
+
+Status: not started.
 
 Goal: provide the complete social request workflow.
 

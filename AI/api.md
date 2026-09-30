@@ -230,8 +230,14 @@ Components should consume feature-level query/mutation functions rather than cal
 
 ## Implemented Phase 3 setup client behavior
 
-Owned setup queries use `["setups", "mine"]` and `["setups", "detail", id]`. Mutations update/remove affected detail data and invalidate only the owned list; no discovery queries exist yet. Setup query/mutation 401 clears the existing `["auth", "me"]` state. Other statuses do not imply logout.
+Owned setup queries use `["setups", "mine"]` and `["setups", "detail", id]`. Mutations update/remove affected detail data and invalidate the owned list plus the `["setups", "search"]` family. Setup query/mutation 401 clears the existing `["auth", "me"]` state. Other statuses do not imply logout.
 
 The schema-v1 form sends a complete replacement `data` document on PATCH, preserving unedited technical values. Empty nested sections are pruned; explicit numeric zero survives. Empty notes send `null` to clear. Historical chassis is displayed from `setup.chassis`, and unchanged chassis is preserved by omitting `chassis_model_id` from PATCH. Explicit chassis changes reuse the active selector.
 
 Setup writes use generated request types and the existing credential-enforcing client. Unexpected statuses use generic safe errors; no undocumented setup 415 semantics are inferred. PATCH 409 requires explicit reload before retrying.
+
+## Implemented Phase 4 discovery and detail
+
+Discovery uses only `GET /api/v1/setups/search` with fixed limit 20 and normalized URL filters `q`, `brand_id`, `model_id`. Infinite query keys are `["setups", "search", { q, brandId, modelId, limit }]`; cursor is opaque page state and each page repeats filters. Public-only membership is backend-owned; owned/visible-user lists are never merged into discovery. Cards use historical chassis and public owner from search responses without detail requests.
+
+The stable `/setups/:setupId` route reuses the existing detail API/key. Invalid UUIDs avoid requests; 400/404 use a generic unavailable state. Schema-v1 read-only display preserves zero, and unsupported versions are not interpreted. Detail resolves owner through `GET /api/v1/users/{user_id}` using `["users", "public", userId]`, with no email and a safe non-401 failure fallback. Search/detail/owner 401 clears current-user state; other failures do not imply logout. Clipboard sharing copies the frontend route without query parameters. Full user-profile navigation remains Phase 6.

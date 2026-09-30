@@ -28,7 +28,10 @@ it("creates Custom with numeric zero and omitted blank angles through the existi
       HttpResponse.json([testSetup]),
     ),
   );
-  const { router } = renderSetupRoute("/my/setups/new");
+  const { router, client } = renderSetupRoute("/my/setups/new");
+  const searchKey = ["setups", "search", { q: "" }];
+  client.setQueryData(searchKey, "cached search");
+  client.setQueryData(["unrelated"], "keep");
   await screen.findByLabelText("Title");
   input("Title", "  Track setup  ");
   input("Front toe (degrees)", "0");
@@ -37,6 +40,8 @@ it("creates Custom with numeric zero and omitted blank angles through the existi
     .click(screen.getByRole("button", { name: "Create setup" }));
   expect(await screen.findByText("Setup created.")).toBeInTheDocument();
   expect(router.state.location.pathname).toBe("/my/setups");
+  expect(client.getQueryState(searchKey)?.isInvalidated).toBe(true);
+  expect(client.getQueryState(["unrelated"])?.isInvalidated).toBe(false);
   expect(received).toEqual({
     title: "Track setup",
     visibility: "private",

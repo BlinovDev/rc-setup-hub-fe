@@ -17,7 +17,7 @@ import {
 
 export const mineKey = ["setups", "mine"] as const;
 export const detailKey = (id: string) => ["setups", "detail", id] as const;
-async function withSession<T>(
+export async function withSession<T>(
   client: QueryClient,
   request: () => Promise<T>,
 ): Promise<T> {
@@ -55,7 +55,10 @@ export function useCreateSetup() {
       withSession(client, () => createSetup(body)),
     retry: false,
     onSuccess: async () => {
-      await client.invalidateQueries({ queryKey: mineKey, exact: true });
+      await Promise.all([
+        client.invalidateQueries({ queryKey: mineKey, exact: true }),
+        client.invalidateQueries({ queryKey: ["setups", "search"] }),
+      ]);
     },
   });
 }
@@ -68,7 +71,10 @@ export function usePatchSetup(id: string) {
     onSuccess: async (setup) => {
       await client.cancelQueries({ queryKey: detailKey(id), exact: true });
       client.setQueryData(detailKey(id), setup);
-      await client.invalidateQueries({ queryKey: mineKey, exact: true });
+      await Promise.all([
+        client.invalidateQueries({ queryKey: mineKey, exact: true }),
+        client.invalidateQueries({ queryKey: ["setups", "search"] }),
+      ]);
     },
   });
 }
@@ -83,7 +89,10 @@ export function useDeleteSetup(id: string) {
       client.setQueryData<components["schemas"]["Setup"][]>(mineKey, (old) =>
         old?.filter((setup) => setup.id !== id),
       );
-      await client.invalidateQueries({ queryKey: mineKey, exact: true });
+      await Promise.all([
+        client.invalidateQueries({ queryKey: mineKey, exact: true }),
+        client.invalidateQueries({ queryKey: ["setups", "search"] }),
+      ]);
     },
   });
 }

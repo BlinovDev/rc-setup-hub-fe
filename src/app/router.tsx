@@ -7,10 +7,17 @@ import { MySetupsPage } from "../features/setups/MySetupsPage";
 import { NewSetupPage } from "../features/setups/NewSetupPage";
 import { EditSetupPage } from "../features/setups/EditSetupPage";
 
+import { DiscoveryPage } from "../features/search/DiscoveryPage";
+import { SetupDetailPage } from "../features/setups/SetupDetailPage";
+
 export const routes: RouteObject[] = [
   {
     path: "/",
-    element: <AuthGate />,
+    element: <AuthGate>{() => <DiscoveryPage />}</AuthGate>,
+  },
+  {
+    path: "/setups/:setupId",
+    element: <AuthGate>{(user) => <SetupDetailPage user={user} />}</AuthGate>,
   },
   {
     path: "/settings",

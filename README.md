@@ -24,14 +24,13 @@ https://github.com/BlinovDev/rc-setup-hub-fe
 
 ## Current repository state
 
-FE Phases 0–2 are complete, including live authentication and `/settings`
-nickname-edit smoke against the real local backend. Phase 3 implementation and
-automated verification are complete; live owned-setup CRUD smoke remains pending.
-Phase 4 is not started.
+FE Phases 0–3 are complete, including live authentication, settings and owned CRUD
+smoke against the real local backend. Phase 4 implementation and automated
+verification are complete; live discovery/share smoke is pending. Phase 5 is not started.
 
-Authenticated routes include `/`, `/settings`, `/my/setups`, `/my/setups/new`,
-and `/my/setups/:setupId/edit`. The root remains the minimal auth shell; public
-search and `/setups/:setupId` detail/share routes are deferred to Phase 4.
+Authenticated routes include `/` (public discovery), `/setups/:setupId`
+(detail/share), `/settings`, `/my/setups`, `/my/setups/new`, and
+`/my/setups/:setupId/edit`. Public discovery also requires a backend session.
 
 ## Stack
 
@@ -99,8 +98,9 @@ src/
   vite-env.d.ts
 ```
 
-Auth, profile, chassis and owned setup features are implemented; other feature/shared directories contain only
-placeholders until their roadmap phases. The QueryClient is created once per
+Auth, profile, chassis, owned setups, discovery and setup detail are implemented.
+The users feature provides only a public-owner lookup; its profile route remains
+Phase 6. Friendship/shared directories contain placeholders for later phases. The QueryClient is created once per
 provider instance. The root shell resolves the session with `GET /api/v1/me`.
 
 ### OpenAPI workflow and API client
@@ -210,16 +210,45 @@ Only Change chassis opens the active selector. It can send an active ID or expli
 Custom/null; Cancel chassis change returns to keeping the current reference.
 
 Query keys are `["setups", "mine"]` and `["setups", "detail", id]`. Create invalidates
-only the owned list. Update replaces the affected detail cache and invalidates the
-owned list. Delete requires confirmation, removes affected detail/list data and
+the owned list. Update replaces the affected detail cache and invalidates the
+owned list. All setup mutations also invalidate the `["setups", "search"]` family. Delete requires confirmation, removes affected detail/list data and
 refetches the owned list; deletion from edit returns to My setups. Automatic retries
 are disabled. A setup 401 clears the existing current-user cache and protected UI;
 other failures show safe feedback. PATCH 409 keeps the form and requires explicit
 Reload setup, labeled as discarding unsaved changes, before another save.
 
-Phase 3 live smoke is pending: create a realistic setup with zero and blank angles,
-verify the owned list, reopen/edit it while retaining other technical fields, clear
-notes, exercise chassis change/cancel, and confirm deletion against the local backend.
+Phase 3 live CRUD smoke was manually verified: realistic setup creation, explicit
+zero and blank angles, nested technical-data preservation during edit, notes
+clearing, changing chassis to Custom, and confirmed deletion.
+
+### Public discovery and detail/share
+
+`/` uses only `GET /api/v1/setups/search`, which returns public setups. An explicit
+Search form trims text and rejects more than 100 characters or null characters.
+URL parameters `q`, `brand_id` and `model_id` restore bookmarked filters. Invalid
+UUIDs/text show a resettable invalid-filter state without backend requests. Active
+brand/model filters reuse the chassis queries; changing/clearing brand clears model.
+There is no synthetic Custom filter. Historical result labels come from responses.
+
+Infinite queries use `["setups", "search", { q, brandId, modelId, limit }]`, with
+fixed limit 20. Cursors are opaque page state, never URL parameters. Load more
+retains existing cards and repeats filters; failures offer retry. Changing filters
+starts at page one, and inactive search queries are discarded so old cursors are
+not restored. Cards show title, public owner identity, chassis and timestamps,
+with no per-card detail fetch. Owner profile navigation remains Phase 6.
+
+`/setups/:setupId` validates UUID syntax and reuses `["setups", "detail", id]`.
+400/404 show the same generic unavailable message. General metadata and schema-v1
+technical sections are read-only, retaining explicit zero. Empty data and unsupported
+schema versions have safe states. Owner display uses `["users", "public", userId]`
+and `GET /api/v1/users/{user_id}` without email; non-401 lookup failures leave the
+setup visible with an owner-unavailable fallback. A current owner gets an Edit link.
+
+Copy link uses a testable clipboard boundary and copies only the frontend origin
+plus `/setups/{id}`. Failure exposes a selectable URL. Search/detail/owner 401
+clears the existing current-user state; other failures never imply logout.
+Phase 4 automated verification is complete; real backend/browser discovery and
+share-link smoke remains pending.
 
 ### Verification
 

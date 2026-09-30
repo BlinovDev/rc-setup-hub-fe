@@ -113,3 +113,9 @@ npm run build
 ```
 
 Exact script names may be finalized in FE 0 and then must remain stable unless there is a reason to change them.
+
+## Phase 4 automated coverage and live checkpoint
+
+MSW/RTL tests cover URL initialization and validation, explicit text submission, brand/model reset, first-page and cursor-page errors/retries, ordered pagination without duplicates, historical/Custom cards and absence of N+1 detail requests. Detail tests cover generic unavailable states, full technical display with zero, empty/null values, unsupported versions, public owner lookup/fallback, owner-only Edit links, session expiry and clipboard success/fallback. Existing create/update/delete tests verify narrow search-family invalidation.
+
+Phase 3 live owned CRUD smoke is complete. Phase 4 live backend/browser discovery and stable share-link smoke remains pending. Full user profiles and friendships are not Phase 4 tests.

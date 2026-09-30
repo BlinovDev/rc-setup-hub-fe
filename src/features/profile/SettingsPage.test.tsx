@@ -67,6 +67,10 @@ it("normalizes the PATCH body and updates settings, root shell and only the curr
   const saved = { ...user, nickname: "New Driver" };
   let patches = 0;
   server.use(
+    http.get(`${apiUrl}/api/v1/chassis/brands`, () => HttpResponse.json([])),
+    http.get(`${apiUrl}/api/v1/setups/search`, () =>
+      HttpResponse.json({ items: [], next_cursor: null }),
+    ),
     http.patch(`${apiUrl}/api/v1/me`, async ({ request }) => {
       patches++;
       expect(request.credentials).toBe("include");
@@ -91,7 +95,9 @@ it("normalizes the PATCH body and updates settings, root shell and only the curr
   expect(client.getQueryData(["unrelated"])).toBe("keep");
   await userEvent.setup().click(screen.getByRole("link", { name: "Home" }));
   expect(screen.getByText("New Driver")).toBeInTheDocument();
-  expect(screen.queryByRole("textbox")).not.toBeInTheDocument();
+  expect(
+    screen.queryByRole("textbox", { name: "Nickname" }),
+  ).not.toBeInTheDocument();
   expect(patches).toBe(1);
 });
 it("does not PATCH an unchanged normalized nickname even on form submission", async () => {

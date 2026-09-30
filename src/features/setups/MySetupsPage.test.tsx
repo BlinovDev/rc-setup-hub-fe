@@ -66,7 +66,7 @@ it.each(["server", "network"])("retries %s list failure", async (failure) => {
   await screen.findByText(testSetup.title);
   expect(calls).toBe(2);
 });
-it("requires delete confirmation, cancel sends nothing, and success refreshes only owned caches", async () => {
+it("requires delete confirmation, cancel sends nothing, and success refreshes owned and search caches", async () => {
   let deleted = false,
     calls = 0;
   server.use(
@@ -87,6 +87,8 @@ it("requires delete confirmation, cancel sends nothing, and success refreshes on
   const { client } = renderSetupRoute("/my/setups");
   client.setQueryData(detailKey(testSetup.id), testSetup);
   client.setQueryData(["unrelated"], "keep");
+  const searchKey = ["setups", "search", { q: "track" }];
+  client.setQueryData(searchKey, "cached search");
   await screen.findByText(testSetup.title);
   const events = userEvent.setup();
   await events.click(screen.getByRole("button", { name: "Delete setup" }));
@@ -100,6 +102,8 @@ it("requires delete confirmation, cancel sends nothing, and success refreshes on
   expect(calls).toBe(1);
   expect(client.getQueryData(detailKey(testSetup.id))).toBeUndefined();
   expect(client.getQueryData(mineKey)).toEqual([]);
+  expect(client.getQueryState(searchKey)?.isInvalidated).toBe(true);
+  expect(client.getQueryState(["unrelated"])?.isInvalidated).toBe(false);
   expect(client.getQueryData(["unrelated"])).toBe("keep");
 });
 it.each([400, 403, 404, 500])(

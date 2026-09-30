@@ -45,7 +45,7 @@ Public setup discovery/search.
 - brand/model filters;
 - newest-first results;
 - cursor pagination/load-more;
-- links to setup detail and owner profile.
+- links to setup detail and safe public owner identity; owner profile navigation is Phase 6.
 
 ### `/setups/:setupId`
 
@@ -92,7 +92,7 @@ POC profile settings:
 - current avatar if available;
 - logout through the shared authenticated shell.
 
-Implemented in Phase 2. Phase 3 adds Home/My setups/Settings navigation and the owned setup list/create/edit routes. The active chassis selector is reused for new selections; edit preserves the historical chassis until Change chassis is explicitly chosen. The public/share detail route and discovery remain Phase 4.
+Implemented in Phase 2. Phase 3 adds Home/My setups/Settings navigation and the owned setup list/create/edit routes. The active chassis selector is reused for new selections; edit preserves the historical chassis until Change chassis is explicitly chosen. Phase 4 now implements authenticated public discovery and the stable detail/share route. Owner identity is displayed without a user-profile link until Phase 6.
 
 ## Setup form sections
 
@@ -189,3 +189,9 @@ Use semantic controls and labels.
 - keyboard navigation must work;
 - do not communicate visibility/error state only by color;
 - dialogs require focus management if introduced.
+
+## Implemented discovery/detail states (Phase 4)
+
+Discovery submits text explicitly, keeps filters in the URL, and clears model when brand changes. All brands/All models are distinct from Custom setup selection; no Custom filter is offered. Invalid URL filters show a Reset filters action without requests. Load more retains cards and retries additional-page failures independently.
+
+Detail uses historical chassis, safe public owner identity and only present technical values, including zero. Empty and unsupported technical data have explicit messages. Unavailable detail never distinguishes missing/private/friendship cases. Copy link reports success or exposes a selectable fallback URL. Owners have an Edit link; full user-profile pages remain Phase 6.
