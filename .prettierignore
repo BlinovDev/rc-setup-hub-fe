@@ -1,0 +1,9 @@
+node_modules/
+dist/
+coverage/
+src/api/generated/
+package-lock.json
+AGENTS.md
+AI/
+api/openapi.yaml
+BOOTSTRAP.md

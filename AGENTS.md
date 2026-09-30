@@ -48,3 +48,20 @@ A phase is complete only when:
 5. documentation is updated if the client contract changed.
 
 When asked to implement a roadmap phase, first read the referenced AI docs, implement only that phase, run its verification commands, and report changed files and test/build results.
+
+## Backend API contract
+
+The frontend must use `api/openapi.yaml` as the machine-readable backend contract.
+
+Rules:
+
+- Do not infer API shapes from assumptions.
+- Do not inspect or depend on Go backend source code unless explicitly asked.
+- Do not manually recreate API response/request interfaces when they can be generated from OpenAPI.
+- Generated API types belong under `src/api/generated/`.
+- Do not manually edit generated files.
+- Backend authorization rules must not be duplicated as frontend security logic.
+- HttpOnly cookie authentication is backend-owned.
+- Never store authentication tokens in localStorage or sessionStorage.
+- All authenticated browser API requests must use credentials.
+- If implementation and OpenAPI appear inconsistent, stop and report the mismatch instead of guessing.
