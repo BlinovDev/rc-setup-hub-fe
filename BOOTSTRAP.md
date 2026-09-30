@@ -1,16 +1,12 @@
-# Bootstrap note
+# Bootstrap status
 
-This repository intentionally starts without a generated Vite application.
+FE Phase 0 is complete and technically accepted. The application bootstrap, testing
+stack, OpenAPI generation and typed API client are implemented. See `README.md`
+for install, run and verification commands.
 
-The documentation files should be committed first so Codex receives the project constraints before generating application code.
-
-Recommended workflow:
-
-1. copy this starter into the empty `rc-setup-hub-fe` repository;
-2. commit the documentation baseline;
-3. start a fresh Codex conversation in this repository;
-4. ask Codex to implement **FE Phase 0 only**;
-5. review, test, commit, and push;
-6. continue one roadmap phase at a time.
+Continue one roadmap phase at a time using `AI/roadmap.md`. FE Phase 1 is the next
+implementation phase and builds authentication on the existing API foundation.
+Do not start the next phase until the current phase is reviewed, committed, pushed
+and its checkpoint is green.
 
 Do not ask Codex to build the whole application in a single prompt.

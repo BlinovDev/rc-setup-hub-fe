@@ -8,9 +8,11 @@ Do not start the next phase until the current phase is reviewed, committed, push
 
 ## FE Phase 0 — application bootstrap
 
+Status: complete; implementation technically accepted.
+
 Goal: create a clean, runnable React/TypeScript foundation without implementing product flows.
 
-Tasks:
+Completed foundation:
 
 - bootstrap React + TypeScript with Vite in the existing repository;
 - preserve all existing `AGENTS.md` and `AI/*` documentation;
@@ -21,7 +23,12 @@ Tasks:
 - add MSW test dependency/setup;
 - establish formatter/linter/typecheck/build scripts;
 - create the agreed feature-oriented source tree;
-- add `VITE_API_BASE_URL` configuration helper;
+- commit `api/openapi.yaml` as the machine-readable backend contract;
+- install `openapi-typescript` and establish `npm run api:generate`;
+- generate `src/api/generated/schema.ts`;
+- add the shared typed `openapi-fetch` client;
+- add `VITE_API_URL` configuration helper;
+- enforce `credentials: "include"` at the final fetch boundary;
 - add minimal app/providers/router shell;
 - add a simple not-found route;
 - no backend business features yet.
@@ -30,6 +37,8 @@ Tests/checkpoint:
 
 ```text
 dev server starts
+API generation passes
+formatting passes
 lint passes
 typecheck passes
 tests pass
@@ -40,25 +49,22 @@ Do not implement login, profile, setups, friendships, or search yet.
 
 ---
 
-## FE Phase 1 — API contract + authentication foundation
+## FE Phase 1 — authentication foundation
 
 Prerequisite:
 
-Backend frontend-readiness/API-contract phase is complete and provides stable OpenAPI plus frontend login redirect behavior.
+Phase 0 already provides the committed OpenAPI contract, generation workflow, generated types, typed API client, `VITE_API_URL` configuration and enforced cookie credentials. Reuse this foundation. Authentication integration must follow the current contract for backend login redirects and CORS/cookie behavior.
 
-Goal: establish typed API access and authenticated application shell.
+Goal: build authentication state and an authenticated application shell on the existing API foundation.
 
 Tasks:
 
-- add OpenAPI type generation workflow;
-- generate backend transport types into `src/api/generated/`;
-- create shared API client using `VITE_API_BASE_URL`;
-- all requests use credentials;
-- current-user (`/me`) query;
-- Google login action navigates to backend `/auth/google`;
+- current-user (`GET /api/v1/me`) query using the existing typed client and TanStack Query;
+- authentication state derived from the current-user query;
+- Google login action uses browser navigation to backend `/auth/google`;
 - logout mutation;
 - authenticated/unauthenticated route shell;
-- 401 handling;
+- 401/session-expired behavior;
 - basic loading/error states;
 - no token storage in browser storage.
 
@@ -66,8 +72,11 @@ Tests:
 
 - unauthenticated state;
 - authenticated state;
-- logout;
-- credentials-enabled API behavior;
+- Google login browser navigation;
+- logout mutation and resulting authentication state;
+- 401/session-expired behavior;
+- loading/error states;
+- credentials-enabled authentication API behavior;
 - no localStorage/sessionStorage auth dependency.
 
 Checkpoint:

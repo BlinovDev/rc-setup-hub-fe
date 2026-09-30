@@ -12,7 +12,7 @@ Use strict TypeScript.
 
 Avoid `any` unless interacting with an unavoidable untyped boundary and document why.
 
-Prefer generated backend transport types once OpenAPI exists.
+Use the existing backend transport types in `src/api/generated/schema.ts`, generated from `api/openapi.yaml` with `npm run api:generate`.
 
 Use small frontend-specific view-model types only when they represent UI state rather than duplicating API schemas.
 
@@ -71,7 +71,7 @@ Public setup search filters should be URL-addressable so discovery state can be 
 Expected non-secret frontend configuration:
 
 ```text
-VITE_API_BASE_URL=http://localhost:8080
+VITE_API_URL=http://localhost:8080
 ```
 
 Add more frontend env variables only when needed.

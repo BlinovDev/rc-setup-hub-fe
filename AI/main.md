@@ -49,7 +49,9 @@ BlinovDev/rc-setup-hub
 
 This frontend must consume the backend contract rather than inventing its own API semantics.
 
-Once OpenAPI is available, generated TypeScript API types become the transport-schema source of truth.
+The machine-readable contract is already present at `api/openapi.yaml`. Generated TypeScript transport types live in `src/api/generated/schema.ts`; regenerate them with `npm run api:generate`.
+
+FE Phase 0 is complete: the application bootstrap, providers, router, typed API client and enforced cookie credentials exist. API configuration uses `VITE_API_URL`. FE Phase 1 is next and builds authentication on this foundation; product flows remain unimplemented.
 
 ## Read next
 

@@ -34,7 +34,7 @@ The frontend uses the backend HttpOnly session cookie and never stores auth toke
 
 Status: accepted.
 
-After backend frontend-readiness work provides OpenAPI, generated TypeScript transport types are the source of truth.
+The committed `api/openapi.yaml` is the machine-readable backend contract. Phase 0 established generated transport types in `src/api/generated/schema.ts` via `npm run api:generate`; these types are the source of truth for frontend transport typing.
 
 Do not maintain parallel hand-written API DTOs for the same contract.
 
@@ -79,3 +79,11 @@ For optional setup numbers, empty/unknown and explicit `0` are different values 
 Status: accepted.
 
 Do not add offline sync, complex global state, a large design system, micro-frontends, or generalized form engines unless real requirements justify them.
+
+## F011 — API foundation established in Phase 0
+
+Status: accepted.
+
+Use `VITE_API_URL` for the non-secret backend origin, defaulting to `http://localhost:8080`. The existing `openapi-fetch` client uses generated OpenAPI types and enforces `credentials: "include"`.
+
+OpenAPI generation and the shared client belong to the completed Phase 0 foundation. Phase 1 builds current-user queries, authentication state, login/logout and session behavior on that foundation.

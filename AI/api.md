@@ -4,9 +4,9 @@
 
 The frontend must not invent backend transport schemas.
 
-After the backend frontend-readiness phase is complete, the backend OpenAPI document is the canonical transport contract.
+The current backend contract is already committed at `api/openapi.yaml`. It is the machine-readable source of truth for transport schemas.
 
-The frontend should generate TypeScript types from that contract into:
+Phase 0 established `npm run api:generate`, using `openapi-typescript` to generate `src/api/generated/schema.ts`. Generated types already live under:
 
 ```text
 src/api/generated/
@@ -27,7 +27,7 @@ http://localhost:8080
 Frontend environment should expose a non-secret API base URL, for example:
 
 ```text
-VITE_API_BASE_URL=http://localhost:8080
+VITE_API_URL=http://localhost:8080
 ```
 
 Do not hardcode production URLs into source files.
@@ -69,7 +69,7 @@ The frontend must not parse Google OAuth tokens.
 
 ## Known POC endpoints
 
-The backend contract currently includes or is expected to include:
+The current OpenAPI contract includes these POC endpoints:
 
 ```text
 GET  /health
@@ -92,6 +92,7 @@ GET    /api/v1/me/setups
 GET    /api/v1/users/{user_id}/setups
 GET    /api/v1/setups/search
 
+GET    /api/v1/users/{user_id}
 GET    /api/v1/users/search?q=<nickname>
 GET    /api/v1/friendships
 POST   /api/v1/friendships
@@ -99,7 +100,7 @@ POST   /api/v1/friendships/{id}/accept
 DELETE /api/v1/friendships/{id}
 ```
 
-Always prefer the current OpenAPI document over this static list once OpenAPI exists.
+Always prefer `api/openapi.yaml` over this static overview. `GET /api/v1/users/{user_id}` returns the safe public profile for an authenticated caller.
 
 ## HTTP behavior
 
@@ -223,6 +224,6 @@ for numeric fields because that converts `0` to `undefined`.
 
 Use one shared typed client.
 
-Once backend OpenAPI exists, preferred direction is generated types plus a small OpenAPI-aware fetch client.
+Phase 0 already provides `src/api/client.ts`, using `openapi-fetch` with generated OpenAPI `paths`. Its base URL comes from `src/api/config.ts` and `VITE_API_URL`. The final fetch wrapper enforces `credentials: "include"`, even if a caller supplies a different option. Build feature queries and mutations on this existing foundation.
 
 Components should consume feature-level query/mutation functions rather than call raw fetch directly.

@@ -24,11 +24,13 @@ https://github.com/BlinovDev/rc-setup-hub-fe
 
 ## Current repository state
 
-This starter contains project instructions and the planned source tree only.
+FE Phase 0 is complete. The React/TypeScript/Vite bootstrap, router, TanStack Query
+provider, testing stack, OpenAPI generation and typed API client are implemented.
+Only bootstrap and not-found routes exist; authentication and product flows remain
+unimplemented. FE Phase 1 — authentication foundation — is the next implementation
+phase in `AI/roadmap.md`.
 
-Do not manually bootstrap random application code before Phase FE 0. Let Codex implement the roadmap one phase at a time using `AI/roadmap.md`.
-
-## Intended stack
+## Stack
 
 - React
 - TypeScript
@@ -55,32 +57,10 @@ Backend:  http://localhost:8080
 
 The frontend uses backend-owned Google authentication and an HttpOnly application session cookie.
 
-The backend must complete its frontend-readiness phase before FE authentication integration is finalized. That phase should provide:
+The current backend contract is committed at `api/openapi.yaml`, including login
+redirect and CORS/cookie guidance. See `AI/api.md`.
 
-- a stable OpenAPI document;
-- a frontend-friendly post-login redirect;
-- documented CORS/cookie behavior;
-- a complete current API contract.
-
-See `AI/api.md`.
-
-## Start development
-
-After copying this starter into the empty repository:
-
-```bash
-git add .
-git commit -m "Add frontend development plan"
-git push
-```
-
-Then ask Codex to implement **FE Phase 0 only** from `AI/roadmap.md`.
-
-## Phase 0 bootstrap
-
-The application foundation is now implemented. The starter-state sections above
-are retained as project history. Only the bootstrap and not-found routes exist;
-no authentication or product flows are implemented.
+## Install and run
 
 Use Node.js 24 LTS (`.nvmrc`) and npm:
 
@@ -91,8 +71,7 @@ npm run dev
 ```
 
 Vite serves the frontend at `http://localhost:5173` with a strict port. The only
-environment variable is `VITE_API_URL=http://localhost:8080`. This explicitly
-requested name supersedes the earlier `VITE_API_BASE_URL` examples in `AI/*`.
+environment variable is `VITE_API_URL=http://localhost:8080`.
 The config helper defaults to that local origin and rejects non-HTTP(S) URLs,
 embedded credentials, paths, queries and fragments. All `VITE_*` values are public
 build-time configuration; never put secrets in them. Local env files are ignored.
@@ -129,8 +108,9 @@ npm run api:generate
 This runs `openapi-typescript api/openapi.yaml -o src/api/generated/schema.ts`.
 Commit the generated file with contract changes; never edit it manually. Generated
 files are excluded from lint/format rewrites. The OpenAPI source is preserved.
-Generation and the generic client foundation are included in Phase 0 by explicit
-request; the remaining Phase 1 features stay deferred.
+Generation and the generic client foundation are complete in Phase 0. Phase 1
+will use them for current-user queries, authentication state, Google login browser
+navigation, logout, session-expired behavior and loading/error states.
 
 `src/api/client.ts` uses `openapi-fetch` parameterized with generated `paths`, so
 endpoint methods, parameters, request bodies and response bodies come from the
@@ -160,8 +140,7 @@ as errors and resets handlers after each test. Playwright remains deferred.
 ### Contract review for later phases
 
 No contract issue blocks the bootstrap. The contract includes the direct public
-profile endpoint and historical chassis display beyond the static endpoint list in
-`AI/api.md`. All `/api/v1` endpoints, including public discovery, require a session.
+profile endpoint and historical chassis display. All `/api/v1` endpoints, including public discovery, require a session.
 Numeric/UUID/length constraints require runtime form validation later; generated
 TypeScript types do not validate values at runtime.
 

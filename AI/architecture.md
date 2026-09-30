@@ -49,7 +49,9 @@ src/
 │   └── providers.tsx
 ├── api/
 │   ├── client.ts
+│   ├── config.ts
 │   └── generated/
+│       └── schema.ts
 ├── features/
 │   ├── auth/
 │   ├── profile/
@@ -77,6 +79,12 @@ Each feature may contain its own:
 - local view-model helpers.
 
 Do not create abstraction folders before they have real consumers.
+
+## Existing API foundation
+
+Phase 0 provides an `openapi-fetch` client typed from the committed `api/openapi.yaml`. Run `npm run api:generate` to regenerate `src/api/generated/schema.ts`. The API origin is configured through `VITE_API_URL`, defaulting to `http://localhost:8080`. All client requests enforce `credentials: "include"`.
+
+Phase 1 builds authentication queries and session-aware UI on this existing foundation.
 
 ## Server state
 
