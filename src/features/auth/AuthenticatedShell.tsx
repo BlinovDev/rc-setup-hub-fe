@@ -1,3 +1,5 @@
+import { InlineNotice } from "../../shared/components/Feedback";
+import { Button } from "../../shared/components/Button";
 import type { components } from "../../api/generated/schema";
 import { useLogout } from "./queries";
 
@@ -8,26 +10,26 @@ export function AuthenticatedShell({
 }) {
   const signOut = useLogout();
   return (
-    <section className="mt-6" aria-label="Your session">
+    <section className="session-control" aria-label="Your session">
       <div className="flex items-center gap-3">
         {user.avatar_url && (
           <img
-            className="h-12 w-12 rounded-full object-cover"
+            className="h-8 w-8 shrink-0 rounded-full object-cover"
             src={user.avatar_url}
             alt=""
-            width={48}
-            height={48}
+            width={32}
+            height={32}
           />
         )}
-        <p className="break-words">{user.nickname}</p>
+        <p className="min-w-0 break-words text-sm">{user.nickname}</p>
       </div>
       {signOut.isError && (
-        <p className="mt-4" role="alert">
+        <InlineNotice tone="error" className="mt-4">
           Sign out failed. Please try again.
-        </p>
+        </InlineNotice>
       )}
-      <button
-        className="mt-6 min-h-11 rounded bg-slate-800 px-4 py-2 text-white disabled:opacity-60 focus-visible:outline-2 focus-visible:outline-offset-2"
+      <Button
+        className="session-signout"
         type="button"
         disabled={signOut.isPending}
         aria-busy={signOut.isPending}
@@ -38,7 +40,7 @@ export function AuthenticatedShell({
           : signOut.isError
             ? "Try again"
             : "Sign out"}
-      </button>
+      </Button>
     </section>
   );
 }

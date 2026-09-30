@@ -1,3 +1,5 @@
+import { InlineNotice, LoadingState } from "../../shared/components/Feedback";
+import { Button } from "../../shared/components/Button";
 import { useEffect, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useSearchParams } from "react-router";
@@ -34,11 +36,11 @@ export function DiscoveryPage() {
     return (
       <section className="space-y-4">
         <h2>Public setups</h2>
-        <p role="alert">
+        <InlineNotice tone="error">
           Invalid search filters. Use a valid UUID and search text of at most
           100 characters without null characters.
-        </p>
-        <button onClick={() => setParams({})}>Reset filters</button>
+        </InlineNotice>
+        <Button onClick={() => setParams({})}>Reset filters</Button>
       </section>
     );
   const items = search.data?.pages.flatMap((page) => page.items) ?? [];
@@ -50,8 +52,8 @@ export function DiscoveryPage() {
         initialText={filters.q}
         onSearch={(q) => update({ ...filters, q })}
       />
-      <div className="flex flex-wrap gap-4">
-        <label className="grid gap-1">
+      <div className="grid gap-4 sm:grid-cols-2">
+        <label className="grid min-w-0 gap-1">
           Brand
           <select
             className="rounded border p-2"
@@ -76,7 +78,7 @@ export function DiscoveryPage() {
             ))}
           </select>
         </label>
-        <label className="grid gap-1">
+        <label className="grid min-w-0 gap-1">
           Model
           <select
             className="rounded border p-2"
@@ -99,34 +101,49 @@ export function DiscoveryPage() {
           </select>
         </label>
       </div>
-      {brands.isPending && <p role="status">Loading brands…</p>}
+      {brands.isPending && <LoadingState>Loading brands…</LoadingState>}
       {brands.isError && (
-        <p role="alert">
+        <InlineNotice tone="error">
           Unable to load brands.{" "}
-          <button onClick={() => void brands.refetch()}>Retry brands</button>
-        </p>
+          <Button
+            disabled={brands.isFetching}
+            onClick={() => void brands.refetch()}
+          >
+            Retry brands
+          </Button>
+        </InlineNotice>
       )}
       {brands.data?.length === 0 && <p>No active brands available.</p>}
       {filters.brandId && models.isPending && (
-        <p role="status">Loading models…</p>
+        <LoadingState>Loading models…</LoadingState>
       )}
       {models.isError && (
-        <p role="alert">
+        <InlineNotice tone="error">
           {models.error instanceof ChassisError && models.error.status === 404
             ? "Selected brand unavailable."
             : "Unable to load models."}{" "}
-          <button onClick={() => void models.refetch()}>Retry models</button>
-        </p>
+          <Button
+            disabled={models.isFetching}
+            onClick={() => void models.refetch()}
+          >
+            Retry models
+          </Button>
+        </InlineNotice>
       )}
       {models.data?.length === 0 && <p>No active models available.</p>}
-      {search.isPending && <p role="status">Loading public setups…</p>}
+      {search.isPending && <LoadingState>Loading public setups…</LoadingState>}
       {search.isError && !search.data && (
-        <p role="alert">
+        <InlineNotice tone="error">
           {search.error instanceof SetupError && search.error.status === 400
             ? "Invalid search or filters."
             : "Unable to load public setups."}{" "}
-          <button onClick={() => void search.refetch()}>Retry search</button>
-        </p>
+          <Button
+            disabled={search.isFetching}
+            onClick={() => void search.refetch()}
+          >
+            Retry search
+          </Button>
+        </InlineNotice>
       )}
       {search.data && items.length === 0 && (
         <p>No public setups match these filters.</p>
@@ -137,10 +154,12 @@ export function DiscoveryPage() {
         ))}
       </div>
       {search.isFetchNextPageError && (
-        <p role="alert">Unable to load more setups. Please retry.</p>
+        <InlineNotice tone="error">
+          Unable to load more setups. Please retry.
+        </InlineNotice>
       )}
       {search.hasNextPage && (
-        <button
+        <Button
           className="rounded border px-4 py-2"
           disabled={search.isFetching}
           onClick={() => void search.fetchNextPage({ cancelRefetch: false })}
@@ -150,7 +169,7 @@ export function DiscoveryPage() {
             : search.isFetchNextPageError
               ? "Retry load more"
               : "Load more"}
-        </button>
+        </Button>
       )}
     </section>
   );
@@ -168,7 +187,7 @@ function SearchForm({
   return (
     <>
       <form
-        className="flex flex-wrap gap-3 items-end"
+        className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-end"
         onSubmit={(event) => {
           event.preventDefault();
           const q = text.trim();
@@ -182,7 +201,7 @@ function SearchForm({
           onSearch(q);
         }}
       >
-        <label className="grid gap-1">
+        <label className="grid min-w-0 gap-1">
           Title or owner nickname
           <input
             className="rounded border p-2"
@@ -190,11 +209,15 @@ function SearchForm({
             onChange={(event) => setText(event.target.value)}
           />
         </label>
-        <button type="submit" className="rounded border px-4 py-2">
+        <Button
+          variant="primary"
+          type="submit"
+          className="rounded border px-4 py-2"
+        >
           Search
-        </button>
+        </Button>
       </form>
-      {validation && <p role="alert">{validation}</p>}
+      {validation && <InlineNotice tone="error">{validation}</InlineNotice>}
     </>
   );
 }

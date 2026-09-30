@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { Button } from "../../shared/components/Button";
+import { useRef, useState } from "react";
 import { useIsMutating } from "@tanstack/react-query";
 import type { components } from "../../api/generated/schema";
 import {
@@ -19,13 +20,13 @@ export function AddFriend({
   const pending =
     useIsMutating({ mutationKey: ["friendships", "send", userId] }) > 0;
   return (
-    <button
+    <Button
       className="min-h-11 rounded border px-3 py-2 disabled:opacity-60"
       disabled={pending}
       onClick={() => send.mutate()}
     >
       {pending ? "Sending…" : "Add friend"}
-    </button>
+    </Button>
   );
 }
 export function FriendshipActions({
@@ -47,40 +48,57 @@ export function FriendshipActions({
   const pending =
     useIsMutating({ mutationKey: ["friendships", "item", item.id] }) > 0;
   const [confirm, setConfirm] = useState(false);
+  const restoreFocus = useRef(false);
   function deleteItem() {
     remove.mutate();
   }
   return (
     <div className="flex flex-wrap gap-2 items-center">
       {bucket === "incoming" && (
-        <button
+        <Button
+          variant="primary"
           disabled={pending}
           className="min-h-11 rounded border px-3 py-2 disabled:opacity-60"
           onClick={() => accept.mutate()}
         >
           {accept.isPending ? "Accepting…" : "Accept"}
-        </button>
+        </Button>
       )}
       {confirm ? (
         <div
           role="group"
           aria-label={`Confirm removing ${item.user.nickname}`}
-          className="flex flex-wrap gap-2 items-center"
+          className="inline-confirmation"
         >
           <p>Remove {item.user.nickname} from friends?</p>
-          <button disabled={pending} onClick={() => setConfirm(false)}>
+          <Button
+            autoFocus
+            disabled={pending}
+            onClick={() => {
+              restoreFocus.current = true;
+              setConfirm(false);
+            }}
+          >
             Cancel
-          </button>
-          <button
+          </Button>
+          <Button
+            variant="danger"
             disabled={pending}
             className="min-h-11 rounded border px-3 py-2 disabled:opacity-60"
             onClick={deleteItem}
           >
             {remove.isPending ? "Removing…" : "Remove"}
-          </button>
+          </Button>
         </div>
       ) : (
-        <button
+        <Button
+          ref={(element) => {
+            if (element && restoreFocus.current) {
+              element.focus();
+              restoreFocus.current = false;
+            }
+          }}
+          variant={bucket === "outgoing" ? "secondary" : "danger"}
           disabled={pending}
           className="min-h-11 rounded border px-3 py-2 disabled:opacity-60"
           onClick={() =>
@@ -94,7 +112,7 @@ export function FriendshipActions({
               : bucket === "outgoing"
                 ? "Cancel request"
                 : "Remove friend"}
-        </button>
+        </Button>
       )}
     </div>
   );

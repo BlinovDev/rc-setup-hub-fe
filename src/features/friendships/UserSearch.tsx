@@ -1,3 +1,5 @@
+import { InlineNotice, LoadingState } from "../../shared/components/Feedback";
+import { Button } from "../../shared/components/Button";
 import { PublicIdentity } from "../users/PublicIdentity";
 import { useState } from "react";
 import type { components } from "../../api/generated/schema";
@@ -21,7 +23,7 @@ export function UserSearch({
         Find people
       </h3>
       <form
-        className="flex flex-wrap gap-3"
+        className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-end"
         onSubmit={(event) => {
           event.preventDefault();
           const normalized = text.trim();
@@ -43,26 +45,30 @@ export function UserSearch({
             className="rounded border p-2"
           />
         </label>
-        <button type="submit" className="min-h-11 rounded border px-4 py-2">
+        <Button
+          variant="primary"
+          type="submit"
+          className="min-h-11 rounded border px-4 py-2"
+        >
           Search
-        </button>
+        </Button>
       </form>
-      {validation && <p role="alert">{validation}</p>}
+      {validation && <InlineNotice tone="error">{validation}</InlineNotice>}
       {!q && !validation && <p>Search by nickname to find people.</p>}
-      {q && search.isPending && <p role="status">Searching people…</p>}
+      {q && search.isPending && <LoadingState>Searching people…</LoadingState>}
       {search.isError && (
-        <p role="alert">
+        <InlineNotice tone="error">
           {search.error instanceof FriendshipError &&
           search.error.status === 400
             ? "Invalid nickname search."
             : "Unable to search people."}{" "}
-          <button
+          <Button
             disabled={search.isFetching}
             onClick={() => void search.refetch()}
           >
             Retry search
-          </button>
-        </p>
+          </Button>
+        </InlineNotice>
       )}
       {q && !search.isError && search.data?.length === 0 && (
         <p>No people found.</p>

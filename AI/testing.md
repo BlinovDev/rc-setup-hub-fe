@@ -130,4 +130,10 @@ Phase 5 is complete, including manually verified live two-user friendship/access
 
 MSW/RTL tests cover UUID validation; profile-before-list sequencing; unavailable profile versus empty list; retryable profile/list errors and 401; safe avatar/nickname; exact rendering of returned public/friends/private values without visibility queries; historical/Custom cards; identity/detail navigation; absence of per-card requests/detail seeding; public-profile cache reuse; scoped setup mutation invalidation; specific other-user accept invalidation; accepted removal and stale 404 cache purging; stale Accept 404/409; pending delete preservation; and canceled user-list responses unable to restore old data.
 
-Phase 6 implementation and automated verification are complete. Live user-profile visibility smoke is pending: unrelated sees public, accepted friend sees public + friends without private, removal restores public only, and discovery/friend → profile → detail links work. Phase 7 is not started. Real multi-account Google auth remains a manual checkpoint.
+Phase 6 is complete, including manually verified live user-profile visibility smoke: unrelated sees public, accepted friend sees public + friends without private, removal restores public only, and discovery/friend → profile → detail links work. Real multi-account Google auth is not automated.
+
+## Phase 7 verification and live checkpoint
+
+Automated verification is complete. RTL tests cover labeled/current navigation, section anchor targets, one pending/blocked submit action, first-invalid-field focus and associated errors, decimal text inputs, long content, empty-state navigation and confirmation focus/restoration. Existing numeric serialization, historical chassis, pagination, auth and cache-race regressions remain unchanged and passing.
+
+Live mobile/UX smoke is pending: use about 375px and desktop with the real backend for login, discovery/filters, create/edit, friendships, profile, detail and settings. Check overflow, touch targets, navigation/save overlap, phone keyboard, validation, confirmations and long values. Phase 8 is not started; no Playwright or deployment work was added.

@@ -24,10 +24,10 @@ https://github.com/BlinovDev/rc-setup-hub-fe
 
 ## Current repository state
 
-FE Phases 0–5 are complete, including live authentication, settings, owned CRUD,
-discovery/share and two-user friendship/access smoke. Phase 6 implementation and
-automated verification are complete; live user-profile visibility smoke is pending.
-Phase 7 is not started.
+FE Phases 0–6 are complete, including live authentication, settings, owned CRUD,
+discovery/share, friendship/access and user-profile visibility smoke. Phase 7 UX and
+responsive polish implementation and automated verification are complete; live
+mobile/UX smoke is pending. Phase 8 is not started.
 
 Authenticated routes include `/` (public discovery), `/setups/:setupId`
 (detail/share), `/settings`, `/my/setups`, `/my/setups/new`, and
@@ -307,8 +307,7 @@ Normal pending reject/cancel preserves list caches. Setup create/patch invalidat
 the returned owner’s list; delete uses cached detail owner or current-user ID.
 Unrelated user lists survive. Late canceled list responses cannot restore access.
 
-Phase 6 automated verification is complete; live profile visibility smoke remains
-pending: public-only while unrelated, public + friends after acceptance, public-only
+Phase 6 is complete, including manually verified live profile visibility smoke: public-only while unrelated, public + friends after acceptance, public-only
 after removal, no other-user private items, and identity → profile → detail links.
 
 ### Verification
@@ -338,3 +337,11 @@ request bodies, while profile nickname writes do. Unexpected setup statuses
 use generic safe feedback; no undocumented status behavior is assumed. The documented 256 KiB body limit also has no explicit oversized-body
 response status. No status or backend behavior is assumed here. CORS requires the
 frontend origin in backend `ALLOWED_ORIGINS`; frontend code cannot configure that.
+
+### Phase 7 UX
+
+Phones use a fixed four-item bottom navigation; desktop uses compact header navigation.
+Setup forms keep all sections open, provide section anchors and one fixed mobile
+Save/Create action above navigation (inline on desktop). Shared native buttons,
+loading indicators, inline notices and visibility labels provide consistent feedback.
+Live mobile/UX smoke at about 375px and desktop remains pending; Phase 8 is not started.

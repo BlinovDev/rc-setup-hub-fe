@@ -6,15 +6,18 @@ export function PublicIdentity({
   user: components["schemas"]["PublicProfile"];
 }) {
   return (
-    <Link className="underline" to={`/users/${user.id}`}>
+    <Link
+      className="inline-flex min-h-11 max-w-full min-w-0 items-center gap-2 underline"
+      to={`/users/${user.id}`}
+    >
       {user.avatar_url && (
         <img
-          className="inline-block h-8 w-8 rounded-full mr-2"
+          className="h-8 w-8 shrink-0 rounded-full"
           src={user.avatar_url}
           alt=""
         />
       )}
-      {user.nickname}
+      <span className="min-w-0 break-words">{user.nickname}</span>
     </Link>
   );
 }

@@ -1,3 +1,5 @@
+import { InlineNotice } from "../../shared/components/Feedback";
+import { Button } from "../../shared/components/Button";
 import { useForm, useWatch } from "react-hook-form";
 import { z } from "zod";
 import type { components } from "../../api/generated/schema";
@@ -50,68 +52,70 @@ export function SettingsPage({
       <h2 id="settings-title" className="text-2xl font-semibold">
         Settings
       </h2>
-      <p className="mt-3 break-all">{user.email}</p>
-      <form
-        noValidate
-        className="mt-6"
-        onSubmit={handleSubmit(async ({ nickname }) => {
-          const normalized = nicknameSchema.parse(nickname);
-          if (normalized === user.nickname) return;
-          try {
-            const saved = await update.mutateAsync({ nickname: normalized });
-            reset({ nickname: saved.nickname });
-          } catch {
-            /* Mutation state supplies safe feedback. */
-          }
-        })}
-      >
-        <label className="block" htmlFor="nickname">
-          Nickname
-        </label>
-        <input
-          id="nickname"
-          className="mt-2 min-h-11 w-full rounded border p-2"
-          disabled={update.isPending}
-          aria-invalid={!!errors.nickname}
-          aria-describedby={errors.nickname ? "nickname-error" : undefined}
-          {...register("nickname", {
-            validate: (value) => {
-              const result = nicknameSchema.safeParse(value);
-              return (
-                result.success ||
-                result.error.issues[0]?.message ||
-                "Invalid nickname."
-              );
-            },
-            onChange: () => update.reset(),
+      <div className="rounded border bg-white p-4">
+        <h3 className="font-semibold">Profile</h3>
+        <p className="mt-3 break-all">{user.email}</p>
+        <form
+          noValidate
+          className="mt-6"
+          onSubmit={handleSubmit(async ({ nickname }) => {
+            const normalized = nicknameSchema.parse(nickname);
+            if (normalized === user.nickname) return;
+            try {
+              const saved = await update.mutateAsync({ nickname: normalized });
+              reset({ nickname: saved.nickname });
+            } catch {
+              /* Mutation state supplies safe feedback. */
+            }
           })}
-        />
-        {errors.nickname && (
-          <p id="nickname-error" role="alert">
-            {errors.nickname.message}
-          </p>
-        )}
-        {update.isError && (
-          <p className="mt-3" role="alert">
-            {errorMessage(update.error)}
-          </p>
-        )}
-        {update.isSuccess && (
-          <p className="mt-3" role="status">
-            Nickname saved.
-          </p>
-        )}
-        <button
-          type="submit"
-          disabled={!changed || update.isPending}
-          className="mt-4 min-h-11 rounded bg-slate-800 px-4 py-2 text-white disabled:opacity-60"
         >
-          {update.isPending ? "Saving…" : "Save nickname"}
-        </button>
-        {!changed && !update.isSuccess && (
-          <p className="mt-2">No changes to save.</p>
-        )}
-      </form>
+          <label className="block" htmlFor="nickname">
+            Nickname
+          </label>
+          <input
+            id="nickname"
+            className="mt-2 min-h-11 w-full rounded border p-2"
+            disabled={update.isPending}
+            aria-invalid={!!errors.nickname}
+            aria-describedby={errors.nickname ? "nickname-error" : undefined}
+            {...register("nickname", {
+              validate: (value) => {
+                const result = nicknameSchema.safeParse(value);
+                return (
+                  result.success ||
+                  result.error.issues[0]?.message ||
+                  "Invalid nickname."
+                );
+              },
+              onChange: () => update.reset(),
+            })}
+          />
+          {errors.nickname && (
+            <InlineNotice id="nickname-error" tone="error">
+              {errors.nickname.message}
+            </InlineNotice>
+          )}
+          {update.isError && (
+            <InlineNotice tone="error" className="mt-3">
+              {errorMessage(update.error)}
+            </InlineNotice>
+          )}
+          {update.isSuccess && (
+            <InlineNotice className="mt-3">Nickname saved.</InlineNotice>
+          )}
+          <Button
+            variant="primary"
+            type="submit"
+            disabled={!changed || update.isPending}
+            className="mt-4 min-h-11 rounded bg-slate-800 px-4 py-2 text-white disabled:opacity-60"
+          >
+            {update.isPending ? "Saving…" : "Save nickname"}
+          </Button>
+          {!changed && !update.isSuccess && (
+            <p className="mt-2">No changes to save.</p>
+          )}
+        </form>
+      </div>
     </section>
   );
 }

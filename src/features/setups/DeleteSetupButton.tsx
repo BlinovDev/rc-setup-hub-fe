@@ -1,4 +1,6 @@
-import { useState } from "react";
+import { InlineNotice } from "../../shared/components/Feedback";
+import { Button } from "../../shared/components/Button";
+import { useRef, useState } from "react";
 import { SetupError, setupErrorMessage } from "./api";
 import { useDeleteSetup } from "./queries";
 
@@ -10,31 +12,43 @@ export function DeleteSetupButton({
   onDeleted?: () => void;
 }) {
   const [confirm, setConfirm] = useState(false);
+  const restoreFocus = useRef(false);
   const deletion = useDeleteSetup(id);
   const unavailable =
     deletion.error instanceof SetupError && deletion.error.status === 404;
-  if (unavailable) return <p role="alert">Setup not found or unavailable.</p>;
+  if (unavailable)
+    return (
+      <InlineNotice tone="error">Setup not found or unavailable.</InlineNotice>
+    );
   return (
     <div className="mt-3">
       {deletion.isError && (
-        <p role="alert">{setupErrorMessage(deletion.error, "delete")}</p>
+        <InlineNotice tone="error">
+          {setupErrorMessage(deletion.error, "delete")}
+        </InlineNotice>
       )}
       {confirm ? (
-        <div role="group" aria-label="Confirm deletion">
+        <div
+          role="group"
+          aria-label="Confirm deletion"
+          className="inline-confirmation"
+        >
           <p>Delete setup? This cannot be undone.</p>
-          <button
+          <Button
+            autoFocus
             type="button"
             disabled={deletion.isPending}
             onClick={() => {
+              restoreFocus.current = true;
               setConfirm(false);
               deletion.reset();
             }}
           >
             Cancel
-          </button>
-          <button
+          </Button>
+          <Button
+            variant="danger"
             type="button"
-            className="ml-4 min-h-11 text-red-800"
             disabled={deletion.isPending}
             onClick={() =>
               deletion.mutate(undefined, {
@@ -46,16 +60,22 @@ export function DeleteSetupButton({
             }
           >
             {deletion.isPending ? "Deleting…" : "Confirm delete"}
-          </button>
+          </Button>
         </div>
       ) : (
-        <button
+        <Button
+          ref={(element) => {
+            if (element && restoreFocus.current) {
+              element.focus();
+              restoreFocus.current = false;
+            }
+          }}
+          variant="danger"
           type="button"
-          className="min-h-11 text-red-800"
           onClick={() => setConfirm(true)}
         >
           Delete setup
-        </button>
+        </Button>
       )}
     </div>
   );

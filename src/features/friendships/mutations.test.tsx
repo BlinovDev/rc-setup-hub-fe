@@ -284,7 +284,10 @@ it("removing accepted friend requires confirmation, removes stale detail, and re
   const events = userEvent.setup();
   await events.click(section.getByRole("button", { name: "Remove friend" }));
   expect(deletes).toBe(0);
+  expect(section.getByRole("group")).toHaveTextContent("from friends?");
+  expect(section.getByRole("button", { name: "Cancel" })).toHaveFocus();
   await events.click(section.getByRole("button", { name: "Cancel" }));
+  expect(section.getByRole("button", { name: "Remove friend" })).toHaveFocus();
   expect(deletes).toBe(0);
   await events.click(section.getByRole("button", { name: "Remove friend" }));
   await events.click(section.getByRole("button", { name: "Remove" }));

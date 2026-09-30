@@ -1,3 +1,5 @@
+import { InlineNotice, LoadingState } from "../../shared/components/Feedback";
+import { Button } from "../../shared/components/Button";
 import { useState } from "react";
 import { Link, useNavigate, useParams } from "react-router";
 import { z } from "zod";
@@ -30,52 +32,54 @@ export function EditSetupPage({
     update.error instanceof SetupError && update.error.status === 409;
   if (unavailable)
     return (
-      <section className="mt-8">
-        <p role="alert">Setup not found or unavailable.</p>
+      <section className="setup-editor mt-8">
+        <InlineNotice tone="error">
+          Setup not found or unavailable.
+        </InlineNotice>
         <Link to="/my/setups">Back to my setups</Link>
       </section>
     );
   if (detail.isPending)
-    return (
-      <p className="mt-8" role="status">
-        Loading setup…
-      </p>
-    );
+    return <LoadingState className="mt-8">Loading setup…</LoadingState>;
   if (detail.isError)
     return (
       <div className="mt-8">
-        <p role="alert">{setupErrorMessage(detail.error, "load")}</p>
-        <button
+        <InlineNotice tone="error">
+          {setupErrorMessage(detail.error, "load")}
+        </InlineNotice>
+        <Button
           type="button"
           disabled={detail.isFetching}
           onClick={() => void detail.refetch()}
         >
           Retry setup
-        </button>
+        </Button>
       </div>
     );
   if (detail.data.owner_id !== user.id)
     return (
-      <p className="mt-8" role="alert">
+      <InlineNotice tone="error" className="mt-8">
         Setup not found or unavailable.
-      </p>
+      </InlineNotice>
     );
   if (detail.data.schema_version !== 1)
     return (
-      <p className="mt-8" role="alert">
+      <InlineNotice tone="error" className="mt-8">
         This setup version is not supported by this form.
-      </p>
+      </InlineNotice>
     );
   return (
-    <section className="mt-8">
+    <section className="setup-editor mt-8">
       <h2 className="text-2xl font-semibold">Edit setup</h2>
       <Link to="/my/setups">Back to my setups</Link>
-      {saved && <p role="status">Setup saved.</p>}
+      {saved && <InlineNotice>Setup saved.</InlineNotice>}
       {update.isError && (
-        <p role="alert">{setupErrorMessage(update.error, "save")}</p>
+        <InlineNotice tone="error">
+          {setupErrorMessage(update.error, "save")}
+        </InlineNotice>
       )}
       {conflict && (
-        <button
+        <Button
           type="button"
           disabled={reloading}
           onClick={async () => {
@@ -90,7 +94,7 @@ export function EditSetupPage({
           }}
         >
           Reload setup (discard unsaved changes)
-        </button>
+        </Button>
       )}
       <SetupForm
         key={`${setupId}-${revision}`}

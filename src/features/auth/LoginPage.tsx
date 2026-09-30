@@ -1,13 +1,19 @@
+import { Button } from "../../shared/components/Button";
 import { startGoogleLogin } from "./navigation";
 
 export function LoginPage() {
   return (
-    <button
-      className="mt-6 min-h-11 rounded bg-slate-800 px-4 py-2 text-white focus-visible:outline-2 focus-visible:outline-offset-2"
-      type="button"
-      onClick={startGoogleLogin}
-    >
-      Sign in with Google
-    </button>
+    <section className="login-panel">
+      <h2 className="text-xl font-semibold">Sign in to RC Setup Hub</h2>
+      <p>Manage and share your RC drift setups.</p>
+      <Button
+        variant="primary"
+        className="w-full"
+        type="button"
+        onClick={startGoogleLogin}
+      >
+        Sign in with Google
+      </Button>
+    </section>
   );
 }

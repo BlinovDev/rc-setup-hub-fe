@@ -1,3 +1,6 @@
+import { VisibilityBadge } from "../../shared/components/VisibilityBadge";
+import { InlineNotice, LoadingState } from "../../shared/components/Feedback";
+import { Button } from "../../shared/components/Button";
 import { Link, useLocation } from "react-router";
 import { chassisLabel, setupErrorMessage } from "./api";
 import { useMySetups } from "./queries";
@@ -18,19 +21,21 @@ export function MySetupsPage() {
       >
         New setup
       </Link>
-      {typeof message === "string" && <p role="status">{message}</p>}
+      {typeof message === "string" && <InlineNotice>{message}</InlineNotice>}
       {setups.isPending ? (
-        <p role="status">Loading setups…</p>
+        <LoadingState>Loading setups…</LoadingState>
       ) : setups.isError ? (
         <div>
-          <p role="alert">{setupErrorMessage(setups.error, "load")}</p>
-          <button
+          <InlineNotice tone="error">
+            {setupErrorMessage(setups.error, "load")}
+          </InlineNotice>
+          <Button
             type="button"
             disabled={setups.isFetching}
             onClick={() => void setups.refetch()}
           >
             Retry setups
-          </button>
+          </Button>
         </div>
       ) : setups.data.length === 0 ? (
         <p>No setups yet.</p>
@@ -42,14 +47,16 @@ export function MySetupsPage() {
                 {setup.title}
               </h3>
               <p>{chassisLabel(setup)}</p>
-              <p>Visibility: {setup.visibility}</p>
-              <Link
-                className="mt-3 inline-block min-h-11 underline"
-                to={`/my/setups/${setup.id}/edit`}
-              >
-                Edit setup
-              </Link>
-              <DeleteSetupButton id={setup.id} />
+              <VisibilityBadge value={setup.visibility} />
+              <div className="flex flex-wrap items-center gap-3 mt-3">
+                <Link
+                  className="inline-flex min-h-11 items-center px-3 underline"
+                  to={`/my/setups/${setup.id}/edit`}
+                >
+                  Edit setup
+                </Link>
+                <DeleteSetupButton id={setup.id} />
+              </div>
             </li>
           ))}
         </ul>

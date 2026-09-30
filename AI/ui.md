@@ -205,3 +205,11 @@ List failure blocks relationship actions instead of appearing empty. List/search
 ## Implemented profiles (Phase 6)
 
 The authenticated `/users/:userId` route shows nickname/avatar, then a visible-setup list with title, historical chassis, returned visibility, update timestamp and detail link. Own profile URLs use the same route. No email, hidden counts, friendship inference or inline friend actions. Invalid/missing profiles are generic unavailable; profile and list loading/errors are independent. Discovery/detail/friendship/search identities use reusable user links with actions outside the link.
+
+## Implemented responsive UX (Phase 7)
+
+Mobile uses fixed bottom navigation (Home, My setups, Friends, Settings), while desktop uses the compact app header. Active navigation includes an underline/border and accessible current-page state. Identity and Sign out remain compact in the header. Main content reserves space for navigation and safe-area insets.
+
+Setup sections remain open with anchor navigation; one mobile Save/Create bar sits above navigation, with page padding keeping final controls reachable. Desktop actions remain inline. Numeric inputs remain decimal text fields with blank/zero/negative semantics unchanged. Shared native buttons, loading states, inline notices and readable visibility badges unify feedback. Inline destructive confirmations focus Cancel and restore the initiating action on cancellation. Cards, technical definition lists, filters, profile and settings wrap on narrow screens.
+
+Phases 0–6 are complete, including live profile/visibility smoke. Phase 7 implementation and automated verification are complete; live mobile/UX smoke remains pending. Phase 8 is not started.

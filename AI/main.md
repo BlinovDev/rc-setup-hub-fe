@@ -59,7 +59,7 @@ FE Phase 4 is complete, including manually verified live discovery/share smoke: 
 
 FE Phase 5 is complete, including live two-user friendship/access smoke: search → request → incoming → accept → friends-only readable → remove → unavailable.
 
-FE Phase 6 implementation and automated verification are complete: `/users/:userId`, shared safe public-profile resource, backend-returned visible setups, discovery/detail/friend identity links and targeted user-list cache safety. Live user-profile visibility smoke is pending. Phase 7 is not started.
+FE Phase 6 is complete, including live profile/visibility smoke: `/users/:userId`, shared safe public-profile resource, backend-returned visible setups, discovery/detail/friend identity links and targeted user-list cache safety. The live smoke verified public-only while unrelated, public + friends after acceptance, private remaining hidden, public-only after removal and profile/detail navigation. FE Phase 7 implementation and automated verification are complete; live mobile/UX smoke is pending. Phase 8 is not started.
 
 ## Read next
 

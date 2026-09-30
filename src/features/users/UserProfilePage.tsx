@@ -1,3 +1,6 @@
+import { VisibilityBadge } from "../../shared/components/VisibilityBadge";
+import { InlineNotice, LoadingState } from "../../shared/components/Feedback";
+import { Button } from "../../shared/components/Button";
 import { Link, useParams } from "react-router";
 import { isUuid } from "../search/filters";
 import { SetupError, chassisLabel } from "../setups/api";
@@ -14,39 +17,45 @@ export function UserProfilePage() {
       [400, 404].includes(profile.error.status))
   )
     return <p>User not found or unavailable.</p>;
-  if (profile.isPending) return <p role="status">Loading profile…</p>;
+  if (profile.isPending) return <LoadingState>Loading profile…</LoadingState>;
   if (profile.isError)
     return (
-      <p role="alert">
+      <InlineNotice tone="error">
         Unable to load profile.{" "}
-        <button
+        <Button
           disabled={profile.isFetching}
           onClick={() => void profile.refetch()}
         >
           Retry profile
-        </button>
-      </p>
+        </Button>
+      </InlineNotice>
     );
   const user = profile.data;
   return (
     <section className="space-y-4">
-      <h2 className="text-2xl font-semibold">{user.nickname}</h2>
-      {user.avatar_url && (
-        <img className="h-16 w-16 rounded-full" src={user.avatar_url} alt="" />
-      )}
+      <div className="profile-header">
+        <h2 className="min-w-0 text-2xl font-semibold">{user.nickname}</h2>
+        {user.avatar_url && (
+          <img
+            className="h-16 w-16 shrink-0 rounded-full"
+            src={user.avatar_url}
+            alt=""
+          />
+        )}
+      </div>
       <h3 className="text-xl font-semibold">Visible setups</h3>
       {setups.isPending ? (
-        <p role="status">Loading visible setups…</p>
+        <LoadingState>Loading visible setups…</LoadingState>
       ) : setups.isError ? (
-        <p role="alert">
+        <InlineNotice tone="error">
           Unable to load visible setups.{" "}
-          <button
+          <Button
             disabled={setups.isFetching}
             onClick={() => void setups.refetch()}
           >
             Retry visible setups
-          </button>
-        </p>
+          </Button>
+        </InlineNotice>
       ) : setups.data.length === 0 ? (
         <p>No visible setups.</p>
       ) : (
@@ -59,11 +68,7 @@ export function UserProfilePage() {
                 </Link>
               </h4>
               <p>{chassisLabel(setup)}</p>
-              <p>
-                Visibility:{" "}
-                {setup.visibility.charAt(0).toUpperCase() +
-                  setup.visibility.slice(1)}
-              </p>
+              <VisibilityBadge value={setup.visibility} />
               <p>
                 Updated:{" "}
                 <time dateTime={setup.updated_at}>

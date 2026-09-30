@@ -1,3 +1,4 @@
+import { InlineNotice } from "../../../shared/components/Feedback";
 import { useId } from "react";
 import { useFormContext, type FieldPathByValue } from "react-hook-form";
 import type { SetupFormValues } from "./formSchema";
@@ -21,26 +22,32 @@ export function SetupField({
   const props = {
     id,
     className: "mt-1 min-h-11 w-full rounded border p-2",
+    "aria-label": label,
     "aria-invalid": !!error,
     "aria-describedby": error ? `${id}-error` : undefined,
     ...register(name),
   };
   return (
     <div>
-      <label htmlFor={id}>{label}</label>
+      <label htmlFor={id}>
+        {numeric
+          ? label.replace(/^(Front|Rear) /, "").replace("(degrees)", "(°)")
+          : label}
+      </label>
       {multiline ? (
         <textarea rows={4} {...props} />
       ) : (
         <input
           type="text"
           inputMode={numeric ? "decimal" : "text"}
+          autoComplete={numeric ? "off" : undefined}
           {...props}
         />
       )}
       {error && (
-        <p id={`${id}-error`} role="alert">
+        <InlineNotice id={`${id}-error`} tone="error">
           {error.message}
-        </p>
+        </InlineNotice>
       )}
     </div>
   );

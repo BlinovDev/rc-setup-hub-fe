@@ -1,3 +1,5 @@
+import { InlineNotice, LoadingState } from "../../shared/components/Feedback";
+import { Button } from "../../shared/components/Button";
 import { useId } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { ChassisError } from "./api";
@@ -36,17 +38,17 @@ export function ChassisSelector({
             </option>
           ))}
       </select>
-      {brands.isPending && <p role="status">Loading brands…</p>}
+      {brands.isPending && <LoadingState>Loading brands…</LoadingState>}
       {brands.isError && (
         <div>
-          <p role="alert">Unable to load brands.</p>
-          <button
+          <InlineNotice tone="error">Unable to load brands.</InlineNotice>
+          <Button
             type="button"
             disabled={brands.isFetching}
             onClick={() => void brands.refetch()}
           >
             Retry brands
-          </button>
+          </Button>
         </div>
       )}
       {brands.isSuccess && brands.data.length === 0 && (
@@ -79,22 +81,22 @@ export function ChassisSelector({
                 </option>
               ))}
           </select>
-          {models.isPending && <p role="status">Loading models…</p>}
+          {models.isPending && <LoadingState>Loading models…</LoadingState>}
           {models.isError && (
             <div>
-              <p role="alert">
+              <InlineNotice tone="error">
                 {models.error instanceof ChassisError &&
                 models.error.status === 404
                   ? "This brand is no longer available. Choose another brand or retry."
                   : "Unable to load models."}
-              </p>
-              <button
+              </InlineNotice>
+              <Button
                 type="button"
                 disabled={models.isFetching}
                 onClick={() => void models.refetch()}
               >
                 Retry models
-              </button>
+              </Button>
             </div>
           )}
           {models.isSuccess && models.data.length === 0 && (

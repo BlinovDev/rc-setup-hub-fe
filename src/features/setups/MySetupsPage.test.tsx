@@ -43,7 +43,7 @@ it("shows historical projection and Custom without querying active catalog", asy
   await screen.findByText(testSetup.title);
   expect(screen.getByText("Historical Yokomo RD2.0")).toBeInTheDocument();
   expect(screen.getByText("Custom / not listed")).toBeInTheDocument();
-  expect(screen.getAllByText("Visibility: friends")).toHaveLength(2);
+  expect(screen.getAllByText("Visibility: Friends")).toHaveLength(2);
 });
 it.each(["server", "network"])("retries %s list failure", async (failure) => {
   let calls = 0;
@@ -96,7 +96,12 @@ it("requires delete confirmation, cancel sends nothing, and success refreshes ow
   const events = userEvent.setup();
   await events.click(screen.getByRole("button", { name: "Delete setup" }));
   expect(calls).toBe(0);
+  expect(
+    screen.getByRole("group", { name: "Confirm deletion" }),
+  ).toHaveTextContent("Delete setup?");
+  expect(screen.getByRole("button", { name: "Cancel" })).toHaveFocus();
   await events.click(screen.getByRole("button", { name: "Cancel" }));
+  expect(screen.getByRole("button", { name: "Delete setup" })).toHaveFocus();
   expect(calls).toBe(0);
   await events.click(screen.getByRole("button", { name: "Delete setup" }));
   await events.click(screen.getByRole("button", { name: "Confirm delete" }));

@@ -1,3 +1,4 @@
+import { Button } from "../../../shared/components/Button";
 import { useFieldArray, useFormContext } from "react-hook-form";
 import type { SetupFormValues } from "./formSchema";
 import { SetupField } from "./SetupField";
@@ -10,7 +11,7 @@ export function SuspensionSection({ side }: { side: "front" | "rear" }) {
   });
   const label = side === "front" ? "Front" : "Rear";
   return (
-    <fieldset className="space-y-3 rounded border p-4">
+    <fieldset id={`setup-${side}`} className="space-y-3 rounded border p-4">
       <legend className="font-semibold">{label} suspension</legend>
       <SetupField
         name={`${side}.camber_deg`}
@@ -30,6 +31,7 @@ export function SuspensionSection({ side }: { side: "front" | "rear" }) {
       <h3>{label} link lengths</h3>
       {fields.map((field, index) => (
         <div key={field.id} className="space-y-2 rounded border p-3">
+          <h4 className="font-semibold">Link {index + 1}</h4>
           <SetupField
             name={`${side}.link_lengths.${index}.name`}
             label={`${label} link ${index + 1} name`}
@@ -39,18 +41,18 @@ export function SuspensionSection({ side }: { side: "front" | "rear" }) {
             label={`${label} link ${index + 1} length (mm)`}
             numeric
           />
-          <button type="button" onClick={() => remove(index)}>
+          <Button type="button" onClick={() => remove(index)}>
             Remove {label.toLowerCase()} link {index + 1}
-          </button>
+          </Button>
         </div>
       ))}
-      <button
+      <Button
         type="button"
         disabled={fields.length >= 100}
         onClick={() => append({ name: "", length_mm: "" })}
       >
         Add {label.toLowerCase()} link
-      </button>
+      </Button>
     </fieldset>
   );
 }

@@ -1,3 +1,5 @@
+import { InlineNotice } from "../../../shared/components/Feedback";
+import { Button } from "../../../shared/components/Button";
 import {
   useForm,
   FormProvider,
@@ -51,14 +53,28 @@ export function SetupForm({
           if (!pending && !blocked) await onSave(parsed.data);
         })}
       >
+        <nav className="section-nav" aria-label="Setup sections">
+          {[
+            ["general", "General"],
+            ["front", "Front"],
+            ["rear", "Rear"],
+            ["front-shocks", "Front shocks"],
+            ["rear-shocks", "Rear shocks"],
+            ["electronics", "Electronics"],
+          ].map(([id, label]) => (
+            <a key={id} href={`#setup-${id}`}>
+              {label}
+            </a>
+          ))}
+        </nav>
         <fieldset disabled={pending} className="space-y-6">
-          <fieldset className="space-y-3 rounded border p-4">
+          <fieldset id="setup-general" className="space-y-3 rounded border p-4">
             <legend className="font-semibold">General</legend>
             <SetupField name="title" label="Title" />
             {setup && (
               <>
                 <p>Current chassis: {chassisLabel(setup)}</p>
-                <button
+                <Button
                   type="button"
                   onClick={() => {
                     form.setValue("changeChassis", !changeChassis);
@@ -70,7 +86,7 @@ export function SetupForm({
                   }}
                 >
                   {changeChassis ? "Cancel chassis change" : "Change chassis"}
-                </button>
+                </Button>
               </>
             )}
             {changeChassis && (
@@ -86,7 +102,7 @@ export function SetupForm({
               />
             )}
             {selectionError?.message && (
-              <p role="alert">{selectionError.message}</p>
+              <InlineNotice tone="error">{selectionError.message}</InlineNotice>
             )}
             <label className="block" htmlFor="setup-visibility">
               Visibility
@@ -109,7 +125,11 @@ export function SetupForm({
           <SuspensionSection side="front" />
           <SuspensionSection side="rear" />
           {(["frontShock", "rearShock"] as const).map((side, index) => (
-            <fieldset key={side} className="space-y-3 rounded border p-4">
+            <fieldset
+              id={`setup-${index === 0 ? "front" : "rear"}-shocks`}
+              key={side}
+              className="space-y-3 rounded border p-4"
+            >
               <legend className="font-semibold">
                 {index === 0 ? "Front" : "Rear"} shocks
               </legend>
@@ -136,7 +156,10 @@ export function SetupForm({
               />
             </fieldset>
           ))}
-          <fieldset className="space-y-3 rounded border p-4">
+          <fieldset
+            id="setup-electronics"
+            className="space-y-3 rounded border p-4"
+          >
             <legend className="font-semibold">Electronics</legend>
             {(["motor", "esc", "servo", "gyro", "radio"] as const).map(
               (key) => (
@@ -152,13 +175,16 @@ export function SetupForm({
               ),
             )}
           </fieldset>
-          <button
-            type="submit"
-            disabled={pending || blocked}
-            className="min-h-11 rounded bg-slate-800 px-4 py-2 text-white disabled:opacity-60"
-          >
-            {pending ? "Saving…" : setup ? "Save setup" : "Create setup"}
-          </button>
+          <div className="form-actions">
+            <Button
+              variant="primary"
+              type="submit"
+              disabled={pending || blocked}
+              className="min-h-11 rounded bg-slate-800 px-4 py-2 text-white disabled:opacity-60"
+            >
+              {pending ? "Saving…" : setup ? "Save setup" : "Create setup"}
+            </Button>
+          </div>
         </fieldset>
       </form>
     </FormProvider>

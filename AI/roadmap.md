@@ -221,7 +221,7 @@ Verified manually: User A searched B and sent a request; B saw incoming and acce
 
 ## FE Phase 6 — other user profiles and visible setups
 
-Status: implementation and automated verification complete; live user-profile visibility smoke pending.
+Status: complete, including manually verified live profile/visibility smoke.
 
 Goal: connect discovery/social flows to another user's visible setups.
 
@@ -243,13 +243,13 @@ Tests:
 
 Checkpoint:
 
-Live smoke pending: unrelated B opens A’s profile and sees public only; after acceptance B sees public + friends, never private; after removal B sees public only again. Verify discovery/friend identity → profile → detail links.
+Live smoke verified: unrelated B sees public only; after acceptance B sees public + friends, never private; removal restores public only. Discovery/friend identity → profile → detail links work.
 
 ---
 
 ## FE Phase 7 — UX and responsive polish
 
-Status: not started.
+Status: implementation and automated verification complete; live mobile/UX smoke pending.
 
 Goal: make the POC comfortable for real track use.
 
@@ -266,6 +266,10 @@ Tasks:
 - sensible form autofocus/input modes for numeric fields;
 - final visual consistency pass.
 
+Implemented: fixed phone bottom navigation and compact desktop header; shared native controls/feedback/visibility labels; wrapping cards and technical definition lists; open setup sections with sticky anchor navigation and one fixed mobile save bar above navigation; contextual inline confirmations with Cancel focus and focus restoration. API/session/cache/form serialization behavior is unchanged.
+
+Live checkpoint pending: around 375px, verify login, discovery/filters, create/edit long setup, friends, profiles, detail and settings. Check no horizontal overflow, reachable navigation and save, phone numeric keyboard, obvious errors, confirmations and long content wrapping without fixed-control overlap; confirm desktop comfort.
+
 Do not add new product features in this phase.
 
 Tests/checkpoint:
@@ -278,6 +282,8 @@ Tests/checkpoint:
 ---
 
 ## FE Phase 8 — E2E, deployment, optional PWA
+
+Status: not started.
 
 Goal: prepare the frontend for POC users.
 

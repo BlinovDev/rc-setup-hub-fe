@@ -13,9 +13,9 @@ function Values({
   return (
     <section className="rounded border p-4">
       <h3 className="font-semibold">{title}</h3>
-      <dl>
+      <dl className="technical-values">
         {present.map(([label, value], index) => (
-          <div key={index} className="flex gap-2">
+          <div key={index}>
             <dt>{label}:</dt>
             <dd>{value}</dd>
           </div>
