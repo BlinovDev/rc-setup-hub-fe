@@ -51,7 +51,7 @@ Do not implement login, profile, setups, friendships, or search yet.
 
 ## FE Phase 1 — authentication foundation
 
-Status: implemented with automated verification; live signed-in backend checkpoint pending.
+Status: complete, including automated verification and manually verified live backend/browser smoke.
 
 Prerequisite:
 
@@ -83,13 +83,13 @@ Tests:
 
 Checkpoint:
 
-A locally signed-in backend session opens the React app and resolves `/api/v1/me` successfully.
+Verified manually at `http://localhost:5173` with the real local backend: Google login navigated through backend OAuth, the callback redirected to the frontend, `GET /api/v1/me` returned the authenticated user, and Sign out changed the UI back to Sign in without a page reload.
 
 ---
 
 ## FE Phase 2 — profile + chassis catalog
 
-Status: implemented with automated verification; live backend profile/catalog checkpoint pending. The reusable selector is tested independently and will be integrated into the setup form in Phase 3.
+Status: implementation and automated verification complete; live `/settings` nickname-edit smoke pending. Chassis selector automated tests are sufficient for Phase 2 implementation review. No standalone live selector smoke is required because the reusable selector is intentionally not mounted into a product route until Phase 3.
 
 Goal: support user profile editing and setup-selection dependencies.
 
@@ -112,11 +112,13 @@ Tests:
 
 Checkpoint:
 
-User can edit nickname and select Yokomo -> RD2.0 or Custom in the client.
+Live `/settings` nickname-edit smoke remains pending. Automated tests verify selection of Yokomo -> RD2.0 or Custom in the reusable selector; its product-route integration remains in Phase 3.
 
 ---
 
 ## FE Phase 3 — owned setups CRUD
+
+Status: not started.
 
 Goal: complete the primary setup-management workflow.
 

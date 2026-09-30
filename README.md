@@ -28,7 +28,9 @@ FE Phases 0, 1 and 2 are implemented. The bootstrap includes an authentication-a
 root route and a not-found route. The shell checks the backend session, offers
 Google sign-in, displays the current nickname/avatar, and supports logout. Product
 features beyond profile/settings and active chassis selection remain deferred to FE Phase 3 and later in `AI/roadmap.md`.
-The live backend-session checkpoint still requires a locally signed-in backend.
+FE Phases 0 and 1 are complete, including Phase 1 live backend/browser smoke.
+Phase 2 implementation and automated verification are complete; live `/settings`
+nickname-edit smoke remains pending. FE Phase 3 is not started.
 
 ## Stack
 
@@ -143,11 +145,11 @@ invalidation is required. Failures preserve authenticated state and offer retry.
 Pending logout disables the action. Authentication uses no browser storage, tokens,
 persistence or frontend OAuth callback handling.
 
-For the live checkpoint, configure the backend's `ALLOWED_ORIGINS` for
-`http://localhost:5173` and `APP_URL` for the frontend root. Start both servers,
-click sign-in, and verify nickname/avatar after the backend redirects back. Verify
-logout replaces the profile with sign-in without a reload. Automated tests use MSW
-and do not perform real Google OAuth.
+Phase 1 live backend/browser smoke was manually verified at
+`http://localhost:5173` with the real local backend: Google login navigated through
+backend OAuth, the callback redirected back to the frontend, `/api/v1/me` returned
+the authenticated user, and Sign out changed the UI back to Sign in without a page
+reload. Automated tests use MSW and do not perform real Google OAuth.
 
 ### Profile and active chassis catalog
 
@@ -175,6 +177,11 @@ Selection state is `{ brandId: string | null, modelId: string | null }`.
 selection, and `undefined` for an incomplete brand selection. The future form must
 require a model for a selected brand before saving. No fake Custom UUID or
 historical/inactive setup-editing behavior is introduced.
+
+Phase 2 implementation and automated verification are complete. Live `/settings`
+nickname-edit smoke remains pending. Chassis selector automated tests are sufficient
+for Phase 2 implementation review. No standalone live selector smoke is required;
+the reusable selector is intentionally not mounted into a product route until Phase 3.
 
 ### Verification
 

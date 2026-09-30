@@ -51,7 +51,7 @@ This frontend must consume the backend contract rather than inventing its own AP
 
 The machine-readable contract is already present at `api/openapi.yaml`. Generated TypeScript transport types live in `src/api/generated/schema.ts`; regenerate them with `npm run api:generate`.
 
-FE Phase 0 is complete: the application bootstrap, providers, router, typed API client and enforced cookie credentials exist. API configuration uses `VITE_API_URL`. FE Phase 1 now implements the authentication shell on this foundation: current-user query, explicit Google login navigation, logout and retryable session states. FE Phase 2 now adds authenticated `/settings`, nickname editing and reusable active chassis catalog selection. Setup CRUD and later product flows remain deferred to FE Phase 3 and later. The live signed-in backend checkpoint remains to be verified.
+FE Phase 0 is complete: the application bootstrap, providers, router, typed API client and enforced cookie credentials exist. API configuration uses `VITE_API_URL`. FE Phase 1 is complete, including manually verified live backend/browser smoke, and provides the authentication shell on this foundation: current-user query, explicit Google login navigation, logout and retryable session states. FE Phase 2 implementation and automated verification are complete for authenticated `/settings`, nickname editing and reusable active chassis catalog selection. Live `/settings` nickname-edit smoke remains pending. Chassis selector automated tests suffice for Phase 2 implementation review; no standalone live selector smoke is required before its product-route integration in Phase 3. FE Phase 3 is not started.
 
 ## Read next
 
