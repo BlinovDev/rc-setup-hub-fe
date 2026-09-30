@@ -22,18 +22,13 @@ export function SetupField({
   const props = {
     id,
     className: "mt-1 min-h-11 w-full rounded border p-2",
-    "aria-label": label,
     "aria-invalid": !!error,
     "aria-describedby": error ? `${id}-error` : undefined,
     ...register(name),
   };
   return (
     <div>
-      <label htmlFor={id}>
-        {numeric
-          ? label.replace(/^(Front|Rear) /, "").replace("(degrees)", "(°)")
-          : label}
-      </label>
+      <label htmlFor={id}>{label}</label>
       {multiline ? (
         <textarea rows={4} {...props} />
       ) : (

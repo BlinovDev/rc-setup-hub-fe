@@ -59,7 +59,14 @@ it("focuses and describes the first invalid field without hiding sections", asyn
 });
 it("preserves decimal text input, negative angles, explicit zero and blank values", () => {
   render(form());
-  const toe = screen.getByRole("textbox", { name: "Front toe (degrees)" });
+  const front = within(screen.getByRole("group", { name: "Front suspension" }));
+  const toe = front.getByRole("textbox", { name: "Front toe (degrees)" });
+  const visibleLabel = front.getByText("Front toe (degrees)", {
+    selector: "label",
+  });
+  expect(visibleLabel).toHaveAttribute("for", toe.id);
+  expect(toe).toHaveAccessibleName(visibleLabel.textContent!);
+  expect(toe).not.toHaveAttribute("aria-label");
   expect(toe).toHaveValue("0");
   expect(toe).toHaveAttribute("type", "text");
   expect(toe).toHaveAttribute("inputmode", "decimal");
