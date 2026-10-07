@@ -87,3 +87,14 @@ Status: accepted.
 Use `VITE_API_URL` for the non-secret backend origin, defaulting to `http://localhost:8080`. The existing `openapi-fetch` client uses generated OpenAPI types and enforces `credentials: "include"`.
 
 OpenAPI generation and the shared client belong to the completed Phase 0 foundation. Phase 1 builds current-user queries, authentication state, login/logout and session behavior on that foundation.
+
+
+## F012 — Backend repository coordinates combined deployments
+
+Status: accepted.
+
+The backend repository `BlinovDev/rc-setup-hub` is the sole GitHub Actions coordinator for staging and production releases. The frontend keeps its own CI but does not hold deployment credentials or a competing deploy workflow.
+
+Every server release is a combined pair of explicit backend and frontend commit SHAs. The coordinator validates both repositories, checks their OpenAPI compatibility, builds the frontend for the selected environment and packages it with the Go server and migrator.
+
+Staging and production are rebuilt separately. Production accepts only SHAs reachable from each repository's `main`.

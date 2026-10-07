@@ -1,0 +1,35 @@
+name: Frontend CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: frontend-ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - run: npm run api:generate
+      - name: Verify generated API is committed
+        run: git diff --exit-code -- api/openapi.yaml src/api/generated/schema.ts
+      - run: npm run format:check
+      - run: npm run lint
+      - run: npm run typecheck
+      - run: npm test -- --run
+      - name: Build production bundle
+        env:
+          VITE_API_URL: https://international-drift-hub.com
+        run: npm run build
