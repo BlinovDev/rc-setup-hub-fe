@@ -68,3 +68,7 @@ FE Phase 6 is complete, including live profile/visibility smoke: `/users/:userId
 - `AI/ui.md`
 - `AI/roadmap.md`
 - `AI/decisions.md`
+
+## Deployment
+
+See `AI/deployment.md` for the concrete CI, paired-release, staging, production and recovery contract.
