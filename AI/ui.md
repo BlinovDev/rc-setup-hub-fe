@@ -208,8 +208,15 @@ The authenticated `/users/:userId` route shows nickname/avatar, then a visible-s
 
 ## Implemented responsive UX (Phase 7)
 
-Mobile uses fixed bottom navigation (Home, My setups, Friends, Settings), while desktop uses the compact app header. Active navigation includes an underline/border and accessible current-page state. Identity and Sign out remain compact in the header. Main content reserves space for navigation and safe-area insets.
+Mobile uses fixed bottom navigation (Home, My setups, Friends, Settings), while desktop uses the compact app header. Active navigation includes an underline/border and accessible current-page state. Desktop identity and Sign out remain compact in the header. On mobile, the closed header shows the optional avatar and an account menu button; nickname and Sign out appear inside the account drawer. Main content reserves space for navigation and safe-area insets.
 
 Setup sections remain open with anchor navigation; one mobile Save/Create bar sits above navigation, with page padding keeping final controls reachable. Desktop actions remain inline. Numeric inputs remain decimal text fields with blank/zero/negative semantics unchanged. Shared native buttons, loading states, inline notices and readable visibility badges unify feedback. Inline destructive confirmations focus Cancel and restore the initiating action on cancellation. Cards, technical definition lists, filters, profile and settings wrap on narrow screens.
 
 Phases 0–6 are complete, including live profile/visibility smoke. Phase 7 implementation and automated verification are complete; live mobile/UX smoke remains pending. Phase 8 is not started.
+
+
+## Social links and mobile account drawer (Issue #3)
+
+At the existing 768px desktop breakpoint, authenticated pages show a social footer; the desktop header/session UI is unchanged. Below that breakpoint, an accessible burger button opens a native modal dialog. The dialog puts avatar/nickname at the top, an extensible navigation slot in the middle, and social icons then Sign out at the bottom. Canonical URLs live in `src/shared/social/profiles.ts` and are reused by both surfaces.
+
+The dialog focuses Close on opening, contains keyboard focus through native modal behavior, closes with Close or Escape, and returns focus to its opener. Switching to desktop closes it. The drawer scrolls on short screens and respects safe-area insets and the fixed bottom-navigation space. Bottom navigation stays outside the drawer and becomes inert while the modal is open. Sign out uses the existing mutation and retains disabled pending, safe error and retry states.

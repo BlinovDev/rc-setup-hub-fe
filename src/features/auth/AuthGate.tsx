@@ -1,3 +1,4 @@
+import { SocialLinks } from "../../shared/social/SocialLinks";
 import type { ReactNode } from "react";
 import { NavLink } from "react-router";
 import type { components } from "../../api/generated/schema";
@@ -55,6 +56,11 @@ export function AuthGate({
           children?.(session.data)
         )}
       </main>
+      {authenticated && (
+        <footer className="desktop-footer">
+          <SocialLinks />
+        </footer>
+      )}
     </div>
   );
 }

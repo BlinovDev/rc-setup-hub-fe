@@ -137,3 +137,10 @@ Phase 6 is complete, including manually verified live user-profile visibility sm
 Automated verification is complete. RTL tests cover labeled/current navigation, section anchor targets, one pending/blocked submit action, first-invalid-field focus and associated errors, decimal text inputs, long content, empty-state navigation and confirmation focus/restoration. Existing numeric serialization, historical chassis, pagination, auth and cache-race regressions remain unchanged and passing.
 
 Live mobile/UX smoke is pending: use about 375px and desktop with the real backend for login, discovery/filters, create/edit, friendships, profile, detail and settings. Check overflow, touch targets, navigation/save overlap, phone keyboard, validation, confirmations and long values. Phase 8 is not started; no Playwright or deployment work was added.
+
+
+## Issue #3 account navigation coverage
+
+MSW/RTL regressions cover drawer identity, accessible expanded/control state, canonical safe social links in both drawer/footer, retained bottom navigation, explicit close/native cancel event wiring and focus restoration, desktop resize dismissal, and sign-out pending/error/retry/success. jsdom lacks native dialog APIs, so these tests shim only the showModal/close boundary; native focus containment and Escape should also be checked in browser QA.
+
+QA checklist at about 375px and desktop: avatar/menu versus desktop nickname/sign-out; canonical icon destinations; Close initial focus, Tab/Shift+Tab containment, Escape and restored focus; long nickname and short-height scrolling; safe-area/bottom-navigation spacing; sign-out pending/error/retry. No deployment is performed as part of the implementation-only PR.
