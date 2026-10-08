@@ -124,16 +124,14 @@ it.each(["incoming", "outgoing", "accepted"] as const)(
     expect(await screen.findByRole("alert")).toHaveTextContent(
       "A relationship with this user already exists",
     );
-    await within(
-      screen.getByRole("region", { name: "Find people" }),
-    ).findByText(
-      bucket === "incoming"
-        ? "Incoming request"
-        : bucket === "outgoing"
-          ? "Request sent"
-          : "Friends",
-      { exact: true },
-    );
+    const results = within(screen.getByRole("region", { name: "Find people" }));
+    if (bucket === "incoming")
+      await results.findByRole("button", { name: "Accept friendship" });
+    else
+      await results.findByText(
+        bucket === "outgoing" ? "Request sent" : "Friends",
+        { exact: true },
+      );
     expect(posts).toBe(1);
     expect(lists).toBe(2);
     expect(
@@ -292,12 +290,15 @@ it("removing accepted friend requires confirmation, removes stale detail, and re
   await events.click(section.getByRole("button", { name: "Remove friend" }));
   await events.click(section.getByRole("button", { name: "Remove" }));
   expect(section.getByRole("button", { name: "Removing…" })).toBeDisabled();
+  const searchResults = within(
+    screen.getByRole("region", { name: "Find people" }),
+  );
   expect(
-    within(screen.getByRole("region", { name: "Find people" })).getByRole(
-      "button",
-      { name: "Remove friend" },
-    ),
-  ).toBeDisabled();
+    searchResults.getByText("Friends", { exact: true }),
+  ).toBeInTheDocument();
+  expect(
+    searchResults.queryByRole("button", { name: "Add friend" }),
+  ).not.toBeInTheDocument();
   await screen.findByText("No friends yet.");
   expect(
     screen.getByRole("button", { name: "Add friend" }),
@@ -519,10 +520,18 @@ it.each(["accept", "reject", "cancel"] as const)(
     renderFriendsRoute("/friends");
     const row = await searchDriver();
     await userEvent.setup().click(
-      within(row).getByRole("button", {
+      (action === "accept"
+        ? within(row)
+        : within(
+            screen.getByRole("region", {
+              name:
+                action === "reject" ? "Incoming requests" : "Outgoing requests",
+            }),
+          )
+      ).getByRole("button", {
         name:
           action === "accept"
-            ? "Accept"
+            ? "Accept friendship"
             : action === "reject"
               ? "Reject"
               : "Cancel request",

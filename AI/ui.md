@@ -198,13 +198,13 @@ Detail uses historical chassis, safe public owner identity and only present tech
 
 ## Implemented friendships (Phase 5)
 
-Authenticated navigation is Home/My setups/Friends/Settings. Find people uses an explicit labeled nickname form. Incoming has Accept/Reject, outgoing has Cancel request, and accepted has Remove friend with inline keyboard-accessible confirmation. Public identities show nickname/avatar without email, with profile links separate from action buttons. Search results show Incoming request / Request sent / Friends or Add friend based on the loaded friendship buckets.
+Authenticated navigation is Home/My setups/Friends/Settings. Find people uses an explicit labeled nickname form. Incoming has Accept/Reject, outgoing has Cancel request, and accepted has Remove friend with inline keyboard-accessible confirmation. Public identities show nickname/avatar without email, with profile links separate from action buttons. Search results show Accept friendship / Request sent / Friends or Add friend based on the loaded friendship buckets. Reject/cancel/remove controls remain in the dedicated relationship sections.
 
 List failure blocks relationship actions instead of appearing empty. List/search loading, retryable errors and empty sections are explicit. Mutation errors are safe, and pending controls are disabled per relationship across both list/search renderings. Stale 404/409 refreshes list state. User-profile navigation is implemented in Phase 6.
 
 ## Implemented profiles (Phase 6)
 
-The authenticated `/users/:userId` route shows nickname/avatar, then a visible-setup list with title, historical chassis, returned visibility, update timestamp and detail link. Own profile URLs use the same route. No email, hidden counts, friendship inference or inline friend actions. Invalid/missing profiles are generic unavailable; profile and list loading/errors are independent. Discovery/detail/friendship/search identities use reusable user links with actions outside the link.
+The authenticated `/users/:userId` route shows nickname/avatar, then a visible-setup list with title, historical chassis, returned visibility, update timestamp and detail link. Own profile URLs use the same route. No email, hidden counts or friendship inference from setup visibility. A compact header action uses loaded backend friendship buckets: Add friend / Accept friendship / Request sent / Friends; own profiles have no action. Friendship loading/error/retry is independent of profile and visible setups. Invalid/missing profiles are generic unavailable; profile and list loading/errors are independent. Discovery/detail/friendship/search identities use reusable user links with actions outside the link.
 
 ## Implemented responsive UX (Phase 7)
 
@@ -220,3 +220,9 @@ Phases 0–6 are complete, including live profile/visibility smoke. Phase 7 impl
 At the existing 768px desktop breakpoint, authenticated pages show a social footer; the desktop header/session UI is unchanged. Below that breakpoint, an accessible burger button opens a native modal dialog. The dialog puts avatar/nickname at the top, an extensible navigation slot in the middle, and social icons then Sign out at the bottom. Canonical URLs live in `src/shared/social/profiles.ts` and are reused by both surfaces.
 
 The dialog focuses Close on opening, contains keyboard focus through native modal behavior, closes with Close or Escape, and returns focus to its opener. Switching to desktop closes it. The drawer scrolls on short screens and respects safe-area insets and the fixed bottom-navigation space. Bottom navigation stays outside the drawer and becomes inert while the modal is open. Sign out uses the existing mutation and retains disabled pending, safe error and retry states.
+
+## Profile and search friendship actions (Issue #5)
+
+Profile headers group avatar before nickname on the left, with a compact action/status on the right. Nickname, avatar and action are vertically centered; the header heading has no bottom margin. Search result identities and controls use the same two-column row. Long nicknames wrap within their own column, the action has a bounded width, and screens below 360px put the action in a separate right-aligned row. Missing avatars do not reserve an empty image slot.
+
+Accept friendship accepts the existing incoming request ID and reuses scoped friendship/detail/visible-user-list invalidation. Add friend sends a pending request. Pending actions disable duplicates, stale 404/409 refresh safely, and session expiry follows the existing authentication boundary. Existing Incoming/Outgoing/Accepted management sections retain Accept/Reject/Cancel request/Remove friend.
