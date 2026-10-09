@@ -4,7 +4,7 @@ import { PublicIdentity } from "../users/PublicIdentity";
 import { useState } from "react";
 import type { components } from "../../api/generated/schema";
 import { FriendshipError } from "./api";
-import { AddFriend, FriendshipActions } from "./FriendshipActions";
+import { FriendshipControl } from "./FriendshipControl";
 import { useUserSearch, validUserSearch } from "./queries";
 export function UserSearch({
   friendships,
@@ -76,34 +76,18 @@ export function UserSearch({
       {q && !search.isError && (
         <ul className="space-y-3">
           {search.data?.map((user) => {
-            const bucket = (["incoming", "outgoing", "accepted"] as const).find(
-              (key) =>
-                friendships[key].some((item) => item.user.id === user.id),
-            );
-            const item = bucket
-              ? friendships[bucket].find((item) => item.user.id === user.id)
-              : undefined;
             return (
-              <li key={user.id} className="rounded border p-4 space-y-2">
-                <PublicIdentity user={user} />
-                {bucket && item ? (
-                  <>
-                    <p>
-                      {bucket === "incoming"
-                        ? "Incoming request"
-                        : bucket === "outgoing"
-                          ? "Request sent"
-                          : "Friends"}
-                    </p>
-                    <FriendshipActions
-                      item={item}
-                      bucket={bucket}
+              <li key={user.id} className="rounded border p-4">
+                <div className="identity-action-row">
+                  <PublicIdentity user={user} />
+                  <div className="relationship-control">
+                    <FriendshipControl
+                      userId={user.id}
+                      friendships={friendships}
                       feedback={feedback}
                     />
-                  </>
-                ) : (
-                  <AddFriend userId={user.id} feedback={feedback} />
-                )}
+                  </div>
+                </div>
               </li>
             );
           })}

@@ -1,12 +1,14 @@
 import { act, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { delay, http, HttpResponse } from "msw";
-import { expect, it } from "vitest";
+import { beforeEach, expect, it } from "vitest";
 import { apiUrl } from "../../api/config";
 import { server } from "../../test/server";
 import { testSetup, testUser } from "../setups/testFixtures";
 import { renderSetupRoute } from "../setups/testUtils";
 import { detailKey } from "../setups/queries";
+import { mockList, emptyList } from "../friendships/testUtils";
+beforeEach(() => mockList(emptyList()));
 const id = testSetup.chassis_model_id;
 const profile = {
   id,

@@ -47,7 +47,6 @@ it("searches normalized literal nickname only on submission and derives states w
   const results = within(screen.getByRole("region", { name: "Find people" }));
   await results.findByText(driver.nickname);
   for (const [nickname, state] of [
-    [alice.nickname, "Incoming request"],
     [bob.nickname, "Request sent"],
     [charlie.nickname, "Friends"],
   ]) {
@@ -66,7 +65,7 @@ it("searches normalized literal nickname only on submission and derives states w
   expect(
     within(results.getByText(alice.nickname).closest("li")!).getByRole(
       "button",
-      { name: "Accept" },
+      { name: "Accept friendship" },
     ),
   ).toBeInTheDocument();
   expect(screen.queryByText(/@example/)).not.toBeInTheDocument();

@@ -15,10 +15,11 @@ export const userSearchKey = (q: string) => ["users", "search", q] as const;
 export function validUserSearch(q: string) {
   return Array.from(q).length <= 64 && !q.includes("\0");
 }
-export function useFriendships() {
+export function useFriendships(enabled = true) {
   const client = useQueryClient();
   return useQuery({
     queryKey: friendshipsKey,
+    enabled,
     queryFn: ({ signal }) => withSession(client, () => getFriendships(signal)),
     retry: false,
   });

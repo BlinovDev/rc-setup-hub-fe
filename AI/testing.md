@@ -144,3 +144,11 @@ Live mobile/UX smoke is pending: use about 375px and desktop with the real backe
 MSW/RTL regressions cover drawer identity, accessible expanded/control state, canonical safe social links in both drawer/footer, retained bottom navigation, explicit close/native cancel event wiring and focus restoration, desktop resize dismissal, and sign-out pending/error/retry/success. jsdom lacks native dialog APIs, so these tests shim only the showModal/close boundary; native focus containment and Escape should also be checked in browser QA.
 
 QA checklist at about 375px and desktop: avatar/menu versus desktop nickname/sign-out; canonical icon destinations; Close initial focus, Tab/Shift+Tab containment, Escape and restored focus; long nickname and short-height scrolling; safe-area/bottom-navigation spacing; sign-out pending/error/retry. No deployment is performed as part of the implementation-only PR.
+
+## Issue #5 profile and search friendship coverage
+
+MSW/RTL tests cover direct-profile relationship states, self on profile/search, send and exact-label Accept friendship from both surfaces, correct existing relationship ID/no accept body, duplicate suppression, state refresh across navigation, visible setup refresh after acceptance, profile friendship loading/error/retry, stale send 409 and accept 404/409, and list/send/accept 401. Existing relationship-management and cache-race regressions remain required.
+
+Manual QA uses two accounts in separate sessions. A opens B's direct profile and sends: Add friend becomes Request sent, with no friends-only access yet. B opens/searches A and accepts using Accept friendship: both show Friends after refresh, and the accepting viewer's visible setup list refreshes. Remove via existing Friends controls and repeat acceptance from the other surface. Verify own profile/search has no CTA, and removal revokes friends-only access.
+
+Check profile and search cards at 320px, 375px, 390px, 768px and desktop with normal/long nicknames, present/missing avatars, and Add friend/Accept friendship/status. Identity/action must not overlap or cause horizontal overflow; 320px uses a right-aligned separate action row. Check keyboard focus and pending/error feedback. Real Google multi-account QA remains a live checkpoint; local browser geometry checks do not establish backend authorization.

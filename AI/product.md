@@ -66,6 +66,8 @@ Public discovery/search returns public setups only. User profile setup lists are
 - Requester can cancel; addressee can reject; either participant can remove an accepted friendship.
 - There can be only one relationship for an unordered pair of users.
 - A user cannot friend themselves.
+- Other-user profiles and nickname-search results offer Add friend when unrelated, Accept friendship for an incoming request, Request sent for an outgoing request, and Friends for an accepted relationship. Own identities have no friendship action.
+- Relationship actions wait for successfully loaded backend friendship buckets; loading/errors do not imply no relationship. Accepting refreshes the affected visible setup list.
 
 ## Public profiles
 

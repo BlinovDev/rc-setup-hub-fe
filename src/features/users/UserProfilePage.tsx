@@ -1,3 +1,4 @@
+import { ProfileFriendshipControl } from "../friendships/FriendshipControl";
 import { VisibilityBadge } from "../../shared/components/VisibilityBadge";
 import { InlineNotice, LoadingState } from "../../shared/components/Feedback";
 import { Button } from "../../shared/components/Button";
@@ -33,15 +34,18 @@ export function UserProfilePage() {
   const user = profile.data;
   return (
     <section className="space-y-4">
-      <div className="profile-header">
-        <h2 className="min-w-0 text-2xl font-semibold">{user.nickname}</h2>
-        {user.avatar_url && (
-          <img
-            className="h-16 w-16 shrink-0 rounded-full"
-            src={user.avatar_url}
-            alt=""
-          />
-        )}
+      <div className="profile-header identity-action-row">
+        <div className="profile-identity">
+          {user.avatar_url && (
+            <img
+              className="h-16 w-16 shrink-0 rounded-full"
+              src={user.avatar_url}
+              alt=""
+            />
+          )}
+          <h2 className="min-w-0 text-2xl font-semibold">{user.nickname}</h2>
+        </div>
+        <ProfileFriendshipControl key={user.id} userId={user.id} />
       </div>
       <h3 className="text-xl font-semibold">Visible setups</h3>
       {setups.isPending ? (
