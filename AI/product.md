@@ -39,6 +39,8 @@ A setup contains:
 
 Technical data schema v1 covers suspension, shocks/springs and electronics. Optional numeric values preserve the distinction between omitted and explicit zero.
 
+Front/rear suspension angles and link lengths accept a dot or comma decimal separator in create/edit forms. They are sent as JSON numbers without forced rounding or a fixed decimal-place limit; detail and reopened edit preserve the returned values. A single comma is a decimal separator, never a thousands separator; mixed/repeated separators and non-finite values are invalid. Angles may be negative or zero and blank means unknown; each existing link row requires a finite length greater than zero. Shock-oil input rules are unchanged.
+
 Only the owner may modify or delete a setup.
 
 ## Visibility

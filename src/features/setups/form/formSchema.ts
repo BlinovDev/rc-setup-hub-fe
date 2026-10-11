@@ -13,9 +13,20 @@ export function parseOptionalNumber(input: string): number | undefined {
   return number;
 }
 
-function validNumber(value: string, positive: boolean, required: boolean) {
+// Locale keyboards can insert a comma. Keep the form text untouched and
+// normalize only suspension measurements at the validation/request boundary.
+export function parseSuspensionNumber(input: string): number | undefined {
+  return parseOptionalNumber(input.replace(",", "."));
+}
+
+function validNumber(
+  value: string,
+  positive: boolean,
+  required: boolean,
+  parse = parseOptionalNumber,
+) {
   try {
-    const number = parseOptionalNumber(value);
+    const number = parse(value);
     return number === undefined ? !required : !positive || number > 0;
   } catch {
     return false;
@@ -39,7 +50,7 @@ const text = (max: number, required = false) =>
 const angle = z
   .string()
   .refine(
-    (value) => validNumber(value, false, false),
+    (value) => validNumber(value, false, false, parseSuspensionNumber),
     "Enter a finite number.",
   );
 const oil = z
@@ -59,7 +70,7 @@ const axle = z.object({
         length_mm: z
           .string()
           .refine(
-            (value) => validNumber(value, true, true),
+            (value) => validNumber(value, true, true, parseSuspensionNumber),
             "Enter a finite length greater than zero.",
           ),
       }),
