@@ -1,5 +1,9 @@
 import type { components } from "../../../api/generated/schema";
-import { parseOptionalNumber, type SetupFormValues } from "./formSchema";
+import {
+  parseOptionalNumber,
+  parseSuspensionNumber,
+  type SetupFormValues,
+} from "./formSchema";
 
 type Schemas = components["schemas"];
 const optionalText = (value: string) =>
@@ -49,14 +53,16 @@ export function serializeData(values: SetupFormValues): Schemas["SetupDataV1"] {
   ): Schemas["AxleSuspension"] | undefined {
     const result: Schemas["AxleSuspension"] = {};
     for (const key of ["camber_deg", "caster_deg", "toe_deg"] as const) {
-      const number = parseOptionalNumber(value[key]);
+      const number = parseSuspensionNumber(value[key]);
       if (number !== undefined) result[key] = number;
     }
     if (value.link_lengths.length)
-      result.link_lengths = value.link_lengths.map((link) => ({
-        name: link.name.trim(),
-        length_mm: Number(link.length_mm),
-      }));
+      result.link_lengths = value.link_lengths.map((link) => {
+        const length = parseSuspensionNumber(link.length_mm);
+        if (length === undefined || length <= 0)
+          throw new Error("Enter a finite length greater than zero.");
+        return { name: link.name.trim(), length_mm: length };
+      });
     return Object.keys(result).length ? result : undefined;
   }
   function shock(
