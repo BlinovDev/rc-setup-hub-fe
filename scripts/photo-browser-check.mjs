@@ -201,8 +201,59 @@ try {
     );
     await geometry();
     await page.goto("http://127.0.0.1:5173/my/setups/new");
+    const toolbarCheck = async () => {
+      const picker = page.getByRole("button", {
+        name: "Choose photos",
+        exact: true,
+      });
+      const title = page.getByLabel("Title", { exact: true });
+      await picker.waitFor();
+      assert(
+        await picker.evaluate((element) =>
+          Boolean(
+            element.compareDocumentPosition(
+              document.querySelector('[name="title"]'),
+            ) & Node.DOCUMENT_POSITION_FOLLOWING,
+          ),
+        ),
+        "photo toolbar must precede setup fields",
+      );
+      const info = page.getByRole("button", {
+        name: "Photo information",
+        exact: true,
+      });
+      const panel = page.getByRole("region", {
+        name: "Photo information details",
+      });
+      await info.hover();
+      await panel.waitFor();
+      await geometry();
+      await title.click();
+      await panel.waitFor({ state: "hidden" });
+      await info.focus();
+      await panel.waitFor();
+      await page.keyboard.press("Escape");
+      await panel.waitFor({ state: "hidden" });
+      assert(
+        await info.evaluate((element) => document.activeElement === element),
+      );
+      await info.click();
+      await panel.waitFor();
+      await panel
+        .getByRole("button", { name: "Close photo information" })
+        .click();
+      await panel.waitFor({ state: "hidden" });
+    };
+    await toolbarCheck();
     await page.getByLabel("Title", { exact: true }).fill("New with photos");
-    await page.getByLabel("Choose photos").setInputFiles([
+    const chooserEvent = page.waitForEvent("filechooser");
+    await page
+      .getByRole("button", { name: "Choose photos", exact: true })
+      .click();
+    const chooser = await chooserEvent;
+    assert(chooser.isMultiple());
+    assert.equal(creates, 0, "paperclip must not submit setup");
+    await chooser.setFiles([
       { name: "first.png", mimeType: "image/png", buffer: placeholder },
       { name: "phone.heic", mimeType: "image/heic", buffer: placeholder },
     ]);
@@ -252,6 +303,7 @@ try {
     );
     await geometry();
     await page.getByRole("link", { name: "Edit setup", exact: true }).click();
+    await toolbarCheck();
     await page.getByLabel("Title", { exact: true }).fill("Unsaved photo title");
     await page
       .getByRole("button", { name: "Make photo 2 cover", exact: true })

@@ -318,3 +318,13 @@ photos. Backend PR #6 and this FE feature must use an explicit compatible SHA
 pair; new photo frontend cannot run against the old backend. Decoder/media/nginx
 and coherent DB+media backup prerequisites in backend docs must be fulfilled
 separately before any authorized deployment. No deployment by this task.
+
+## Pending crop dependency (Issue #13)
+
+Backend Issue #10 (https://github.com/BlinovDev/rc-setup-hub/issues/10) owns
+persisted square crops/revision metadata. At foundation investigation it had no
+linked implementation PR; crop PR search and open PR search returned none.
+The committed contract therefore remains the existing exact PR #6 contract.
+Do not invent crop DTOs, endpoints or revisions. Before stage 3, copy the exact
+backend implementation PR contract, regenerate types and record its immutable
+head plus the compatible frontend head. Toolbar foundation makes no API changes.

@@ -152,3 +152,18 @@ and decode/server-load failures use a bundled monochrome model placeholder;
 not an uploaded photo and never counts toward the limit. Detail has a responsive
 gallery and enlarged viewer with Close/Escape, contained focus/restoration and
 previous/next. Current backend visibility remains authoritative on every read.
+
+## Photo UX follow-up (Issue #13, setup-photo-ux-v2)
+
+Both create and edit show the photo toolbar before setup fields. A paperclip
+opens the native multi-file picker; count, remaining capacity, queue progress,
+errors and retry/removal remain visible. Format/size/conversion and persistence
+help lives in an information popover usable by hover, focus or tap, with
+Escape, explicit close and outside dismissal. Photo writes still persist
+independently and never reset unsaved setup fields.
+
+The approved follow-up supersedes the earlier no-crop/3:2 design with persisted
+square thumbnails and an owner crop editor, while retaining natural full media.
+That portion is **pending the backend Issue #10 implementation PR and its exact
+OpenAPI contract**. This foundation does not claim crop support or square lists.
+See AI/photo-ux-roadmap.md for staged gates and remaining QA.

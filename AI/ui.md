@@ -274,3 +274,17 @@ unavailable state instead of a success-looking fallback. The enlarged native
 dialog supports Close/Escape, previous/next, focus containment/restoration and
 mobile/desktop wrapping. No photo captions, manual sorting, crop/editor or new
 permissions are introduced.
+
+## Photo toolbar foundation (Issue #13)
+
+The shared Photos toolbar appears after header/back navigation and before General
+on create/edit. Paperclip opens a hidden, uniquely identified multi-file input.
+The information panel opens on hover/focus/tap, stays hoverable, wraps and scrolls
+on short screens, and dismisses with Escape, Close, outside pointer or focus
+departure. Escape/Close restores its trigger focus. Count/capacity and actionable
+queue/upload failures remain outside the panel. Saved-photo actions follow the
+compact toolbar; photo refresh leaves the setup form mounted.
+
+The approved square crop/editor supersedes Issue #11's no-crop and 3:2 direction
+once stages 2–4 land. Existing 3:2 frames are still implemented in this foundation.
+Do not mark the overall photo UX complete before AI/photo-ux-roadmap.md gates pass.

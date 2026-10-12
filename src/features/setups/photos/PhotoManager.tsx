@@ -41,33 +41,8 @@ export function PhotoManager({
   const pending = actions.mutation.isPending || queue.busy;
   return (
     <section className="space-y-4" aria-label="Manage setup photos">
-      <h3 className="text-xl font-semibold">Setup photos</h3>
-      <p>
-        Photo uploads, cover changes and deletions save immediately. Setup
-        fields use Save setup separately. Leaving editing does not undo saved
-        photo changes. Unsaved queued files are lost if you leave.
-      </p>
-      {photos.isPending ? (
-        <LoadingState>Loading saved photos…</LoadingState>
-      ) : photos.isError ? (
-        <InlineNotice tone="error">
-          Photos not found or unavailable.{" "}
-          <Button onClick={() => void photos.refetch()}>Reload photos</Button>
-        </InlineNotice>
-      ) : (
-        <PersistedPhotos
-          photos={photos.data}
-          pending={pending}
-          onCover={(photoId) => perform(photoId, false)}
-          onDelete={(photoId) => perform(photoId, true)}
-        />
-      )}
-      {actions.mutation.isError && (
-        <InlineNotice tone="error">
-          {photoError(actions.mutation.error)}
-        </InlineNotice>
-      )}
       <PhotoPicker
+        saved
         queue={queue}
         stored={photos.data ?? []}
         disabled={!photos.isSuccess || actions.mutation.isPending}
@@ -90,6 +65,26 @@ export function PhotoManager({
           )
         }
       />
+      {photos.isPending ? (
+        <LoadingState>Loading saved photos…</LoadingState>
+      ) : photos.isError ? (
+        <InlineNotice tone="error">
+          Photos not found or unavailable.{" "}
+          <Button onClick={() => void photos.refetch()}>Reload photos</Button>
+        </InlineNotice>
+      ) : (
+        <PersistedPhotos
+          photos={photos.data}
+          pending={pending}
+          onCover={(photoId) => perform(photoId, false)}
+          onDelete={(photoId) => perform(photoId, true)}
+        />
+      )}
+      {actions.mutation.isError && (
+        <InlineNotice tone="error">
+          {photoError(actions.mutation.error)}
+        </InlineNotice>
+      )}
     </section>
   );
 }

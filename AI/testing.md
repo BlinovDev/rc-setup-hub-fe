@@ -245,3 +245,17 @@ interrupt/retry without duplicate setup/photo, real iPhone HEIC/rotated picture,
 public/friends/private and known full/thumbnail URLs/unfriend, technical edits,
 delete, persistence/restart and coherent backup/restore. Check real phone picker,
 keyboard, actual clipboard, 375px/desktop viewer/actions/focus/errors/placeholder.
+
+## Photo UX foundation verification (Issue #13, stage 1)
+
+PhotoToolbar.test.tsx covers hover/focus/tap, Escape/Close/outside/focus departure,
+focus restoration, unique hidden inputs, native-input activation, multi-select,
+non-submit controls and visible capacity. Photos.test.tsx checks edit toolbar
+ordering and preserved unsaved title alongside existing save-once/idempotency,
+failed/queued/ten-photo and decimal/spacing regressions.
+
+The reproducible photo browser gate now checks create/edit toolbar order,
+hover/focus/click dismissal and overflow at 375px/1280px, and opens the real
+browser filechooser through the paperclip rather than setting the input directly.
+Mocked HTTP only; this is not physical iPhone or live backend QA. Crop and the
+full width/orientation matrix remain pending stages 2–4. See photo-ux-roadmap.md.
