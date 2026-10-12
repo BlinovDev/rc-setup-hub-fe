@@ -629,7 +629,7 @@ try {
       }, draft);
       await page.screenshot({
         path: `artifacts/photo-qa/crop-${shapes[n].name}-${width}x${height}.png`,
-        fullPage: true,
+        fullPage: false,
       });
       if (n === 0) {
         const previous = JSON.stringify(photos[n]);
@@ -745,7 +745,7 @@ try {
     }
     mediaFailure = 0;
     console.log(
-      `PASS ${width}px placeholder decode/create once/partial retry/gallery keyboard/unsaved fields/all list covers/delete fallback/final/no overflow; mocked HTTP, file-picker automation`,
+      `PASS ${width}x${height} placeholder/create once/partial retry/crop shapes/pointer+touch+keyboard/preview match/revision refresh/reload/failure retry/gallery focus/unsaved fields/square lists/no N+1/cover-delete/no overflow; mocked HTTP, emulated Chromium`,
     );
     await context.close();
   }

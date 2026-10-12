@@ -577,7 +577,7 @@
     position: absolute;
     top: 100%;
     right: 0;
-    z-index: 20;
+    z-index: 70;
     width: min(22rem, calc(100vw - 4rem));
     max-height: 60dvh;
     overflow-y: auto;
