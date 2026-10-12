@@ -7,12 +7,14 @@ export function PhotoToolbar({
   disabled,
   accept,
   onSelect,
+  countStatus = "loaded",
 }: {
   count: number;
   saved: boolean;
   disabled: boolean;
   accept: string;
   onSelect: (files: File[]) => void;
+  countStatus?: "loaded" | "loading" | "unavailable";
 }) {
   const input = useRef<HTMLInputElement>(null);
   const info = useRef<HTMLDivElement>(null);
@@ -43,7 +45,13 @@ export function PhotoToolbar({
     <>
       <div className="photo-toolbar">
         <h3 className="font-semibold">Photos</h3>
-        <p role="status">{count}/10 photo slots used (saved and queued).</p>
+        <p role="status">
+          {countStatus === "loaded"
+            ? `${count}/10 photo slots used (saved and queued).`
+            : countStatus === "loading"
+              ? "Loading photo count…"
+              : "Photo count unavailable."}
+        </p>
         <div className="photo-toolbar-actions">
           <Button
             aria-label="Choose photos"
@@ -142,7 +150,9 @@ export function PhotoToolbar({
         </div>
       </div>
       <p className="text-sm">
-        {Math.max(0, 10 - count)} photo slots remaining.{" "}
+        {countStatus === "loaded"
+          ? `${Math.max(0, 10 - count)} photo slots remaining.`
+          : "Load saved photos before adding more."}{" "}
         {saved
           ? "Photo changes save immediately."
           : "Queued photos upload after Create setup."}

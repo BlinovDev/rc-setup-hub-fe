@@ -536,6 +536,14 @@ try {
       const saved = page.getByAltText(`Saved setup photo ${n + 1}`, {
         exact: true,
       });
+      await page
+        .getByRole("button", { name: `Adjust thumbnail ${n + 1}`, exact: true })
+        .waitFor();
+      await page
+        .locator(".photo-grid article")
+        .nth(n)
+        .locator(".photo-frame")
+        .scrollIntoViewIfNeeded();
       await saved.waitFor();
       await saved.evaluate(async (image) => {
         if (!image.complete)

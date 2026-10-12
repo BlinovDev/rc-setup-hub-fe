@@ -38,6 +38,7 @@ export function PhotoPicker({
   onUpload,
   onRetry,
   saved = false,
+  countStatus = "loaded",
 }: {
   queue: PhotoQueue;
   stored?: components["schemas"]["SetupPhoto"][];
@@ -45,6 +46,7 @@ export function PhotoPicker({
   onUpload?: () => void;
   onRetry?: (id: string) => void;
   saved?: boolean;
+  countStatus?: "loaded" | "loading" | "unavailable";
 }) {
   const count =
     new Set([
@@ -59,6 +61,7 @@ export function PhotoPicker({
       <PhotoToolbar
         count={count}
         saved={saved}
+        countStatus={countStatus}
         accept={acceptedPhotoTypes}
         disabled={disabled || queue.busy}
         onSelect={(files) => queue.select(files, stored)}

@@ -71,6 +71,13 @@ export function PhotoManager({
     <section className="space-y-4" aria-label="Manage setup photos">
       <PhotoPicker
         saved
+        countStatus={
+          photos.isSuccess
+            ? "loaded"
+            : photos.isPending
+              ? "loading"
+              : "unavailable"
+        }
         queue={queue}
         stored={photos.data ?? []}
         disabled={!photos.isSuccess || actions.mutation.isPending}

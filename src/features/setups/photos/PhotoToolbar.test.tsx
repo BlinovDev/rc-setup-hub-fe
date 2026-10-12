@@ -3,6 +3,33 @@ import userEvent from "@testing-library/user-event";
 import { expect, it, vi } from "vitest";
 import { PhotoToolbar } from "./PhotoToolbar";
 
+it.each(["loading", "unavailable"] as const)(
+  "does not claim empty saved capacity when photo count is %s",
+  (countStatus) => {
+    render(
+      <PhotoToolbar
+        count={0}
+        saved
+        disabled
+        accept=".jpg"
+        onSelect={vi.fn()}
+        countStatus={countStatus}
+      />,
+    );
+    expect(
+      screen.queryByText("0/10 photo slots used (saved and queued)."),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.getByText(
+        "Load saved photos before adding more. Photo changes save immediately.",
+      ),
+    ).toBeVisible();
+    expect(
+      screen.getByRole("button", { name: "Choose photos" }),
+    ).toBeDisabled();
+  },
+);
+
 it("opens information on hover, keyboard focus and tap; dismisses with Escape, outside pointer and focus departure", async () => {
   const user = userEvent.setup();
   render(
