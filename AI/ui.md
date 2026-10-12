@@ -230,3 +230,21 @@ Accept friendship accepts the existing incoming request ID and reuses scoped fri
 ## Suspension decimal input (Issue #7)
 
 Create/edit keep suspension measurement inputs as text with `inputMode="decimal"`, accepting dot or comma fractions without rewriting text while typing. Normalization happens only during validation and request serialization. Front/rear camber/caster/toe support signed finite values, including explicit zero; blank angles remain unknown. Dynamic link lengths require a positive finite number. Do not add integer stepping or fixed decimal precision. Detail and edit hydration use the numeric API values without rounding. Existing associated validation errors and first-invalid-field focus apply to malformed or nonpositive inputs.
+
+## Optional arm spacing (Issue #9)
+
+Each Front/Rear suspension fieldset offers Add top arm spacing and Add lower arm
+spacing, scoped by axle. Added nested fieldsets identify axle and arm and contain
+Front spacers (mm), Rear spacers (mm) and Remove. Labels explicitly include
+axle/arm; helper text explains ahead/behind vehicle direction and left/right
+symmetry. Only one block per type/axle can exist. Blocks start blank and remain
+optional; removal clears registered values/errors and re-add starts blank.
+
+Reuse decimal text inputs, associated errors and first-invalid focus. Blank is
+unknown, zero valid, totals finite >=0. Existing signed angles and positive-only
+link/oil rules remain intact. Fieldsets/controls wrap within the existing mobile
+layout; validate 375px and desktop geometry in browser QA.
+
+Detail shows separate axle/arm headings and Front spacers (ahead of arm) / Rear
+spacers (behind arm) with mm. Unknown positions and empty blocks are omitted;
+all-zero blocks remain visible. No defaults/calculator/asymmetry are introduced.

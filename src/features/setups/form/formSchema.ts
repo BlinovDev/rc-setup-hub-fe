@@ -59,7 +59,26 @@ const oil = z
     (value) => validNumber(value, true, false),
     "Enter a finite number greater than zero.",
   );
+export function parseArmSpacingNumber(input: string): number | undefined {
+  const value = parseSuspensionNumber(input);
+  if (value !== undefined && value < 0)
+    throw new Error(
+      "Enter a finite spacer total greater than or equal to zero.",
+    );
+  return value;
+}
+const spacerTotal = z.string().refine((value) => {
+  try {
+    parseArmSpacingNumber(value);
+    return true;
+  } catch {
+    return false;
+  }
+}, "Enter a finite spacer total greater than or equal to zero.");
+const armSpacing = z.object({ front_mm: spacerTotal, rear_mm: spacerTotal });
 const axle = z.object({
+  top_arm_spacing: armSpacing.optional(),
+  lower_arm_spacing: armSpacing.optional(),
   camber_deg: angle,
   caster_deg: angle,
   toe_deg: angle,
