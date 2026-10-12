@@ -132,11 +132,13 @@ export function PersistedPhotos({
   pending,
   onCover,
   onDelete,
+  onCrop,
 }: {
   photos: components["schemas"]["SetupPhoto"][];
   pending: boolean;
   onCover: (id: string) => void;
   onDelete: (id: string) => void;
+  onCrop: (photo: components["schemas"]["SetupPhoto"]) => void;
 }) {
   const [confirm, setConfirm] = useState<string>();
   const restore = useRef<string | undefined>(undefined);
@@ -152,6 +154,13 @@ export function PersistedPhotos({
         <article key={p.id} className="space-y-2 rounded border p-3">
           <PhotoImage photo={p} alt={`Saved setup photo ${i + 1}`} />
           <p>{p.is_cover ? "Cover photo" : "Saved photo"}</p>
+          <Button
+            id={`crop-${p.id}`}
+            disabled={pending}
+            onClick={() => onCrop(p)}
+          >
+            Adjust thumbnail {i + 1}
+          </Button>
           {!p.is_cover && (
             <Button disabled={pending} onClick={() => onCover(p.id)}>
               Make photo {i + 1} cover

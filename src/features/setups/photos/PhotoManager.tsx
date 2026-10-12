@@ -1,4 +1,6 @@
-import { useRef } from "react";
+import { useEffect, useRef, useState } from "react";
+import type { components } from "../../../api/generated/schema";
+import { CropEditor } from "./CropEditor";
 import { Button } from "../../../shared/components/Button";
 import {
   InlineNotice,
@@ -23,6 +25,32 @@ export function PhotoManager({
   const photos = usePhotos(setupId);
   const actions = usePhotoActions(setupId, ownerId);
   const actionLock = useRef(false);
+  const [selected, setSelected] =
+    useState<components["schemas"]["SetupPhoto"]>();
+  const offered = useRef(new Set<string>());
+  const opener = useRef<HTMLButtonElement | null>(null);
+  useEffect(() => {
+    if (selected || queue.busy || !photos.isSuccess) return;
+    opener.current?.focus();
+    const next = queue.items.find(
+      (item) =>
+        item.state === "uploaded" &&
+        item.photo &&
+        !offered.current.has(item.photo.id),
+    );
+    if (!next?.photo) return;
+    offered.current.add(next.photo.id);
+    const current = photos.data.find((p) => p.id === next.photo!.id);
+    if (current) {
+      opener.current = document.getElementById(
+        `crop-${current.id}`,
+      ) as HTMLButtonElement | null;
+      setSelected(current);
+    }
+  }, [queue.items, queue.busy, photos.data, photos.isSuccess, selected]);
+  function closeEditor() {
+    setSelected(undefined);
+  }
   function perform(photoId: string, remove: boolean) {
     if (actionLock.current || queue.busy) return;
     actionLock.current = true;
@@ -38,7 +66,7 @@ export function PhotoManager({
       },
     );
   }
-  const pending = actions.mutation.isPending || queue.busy;
+  const pending = actions.mutation.isPending || queue.busy || !!selected;
   return (
     <section className="space-y-4" aria-label="Manage setup photos">
       <PhotoPicker
@@ -78,12 +106,30 @@ export function PhotoManager({
           pending={pending}
           onCover={(photoId) => perform(photoId, false)}
           onDelete={(photoId) => perform(photoId, true)}
+          onCrop={(photo) => {
+            opener.current = document.getElementById(
+              `crop-${photo.id}`,
+            ) as HTMLButtonElement | null;
+            setSelected(photo);
+          }}
         />
       )}
       {actions.mutation.isError && (
         <InlineNotice tone="error">
           {photoError(actions.mutation.error)}
         </InlineNotice>
+      )}
+      {selected && (
+        <CropEditor
+          key={selected.id}
+          photo={selected}
+          ownerId={ownerId}
+          onClose={closeEditor}
+          onReload={async () => {
+            const result = await photos.refetch();
+            return result.data?.find((p) => p.id === selected.id);
+          }}
+        />
       )}
     </section>
   );

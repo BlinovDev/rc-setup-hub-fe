@@ -517,6 +517,38 @@
 }
 
 @layer components {
+  .crop-dialog {
+    width: min(95vw, 640px);
+  }
+  .crop-preview {
+    position: relative;
+    overflow: hidden;
+    width: min(100%, 320px);
+    aspect-ratio: 1;
+    margin: 1rem auto;
+    background: #f1f5f9;
+    touch-action: none;
+    cursor: grab;
+  }
+  .crop-preview img {
+    position: absolute;
+    max-width: none;
+    pointer-events: none;
+    user-select: none;
+  }
+  .crop-controls {
+    display: grid;
+    gap: 0.75rem;
+    margin-block: 1rem;
+  }
+  .crop-controls label {
+    display: grid;
+    min-width: 0;
+  }
+  .crop-controls input {
+    width: 100%;
+    min-height: 44px;
+  }
   .photo-toolbar {
     display: flex;
     flex-wrap: wrap;

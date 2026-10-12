@@ -67,11 +67,14 @@ try {
     let creates = 0;
     let uploadCalls = 0;
     let fail = true;
+    let cropWrites = 0;
     const photo = (n) => ({
       id: `11111111-1111-4111-8111-${String(n).padStart(12, "0")}`,
       setup_id: id,
       width: 600,
       height: 400,
+      crop: null,
+      thumbnail_revision: 0,
       thumbnail_width: 600,
       thumbnail_height: 400,
       content_type: "image/jpeg",
@@ -150,6 +153,40 @@ try {
           body = photos.at(-1);
           status = 201;
         } else body = photos;
+      } else if (path.endsWith("/crop")) {
+        const target = path.split("/").at(-2);
+        const update = req.postDataJSON();
+        const current = photos.find((p) => p.id === target);
+        assert.equal(update.expected_revision, current.thumbnail_revision);
+        const crop = update.crop ?? { x: 100, y: 0, size: 400 };
+        assert(
+          Number.isInteger(crop.x) &&
+            Number.isInteger(crop.y) &&
+            Number.isInteger(crop.size),
+        );
+        assert(
+          crop.x >= 0 &&
+            crop.y >= 0 &&
+            crop.x + crop.size <= current.width &&
+            crop.y + crop.size <= current.height,
+        );
+        cropWrites++;
+        photos = photos.map((p) =>
+          p.id === target
+            ? {
+                ...p,
+                crop,
+                thumbnail_revision: p.thumbnail_revision + 1,
+                thumbnail_width: Math.min(crop.size, 640),
+                thumbnail_height: Math.min(crop.size, 640),
+              }
+            : p,
+        );
+        setup = {
+          ...setup,
+          cover_photo: photos.find((p) => p.is_cover) ?? null,
+        };
+        body = photos.find((p) => p.id === target);
       } else if (path.endsWith("/cover")) {
         const target = path.split("/").at(-2);
         photos = photos.map((p) => ({ ...p, is_cover: p.id === target }));
@@ -264,6 +301,8 @@ try {
       .getByRole("button", { name: "Retry phone.heic", exact: true })
       .waitFor();
     assert.equal(creates, 1);
+    await page.getByRole("dialog", { name: "Adjust thumbnail" }).waitFor();
+    await page.getByRole("button", { name: "Cancel adjustment" }).click();
     fail = false;
     await page
       .getByRole("button", { name: "Retry phone.heic", exact: true })
@@ -274,6 +313,17 @@ try {
       .waitFor();
     assert.equal(creates, 1);
     assert.equal(photos.length, 2);
+    const cropDialog = page.getByRole("dialog", { name: "Adjust thumbnail" });
+    await cropDialog.waitFor();
+    await cropDialog.getByRole("button", { name: "Apply thumbnail" }).waitFor();
+    await cropDialog.getByLabel("Zoom", { exact: true }).fill("2");
+    await cropDialog
+      .getByRole("group", { name: "Square thumbnail preview" })
+      .focus();
+    await page.keyboard.press("ArrowRight");
+    await cropDialog.getByRole("button", { name: "Apply thumbnail" }).click();
+    await cropDialog.waitFor({ state: "hidden" });
+    assert.equal(cropWrites, 1);
     await geometry();
     await page.goto(`http://127.0.0.1:5173/setups/${id}`);
     await page
