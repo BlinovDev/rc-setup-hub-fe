@@ -66,7 +66,7 @@ export function CropEditor({
     return () => close?.();
   }, []);
   useEffect(() => {
-    if (!media.data || !image.current) return;
+    if (unavailable || !media.data || !image.current) return;
     const element = image.current;
     const source = URL.createObjectURL(media.data);
     element.src = source;
@@ -74,7 +74,7 @@ export function CropEditor({
       URL.revokeObjectURL(source);
       element.removeAttribute("src");
     };
-  }, [media.data]);
+  }, [media.data, unavailable]);
   function change(next: Crop) {
     if (!ready) return;
     request.current = null;
@@ -163,7 +163,7 @@ export function CropEditor({
           </Button>
         </InlineNotice>
       )}
-      {media.data && !media.isError && (
+      {media.data && !media.isError && !unavailable && (
         <>
           <div
             ref={frame}

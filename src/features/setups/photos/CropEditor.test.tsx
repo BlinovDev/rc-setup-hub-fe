@@ -200,3 +200,23 @@ it("retains failed draft, retries exactly once and requires explicit reload for 
   expect(writes[1]?.expected_revision).toBe(2);
   expect(photo.crop).toEqual({ x: 0, y: 20, size: 250 });
 });
+it("removes the normalized preview and blocks apply when a crop races with deletion", async () => {
+  server.use(
+    http.put(
+      `${apiUrl}/api/v1/setups/${testSetup.id}/photos/${photo.id}/crop`,
+      () => HttpResponse.json({ error: "deleted" }, { status: 404 }),
+    ),
+  );
+  const user = await open();
+  await user.click(screen.getByRole("button", { name: "Apply thumbnail" }));
+  await screen.findByText(
+    "Photo was deleted or is unavailable. Close the editor and reload photos.",
+  );
+  expect(
+    screen.queryByAltText("Normalized photo crop preview"),
+  ).not.toBeInTheDocument();
+  expect(
+    screen.getByRole("button", { name: "Apply thumbnail" }),
+  ).toBeDisabled();
+  expect(URL.revokeObjectURL).toHaveBeenCalled();
+});
