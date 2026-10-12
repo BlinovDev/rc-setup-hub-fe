@@ -91,3 +91,14 @@ After QA:
 5. require the workflow and server smoke checks to succeed.
 
 Do not deploy an unmerged feature SHA to production.
+
+## Setup photo paired release prerequisites
+
+Frontend Issue #11 requires backend PR #6's exact contract/head and a compatible
+explicit SHA pair. New photo frontend cannot deploy to the previous backend.
+Backend server decoder provisioning, isolated private persistent MEDIA_DIR,
+nginx multipart limits, --check-media verification and coherent DB+media
+backup/restore helper updates are required before any separately authorized
+deployment. See that backend PR and its AI/deployment.md. The generated
+placeholder is a local optimized FE static WebP, never server photo metadata.
+This task does not merge, dispatch workflows, deploy or change a live server.

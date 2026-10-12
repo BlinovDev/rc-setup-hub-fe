@@ -1,5 +1,5 @@
 import { SocialLinks } from "../../shared/social/SocialLinks";
-import type { ReactNode } from "react";
+import { Fragment, type ReactNode } from "react";
 import { NavLink } from "react-router";
 import type { components } from "../../api/generated/schema";
 import { useQuery } from "@tanstack/react-query";
@@ -53,7 +53,7 @@ export function AuthGate({
         ) : session.data === null ? (
           <LoginPage />
         ) : (
-          children?.(session.data)
+          <Fragment key={session.data.id}>{children?.(session.data)}</Fragment>
         )}
       </main>
       {authenticated && (

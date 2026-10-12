@@ -248,3 +248,29 @@ layout; validate 375px and desktop geometry in browser QA.
 Detail shows separate axle/arm headings and Front spacers (ahead of arm) / Rear
 spacers (behind arm) with mm. Unknown positions and empty blocks are omitted;
 all-zero blocks remain visible. No defaults/calculator/asymmetry are introduced.
+
+## Setup photo UI (Issue #11)
+
+New setup has an optional multi-file picker and distinct local preview queue.
+Picker publishes the exact JPEG/PNG/WebP/HEIC/HEIF hint and 25 MiB/ten-photo limits.
+Each queued row exposes pending/queued/error/uploaded status, removal before
+upload, and explicit retry after failure. HEIC browsers may lack local preview;
+explain server conversion. New text/data save happens once; with photos the page
+keeps its returned setup ID and queue/results instead of creating again. An edit
+link allows continuing with that saved setup. Without photos existing navigation
+after create remains unchanged. Remaining local selections are lost on leaving.
+
+Owner edit pages explain immediate photo persistence versus separately saved
+setup fields. Cover badge/select and confirmed saved-photo deletion use server
+responses; removal of a queued item is a different action. Photo query refresh
+does not remount/reset the setup form. Cancellation focuses the restored delete
+button. Detail gallery is read-only; non-owner receives no management controls.
+
+All cards reserve 3:2 thumbnail space, lazy load, and use a consistent optimized
+600x400 bundled fallback (public/images/setup-photo-placeholder.webp). It is a
+verified equivalent generated to replace the corrupt supplied PNG, not a
+recovered original or an uploaded photo. Permission/session failures show explicit
+unavailable state instead of a success-looking fallback. The enlarged native
+dialog supports Close/Escape, previous/next, focus containment/restoration and
+mobile/desktop wrapping. No photo captions, manual sorting, crop/editor or new
+permissions are introduced.

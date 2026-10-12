@@ -1,3 +1,4 @@
+import { PhotoManager } from "./photos/PhotoManager";
 import { InlineNotice, LoadingState } from "../../shared/components/Feedback";
 import { Button } from "../../shared/components/Button";
 import { useState } from "react";
@@ -112,6 +113,7 @@ export function EditSetupPage({
           }
         }}
       />
+      <PhotoManager key={setupId} setupId={setupId} ownerId={user.id} />
       <DeleteSetupButton
         id={setupId}
         onDeleted={() => {

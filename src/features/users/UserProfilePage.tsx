@@ -1,3 +1,4 @@
+import { PhotoImage } from "../setups/photos/PhotoImage";
 import { ProfileFriendshipControl } from "../friendships/FriendshipControl";
 import { VisibilityBadge } from "../../shared/components/VisibilityBadge";
 import { InlineNotice, LoadingState } from "../../shared/components/Feedback";
@@ -66,6 +67,10 @@ export function UserProfilePage() {
         <div className="grid gap-4 sm:grid-cols-2">
           {setups.data.map((setup) => (
             <article key={setup.id} className="rounded border p-4 space-y-2">
+              <PhotoImage
+                photo={setup.cover_photo}
+                alt={`Cover of ${setup.title}`}
+              />
               <h4 className="text-xl font-semibold">
                 <Link className="underline" to={`/setups/${setup.id}`}>
                   {setup.title}

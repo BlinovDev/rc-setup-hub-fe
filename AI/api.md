@@ -283,3 +283,38 @@ New spacing writes require the updated backend. For separately authorized QA,
 select an explicit compatible backend/FE SHA pair and compare OpenAPI bytes.
 Merge/release backend first or as a compatible pair; do not deploy this frontend
 against the old backend. No merge/deploy is authorized by this task.
+
+## Photo contract (backend Issue #5 / frontend Issue #11)
+
+api/openapi.yaml is copied byte-for-byte from backend PR #6
+https://github.com/BlinovDev/rc-setup-hub/pull/6 at head
+99d12cb8ab7b454db02f40161a59da0b03908929. SHA-256:
+96a6313b6a1075d79099e1c9e85a8c29a4d1f8f881ed7b63fd97022aa48e563c.
+Types regenerate with npm run api:generate. Setup/SetupSearchItem have nullable
+cover_photo (SetupPhoto); gallery metadata is separate and not in technical data.
+
+Photo API module uses the existing typed credential-enforcing client: GET gallery,
+POST multipart exactly file + request_id, PUT cover without body, DELETE saved
+photo, GET authenticated image/thumbnail with parseAs blob and cache no-store.
+FormData supplies its own boundary; generated upload request shape is retained
+through the body serializer without invented transport DTOs. UUID per selection
+is stable across explicit retries; POST never auto-retries. 400 rejected format,
+size/corruption/limit; 401 expires session; 403 origin error; 404 unavailable; 409
+changed/deleted idempotency selection; 503 busy; network/500 retry retains setup.
+
+Gallery keys are nested under [setups,detail,id,photos,viewerId], media under the
+same detail prefix with viewer/photo/variant; gcTime 0. Media uses local revocable
+object URLs, no persisted blobs or tokens. Session identity changes remount
+protected UI to discard queues/previews; 401 unmounts it. Existing friendship
+cache cancellation/removal includes all nested photo queries; inaccessible media
+never reuses cached successful bytes as granted access. Cover images lazy-fetch
+using returned IDs and typed backend routes; no per-card gallery/detail metadata
+lookup. Unknown/error photos are distinguished from a legitimate zero-photo cover.
+
+Successful photo writes invalidate exact gallery/detail, mine, owner-visible list
+and search family, preserving unrelated owner/query caches and unsaved RHF data.
+Stale mutation 404/409 refreshes affected state. Full-data PATCH never contains
+photos. Backend PR #6 and this FE feature must use an explicit compatible SHA
+pair; new photo frontend cannot run against the old backend. Decoder/media/nginx
+and coherent DB+media backup prerequisites in backend docs must be fulfilled
+separately before any authorized deployment. No deployment by this task.

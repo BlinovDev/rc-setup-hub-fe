@@ -1,3 +1,12 @@
+import { useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
+import type { components } from "../../api/generated/schema";
+import { PhotoPicker } from "./photos/queue";
+import { usePhotoQueue } from "./photos/usePhotoQueue";
+import { PhotoManager } from "./photos/PhotoManager";
+import { uploadPhoto } from "./photos/api";
+import { refreshPhotos } from "./photos/queries";
+import { withSession } from "./queries";
 import { InlineNotice } from "../../shared/components/Feedback";
 import { Link, useNavigate } from "react-router";
 import { setupErrorMessage } from "./api";
@@ -8,6 +17,28 @@ import { serializeCreate } from "./form/serialization";
 export function NewSetupPage() {
   const create = useCreateSetup();
   const navigate = useNavigate();
+  const queue = usePhotoQueue();
+  const client = useQueryClient();
+  const [savedSetup, setSavedSetup] =
+    useState<components["schemas"]["Setup"]>();
+  if (savedSetup)
+    return (
+      <section className="setup-editor space-y-4">
+        <h2>Setup created.</h2>
+        <p>
+          Your setup is saved. Completed photos are retained. Retry or remove
+          failed selections below.
+        </p>
+        <Link to={`/my/setups/${savedSetup.id}/edit`}>
+          Continue editing setup
+        </Link>
+        <PhotoManager
+          setupId={savedSetup.id}
+          ownerId={savedSetup.owner_id}
+          queue={queue}
+        />
+      </section>
+    );
   return (
     <section className="setup-editor mt-8">
       <h2 className="text-2xl font-semibold">New setup</h2>
@@ -17,11 +48,23 @@ export function NewSetupPage() {
           {setupErrorMessage(create.error, "save")}
         </InlineNotice>
       )}
+      <PhotoPicker queue={queue} disabled={create.isPending} />
       <SetupForm
         pending={create.isPending}
         onSave={async (values) => {
           try {
-            await create.mutateAsync(serializeCreate(values));
+            const setup = await create.mutateAsync(serializeCreate(values));
+            if (queue.items.length) {
+              setSavedSetup(setup);
+              await queue.send(async (item) => {
+                const photo = await withSession(client, () =>
+                  uploadPhoto(setup.id, item.file, item.requestId),
+                );
+                await refreshPhotos(client, setup.id, setup.owner_id);
+                return photo;
+              });
+              return;
+            }
             navigate("/my/setups", { state: { message: "Setup created." } });
           } catch {
             /* Safe error feedback comes from mutation state. */

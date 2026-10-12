@@ -1,3 +1,4 @@
+import { Gallery } from "./photos/Gallery";
 import { VisibilityBadge } from "../../shared/components/VisibilityBadge";
 import { InlineNotice, LoadingState } from "../../shared/components/Feedback";
 import { Button } from "../../shared/components/Button";
@@ -115,6 +116,7 @@ export function SetupDetailPage({
           />
         </InlineNotice>
       )}
+      <Gallery key={setup.id} setupId={setup.id} />
       {setup.schema_version === 1 ? (
         <TechnicalData data={setup.data} />
       ) : (
