@@ -386,6 +386,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/setups/{id}/photos/{photo_id}/crop": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Apply or reset a square thumbnail crop as owner
+         * @description Integer x/y/size use normalized full-image pixels after server orientation and resize; top-left origin. Bounds are checked against stored full dimensions. crop null resets to size=min(width,height), x=floor((width-size)/2), y=floor((height-size)/2). Full JPEG is never modified. Thumbnail is square min(size,640) pixels without upscaling. expected_revision must match the current thumbnail_revision; stale conflicting writes return 409. An identical immediate retry with expected_revision=current-1 returns the current photo, as does an identical current-revision apply. No automatic mutation retry. Crop/delete/cover are serialized; deleted/not-owned photos return 404. Failures preserve the previous crop/thumbnail. Reload after 409.
+         */
+        put: operations["cropSetupPhoto"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/setups/{id}/photos/{photo_id}/cover": {
         parameters: {
             query?: never;
@@ -581,7 +601,21 @@ export interface components {
             /** @description Trimmed technical text without null bytes. Null, omitted or empty text is omitted in responses. */
             radio?: string | null;
         };
+        /** @description Integer square in normalized full JPEG pixels, independent of original orientation. */
+        PhotoCrop: {
+            x: number;
+            y: number;
+            size: number;
+        };
+        PhotoCropUpdate: {
+            expected_revision: number;
+            crop: components["schemas"]["PhotoCrop"] | null;
+        };
         SetupPhoto: {
+            /** @description Null on legacy photos; FE presents centered square until adjustment. New photos have a centered crop. */
+            crop: components["schemas"]["PhotoCrop"] | null;
+            /** @description Zero for legacy thumbnails; starts at one for new square uploads. Use with photo ID in media query keys. */
+            thumbnail_revision: number;
             /** Format: uuid */
             id: string;
             /** Format: uuid */
@@ -597,7 +631,7 @@ export interface components {
             created_at: string;
             /** @description Authenticated full processed image path; never raw source */
             url: string;
-            /** @description Authenticated thumbnail path */
+            /** @description Authenticated thumbnail path with revision query identity. Server always reads the current authorized thumbnail, not historical revisions. */
             thumbnail_url: string;
         };
         /** @description Complete setup with application owner UUID and read-only historical chassis display. No owner email or provider identity is exposed. */
@@ -1455,6 +1489,48 @@ export interface operations {
             409: components["responses"]["Conflict"];
             500: components["responses"]["InternalError"];
             /** @description Upload capacity busy; retry the same request_id */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+        };
+    };
+    cropSetupPhoto: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+                photo_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PhotoCropUpdate"];
+            };
+        };
+        responses: {
+            /** @description Current committed photo and thumbnail revision */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SetupPhoto"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            500: components["responses"]["InternalError"];
+            /** @description Processor busy; explicitly retry the same crop and expected_revision */
             503: {
                 headers: {
                     [name: string]: unknown;

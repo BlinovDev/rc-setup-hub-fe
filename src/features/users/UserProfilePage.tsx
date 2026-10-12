@@ -64,26 +64,28 @@ export function UserProfilePage() {
       ) : setups.data.length === 0 ? (
         <p>No visible setups.</p>
       ) : (
-        <div className="grid gap-4 sm:grid-cols-2">
+        <div className="setup-cards">
           {setups.data.map((setup) => (
-            <article key={setup.id} className="rounded border p-4 space-y-2">
+            <article key={setup.id} className="setup-card rounded border p-4">
               <PhotoImage
                 photo={setup.cover_photo}
                 alt={`Cover of ${setup.title}`}
               />
-              <h4 className="text-xl font-semibold">
-                <Link className="underline" to={`/setups/${setup.id}`}>
-                  {setup.title}
-                </Link>
-              </h4>
-              <p>{chassisLabel(setup)}</p>
-              <VisibilityBadge value={setup.visibility} />
-              <p>
-                Updated:{" "}
-                <time dateTime={setup.updated_at}>
-                  {new Date(setup.updated_at).toLocaleString()}
-                </time>
-              </p>
+              <div className="setup-card-content space-y-2">
+                <h4 className="text-xl font-semibold">
+                  <Link className="underline" to={`/setups/${setup.id}`}>
+                    {setup.title}
+                  </Link>
+                </h4>
+                <p>{chassisLabel(setup)}</p>
+                <VisibilityBadge value={setup.visibility} />
+                <p>
+                  Updated:{" "}
+                  <time dateTime={setup.updated_at}>
+                    {new Date(setup.updated_at).toLocaleString()}
+                  </time>
+                </p>
+              </div>
             </article>
           ))}
         </div>

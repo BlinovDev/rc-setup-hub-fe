@@ -41,26 +41,28 @@ export function MySetupsPage() {
       ) : setups.data.length === 0 ? (
         <p>No setups yet.</p>
       ) : (
-        <ul className="space-y-4">
+        <ul className="setup-cards">
           {setups.data.map((setup) => (
-            <li key={setup.id} className="rounded border p-4">
+            <li key={setup.id} className="setup-card rounded border p-4">
               <PhotoImage
                 photo={setup.cover_photo}
                 alt={`Cover of ${setup.title}`}
               />
-              <h3 className="text-xl font-semibold break-words">
-                {setup.title}
-              </h3>
-              <p>{chassisLabel(setup)}</p>
-              <VisibilityBadge value={setup.visibility} />
-              <div className="flex flex-wrap items-center gap-3 mt-3">
-                <Link
-                  className="inline-flex min-h-11 items-center px-3 underline"
-                  to={`/my/setups/${setup.id}/edit`}
-                >
-                  Edit setup
-                </Link>
-                <DeleteSetupButton id={setup.id} />
+              <div className="setup-card-content space-y-2">
+                <h3 className="text-xl font-semibold break-words">
+                  {setup.title}
+                </h3>
+                <p>{chassisLabel(setup)}</p>
+                <VisibilityBadge value={setup.visibility} />
+                <div className="flex flex-wrap items-center gap-3 mt-3">
+                  <Link
+                    className="inline-flex min-h-11 items-center px-3 underline"
+                    to={`/my/setups/${setup.id}/edit`}
+                  >
+                    Edit setup
+                  </Link>
+                  <DeleteSetupButton id={setup.id} />
+                </div>
               </div>
             </li>
           ))}

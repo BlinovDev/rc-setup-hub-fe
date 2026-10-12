@@ -1,5 +1,21 @@
 import { apiClient } from "../../../api/client";
 import { SetupError } from "../api";
+import type { components } from "../../../api/generated/schema";
+export async function cropPhoto(
+  id: string,
+  photoId: string,
+  body: components["schemas"]["PhotoCropUpdate"],
+) {
+  const { data, response } = await apiClient.PUT(
+    "/api/v1/setups/{id}/photos/{photo_id}/crop",
+    {
+      params: { path: { id, photo_id: photoId } },
+      body,
+    },
+  );
+  if (response.status !== 200 || !data) throw new SetupError(response.status);
+  return data;
+}
 export async function getPhotos(id: string, signal: AbortSignal) {
   const { data, response } = await apiClient.GET("/api/v1/setups/{id}/photos", {
     params: { path: { id } },

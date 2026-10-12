@@ -22,6 +22,8 @@ const photo = (n: number, cover = n === 1): Photo => ({
   setup_id: testSetup.id,
   width: 600,
   height: 400,
+  crop: null,
+  thumbnail_revision: 0,
   thumbnail_width: 600,
   thumbnail_height: 400,
   content_type: "image/jpeg",
@@ -95,6 +97,26 @@ function mockSetupGallery(items: Photo[]) {
   );
 }
 
+it("places the shared photo toolbar before General on create and edit without submitting or resetting fields", async () => {
+  mockActiveCatalog();
+  mockSetupGallery([]);
+  renderSetupRoute(`/my/setups/${testSetup.id}/edit`);
+  const title = await screen.findByLabelText("Title");
+  const user = userEvent.setup();
+  await user.clear(title);
+  await user.type(title, "Unsaved toolbar title");
+  const picker = screen.getByRole("button", { name: "Choose photos" });
+  expect(
+    picker.compareDocumentPosition(title) & Node.DOCUMENT_POSITION_FOLLOWING,
+  ).toBeTruthy();
+  await user.click(screen.getByRole("button", { name: "Photo information" }));
+  expect(
+    screen.getByRole("region", { name: "Photo information details" }),
+  ).toHaveTextContent("save immediately");
+  await user.keyboard("{Escape}");
+  expect(title).toHaveValue("Unsaved toolbar title");
+});
+
 it("saves a new setup once, retains partial success, and retries the same file/UUID without duplicate setup or completed upload", async () => {
   mockActiveCatalog();
   let creates = 0;
@@ -138,11 +160,11 @@ it("saves a new setup once, retains partial success, and retries the same file/U
   const user = userEvent.setup();
   await screen.findByLabelText("Title");
   await user.type(screen.getByLabelText("Title"), "With photos");
-  expect(screen.getByLabelText("Choose photos")).toHaveAttribute(
+  expect(screen.getByLabelText("Photo files")).toHaveAttribute(
     "accept",
     expect.stringContaining(".heic"),
   );
-  await user.upload(screen.getByLabelText("Choose photos"), [
+  await user.upload(screen.getByLabelText("Photo files"), [
     file(),
     file("phone.heic"),
   ]);
@@ -193,12 +215,12 @@ it("queue removal never sends DELETE and optional invalid photos do not block te
   const user = userEvent.setup({ applyAccept: false });
   await screen.findByLabelText("Title");
   await user.type(screen.getByLabelText("Title"), "Optional");
-  await user.upload(screen.getByLabelText("Choose photos"), file());
+  await user.upload(screen.getByLabelText("Photo files"), file());
   await user.click(
     screen.getByRole("button", { name: "Remove queued car.jpg" }),
   );
   await user.upload(
-    screen.getByLabelText("Choose photos"),
+    screen.getByLabelText("Photo files"),
     new File(["svg"], "bad.svg", { type: "image/svg+xml" }),
   );
   await screen.findByText(
@@ -215,11 +237,11 @@ it("counts stored plus queued files, rejects an entire over-limit selection with
   mockSetupGallery(stored);
   renderSetupRoute(`/my/setups/${testSetup.id}/edit`);
   const user = userEvent.setup();
-  await screen.findByLabelText("Choose photos");
+  await screen.findByLabelText("Photo files");
   await waitFor(() =>
-    expect(screen.getByLabelText("Choose photos")).toBeEnabled(),
+    expect(screen.getByLabelText("Photo files")).toBeEnabled(),
   );
-  await user.upload(screen.getByLabelText("Choose photos"), [
+  await user.upload(screen.getByLabelText("Photo files"), [
     file("a.jpg"),
     file("b.jpg"),
   ]);
@@ -229,15 +251,15 @@ it("counts stored plus queued files, rejects an entire over-limit selection with
   expect(screen.queryByText("Queued — not uploaded")).not.toBeInTheDocument();
   const large = file("large.jpg");
   Object.defineProperty(large, "size", { value: 25 * 1024 * 1024 + 1 });
-  await user.upload(screen.getByLabelText("Choose photos"), large);
+  await user.upload(screen.getByLabelText("Photo files"), large);
   await screen.findByText(
     "Each photo must be at most 25 MiB. Choose smaller files; no files were added.",
   );
-  await user.upload(screen.getByLabelText("Choose photos"), file());
+  await user.upload(screen.getByLabelText("Photo files"), file());
   expect(
     screen.getByText("10/10 photo slots used (saved and queued)."),
   ).toBeInTheDocument();
-  await user.upload(screen.getByLabelText("Choose photos"), file("extra.jpg"));
+  await user.upload(screen.getByLabelText("Photo files"), file("extra.jpg"));
   await screen.findByText(
     "You selected 1 files, but only 0 photo slots remain. Choose fewer files; no files were added.",
   );
@@ -420,9 +442,9 @@ it.each([400, 409, 503, 500])(
     renderSetupRoute(`/my/setups/${testSetup.id}/edit`);
     const user = userEvent.setup();
     await waitFor(() =>
-      expect(screen.getByLabelText("Choose photos")).toBeEnabled(),
+      expect(screen.getByLabelText("Photo files")).toBeEnabled(),
     );
-    await user.upload(screen.getByLabelText("Choose photos"), file());
+    await user.upload(screen.getByLabelText("Photo files"), file());
     await user.click(
       screen.getByRole("button", { name: "Upload queued photos" }),
     );
@@ -444,9 +466,9 @@ it("suppresses duplicate pending uploads and photo writes", async () => {
   renderSetupRoute(`/my/setups/${testSetup.id}/edit`);
   const user = userEvent.setup();
   await waitFor(() =>
-    expect(screen.getByLabelText("Choose photos")).toBeEnabled(),
+    expect(screen.getByLabelText("Photo files")).toBeEnabled(),
   );
-  await user.upload(screen.getByLabelText("Choose photos"), file());
+  await user.upload(screen.getByLabelText("Photo files"), file());
   await user.dblClick(
     screen.getByRole("button", { name: "Upload queued photos" }),
   );
@@ -551,7 +573,7 @@ it("changing session identity discards local queued previews and fields", async 
   const user = userEvent.setup();
   await screen.findByLabelText("Title");
   await user.type(screen.getByLabelText("Title"), "Private draft");
-  await user.upload(screen.getByLabelText("Choose photos"), file());
+  await user.upload(screen.getByLabelText("Photo files"), file());
   await screen.findByText("Queued — not uploaded");
   await act(() => {
     client.setQueryData(["auth", "me"], {
@@ -579,7 +601,7 @@ it("a permitted non-owner sees gallery but no upload/cover/delete controls", asy
   );
   renderSetupRoute(`/setups/${testSetup.id}`);
   await screen.findByRole("button", { name: "Enlarge photo 1 (cover)" });
-  expect(screen.queryByLabelText("Choose photos")).not.toBeInTheDocument();
+  expect(screen.queryByLabelText("Photo files")).not.toBeInTheDocument();
   expect(
     screen.queryByRole("button", { name: /Make photo|Delete photo/ }),
   ).not.toBeInTheDocument();

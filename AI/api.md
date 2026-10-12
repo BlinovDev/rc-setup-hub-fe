@@ -286,10 +286,11 @@ against the old backend. No merge/deploy is authorized by this task.
 
 ## Photo contract (backend Issue #5 / frontend Issue #11)
 
-api/openapi.yaml is copied byte-for-byte from backend PR #6
-https://github.com/BlinovDev/rc-setup-hub/pull/6 at head
-99d12cb8ab7b454db02f40161a59da0b03908929. SHA-256:
-96a6313b6a1075d79099e1c9e85a8c29a4d1f8f881ed7b63fd97022aa48e563c.
+The current api/openapi.yaml is copied byte-for-byte from backend PR #11
+https://github.com/BlinovDev/rc-setup-hub/pull/11 at head
+8c5bc3c67eb9ba87e8b9b6b540d2bc5854095096. SHA-256:
+3b81afb96461c5c4973dad261a17460b231c96a30b30c3706c0746c0fb5ee850.
+This includes the photo-v1 contract introduced by PR #6 plus the crop extension.
 Types regenerate with npm run api:generate. Setup/SetupSearchItem have nullable
 cover_photo (SetupPhoto); gallery metadata is separate and not in technical data.
 
@@ -318,3 +319,27 @@ photos. Backend PR #6 and this FE feature must use an explicit compatible SHA
 pair; new photo frontend cannot run against the old backend. Decoder/media/nginx
 and coherent DB+media backup prerequisites in backend docs must be fulfilled
 separately before any authorized deployment. No deployment by this task.
+
+## Square crop contract (Issue #13 / backend Issue #10)
+
+PUT /api/v1/setups/{id}/photos/{photo_id}/crop uses generated PhotoCropUpdate:
+required expected_revision and crop {x,y,size} or null. All coordinates are integers
+in oriented/resized full JPEG pixels; top-left origin, positive size, x/y>=0,
+x+size<=width/y+size<=height. Center/reset uses short edge and floor half-offsets.
+Editor rounds and clamps draft pixels; backend remains authoritative.
+
+SetupPhoto carries required nullable crop and thumbnail_revision in every gallery,
+upload/cover/crop response and joined cover projection. Legacy null/revision 0 is
+center-presented. Thumbnail media queries/render/broken-image identities include
+revision; immutable full-image keys use ID only. Normalized media uses the existing
+credential/no-store API and ephemeral revocable object URLs. Crops never touch
+technical PATCH data or full-image bytes. Apply refreshes gallery/detail/mine/search/
+owner-visible projections, preserving unrelated lists and unsaved RHF data.
+
+Explicit retry reuses the exact body/revision. Backend identical current or one-step
+old retry is safe; conflicting stale 409 blocks Apply until explicit reload; failed
+reload retains the draft. 404 prevents retry; 400/500/503 errors retain prior saved
+crop and show explicit retry. No automatic crop mutation retry. After success, the
+revision in metadata replaces loaded thumbnail blob/render identities. Do not deploy
+the v2 frontend against a photo-v1 backend. Compatible pair: BE head above / FE PR #14
+head recorded in its description (no circular commit SHA in source). No deploy here.

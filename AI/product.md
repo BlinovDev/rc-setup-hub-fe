@@ -152,3 +152,24 @@ and decode/server-load failures use a bundled monochrome model placeholder;
 not an uploaded photo and never counts toward the limit. Detail has a responsive
 gallery and enlarged viewer with Close/Escape, contained focus/restoration and
 previous/next. Current backend visibility remains authoritative on every read.
+
+## Photo UX follow-up (Issue #13, setup-photo-ux-v2)
+
+Both create and edit show the photo toolbar before setup fields. A paperclip
+opens the native multi-file picker; count, remaining capacity, queue progress,
+errors and retry/removal remain visible. Format/size/conversion and persistence
+help lives in an information popover usable by hover, focus or tap, with
+Escape, explicit close and outside dismissal. Photo writes still persist
+independently and never reset unsaved setup fields.
+
+The follow-up supersedes the earlier no-crop/3:2 design: every thumbnail frame
+is square. Owners adjust the square using normalized full-image pixel coordinates;
+full photos remain naturally proportioned and unchanged. Upload completion offers
+the editor without stopping subsequent queued uploads. Cancel/skip keeps the saved
+frame; Apply and Reset to center save immediately through the owner crop endpoint.
+Touch drag, keyboard arrows and position/zoom sliders offer the same bounded frame.
+Failed writes retain the previous saved thumbnail; explicit retry keeps the same
+request. Stale revisions require reload before applying a new draft. Existing
+photos need no backfill/re-upload; null crops use centered presentation until changed.
+Every cover projection and thumbnail media cache identity includes the returned
+revision, with no per-card gallery lookups. See AI/photo-ux-roadmap.md for QA gates.

@@ -124,3 +124,17 @@ covers use returned projections without per-item metadata lookup. Valid bundled
 monochrome placeholder replaces the corrupt asset; it has no database identity
 and no place in the ten-photo limit. No raw/public images, tokens/storage,
 captions/sorting or mixed-version deployment.
+
+## F015 — Persisted square thumbnail UX
+
+Status: implemented (backend #10 / frontend #13, setup-photo-ux-v2).
+
+Supersedes prior 3:2/no-crop thumbnail presentation. Use exact backend PR #11 crop
+contract, generated types, server-normalized full JPEG previews and integer square
+coordinates/revisions. Apply/reset persist independently; Cancel preserves the
+current frame and full media never changes. Touch/keyboard/slider controls are
+bounded. Revision-bearing media identities refresh all joined list covers without
+metadata N+1; old null crops remain centered until adjusted, no backfill/re-upload.
+Photo limits, privacy, idempotent uploads and unsaved setup fields remain intact.
+Mobile lists use compact square rows; desktop uses bounded square cards. Production
+still waits for reviewed physical/paired live QA; no merge/deploy in this task.

@@ -12,6 +12,8 @@ it("uploads exact native file bytes/filename and request UUID with cookie creden
     setup_id: testSetup.id,
     width: 10,
     height: 10,
+    crop: null,
+    thumbnail_revision: 0,
     thumbnail_width: 10,
     thumbnail_height: 10,
     content_type: "image/jpeg",

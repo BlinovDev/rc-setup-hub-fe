@@ -73,6 +73,7 @@ export function EditSetupPage({
     <section className="setup-editor mt-8">
       <h2 className="text-2xl font-semibold">Edit setup</h2>
       <Link to="/my/setups">Back to my setups</Link>
+      <PhotoManager key={setupId} setupId={setupId} ownerId={user.id} />
       {saved && <InlineNotice>Setup saved.</InlineNotice>}
       {update.isError && (
         <InlineNotice tone="error">
@@ -113,7 +114,6 @@ export function EditSetupPage({
           }
         }}
       />
-      <PhotoManager key={setupId} setupId={setupId} ownerId={user.id} />
       <DeleteSetupButton
         id={setupId}
         onDeleted={() => {

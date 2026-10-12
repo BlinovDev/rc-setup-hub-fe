@@ -148,7 +148,7 @@ export function DiscoveryPage() {
       {search.data && items.length === 0 && (
         <p>No public setups match these filters.</p>
       )}
-      <div className="grid gap-4 sm:grid-cols-2">
+      <div className="setup-cards">
         {items.map((item) => (
           <SetupSearchCard key={item.id} item={item} />
         ))}

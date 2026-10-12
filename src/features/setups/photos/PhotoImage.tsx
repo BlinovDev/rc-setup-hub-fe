@@ -1,9 +1,6 @@
 import { useEffect, useRef, useState } from "react";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
 import type { components } from "../../../api/generated/schema";
-import { currentUserOptions } from "../../auth/queries";
-import { detailKey, withSession } from "../queries";
-import { getPhotoImage } from "./api";
+import { usePhotoMedia } from "./usePhotoMedia";
 import { SetupError } from "../api";
 export const placeholderPath = "/images/setup-photo-placeholder.webp";
 function BlobImage({
@@ -11,11 +8,15 @@ function BlobImage({
   alt,
   className,
   onError,
+  width,
+  height,
 }: {
   blob: Blob;
   alt: string;
   className: string;
   onError: () => void;
+  width: number;
+  height: number;
 }) {
   const image = useRef<HTMLImageElement>(null);
   useEffect(() => {
@@ -33,6 +34,8 @@ function BlobImage({
       ref={image}
       alt={alt}
       className={className}
+      width={width}
+      height={height}
       loading="lazy"
       onError={onError}
     />
@@ -47,14 +50,13 @@ export function PhotoImage({
   alt: string;
   thumbnail?: boolean;
 }) {
-  const client = useQueryClient();
-  const session = useQuery(currentUserOptions);
   const container = useRef<HTMLDivElement>(null);
   const [visible, setVisible] = useState(
     typeof IntersectionObserver === "undefined",
   );
   const [brokenId, setBrokenId] = useState<string>();
-  const broken = brokenId === photo?.id && brokenId !== undefined;
+  const identity = `${photo?.id}-${thumbnail ? photo?.thumbnail_revision : "full"}`;
+  const broken = brokenId === identity;
   useEffect(() => {
     if (!container.current || typeof IntersectionObserver === "undefined")
       return;
@@ -70,25 +72,7 @@ export function PhotoImage({
     observer.observe(container.current);
     return () => observer.disconnect();
   }, []);
-  const image = useQuery({
-    queryKey: [
-      ...detailKey(photo?.setup_id ?? "none"),
-      "media",
-      session.data?.id,
-      photo?.id,
-      thumbnail,
-    ],
-    queryFn: ({ signal }) =>
-      withSession(client, () =>
-        getPhotoImage(photo!.setup_id, photo!.id, thumbnail, signal),
-      ),
-    enabled: !!photo && !!session.data && (visible || !thumbnail),
-    retry: false,
-    staleTime: 0,
-    gcTime: 0,
-    refetchOnMount: "always",
-    refetchOnWindowFocus: "always",
-  });
+  const image = usePhotoMedia(photo, thumbnail, visible || !thumbnail);
   const denied =
     image.error instanceof SetupError &&
     [401, 403, 404].includes(image.error.status);
@@ -99,11 +83,13 @@ export function PhotoImage({
       ) : photo && !image.isError && !broken ? (
         image.data ? (
           <BlobImage
-            key={`${photo.id}-${thumbnail}`}
+            key={identity}
             blob={image.data}
             alt={alt}
             className={thumbnail ? "photo-thumb" : "photo-enlarged"}
-            onError={() => setBrokenId(photo.id)}
+            width={thumbnail ? photo.thumbnail_width : photo.width}
+            height={thumbnail ? photo.thumbnail_height : photo.height}
+            onError={() => setBrokenId(identity)}
           />
         ) : (
           <span>Loading photo…</span>
@@ -117,7 +103,7 @@ export function PhotoImage({
                 ? "Photo could not be displayed"
                 : "No setup photo — placeholder"
             }
-            className="photo-thumb"
+            className={thumbnail ? "photo-thumb" : "photo-enlarged"}
             loading="lazy"
             width={600}
             height={400}

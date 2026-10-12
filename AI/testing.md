@@ -245,3 +245,47 @@ interrupt/retry without duplicate setup/photo, real iPhone HEIC/rotated picture,
 public/friends/private and known full/thumbnail URLs/unfriend, technical edits,
 delete, persistence/restart and coherent backup/restore. Check real phone picker,
 keyboard, actual clipboard, 375px/desktop viewer/actions/focus/errors/placeholder.
+
+## Photo UX foundation verification (Issue #13, stage 1)
+
+PhotoToolbar.test.tsx covers hover/focus/tap, Escape/Close/outside/focus departure,
+focus restoration, unique hidden inputs, native-input activation, multi-select,
+non-submit controls and visible capacity. Photos.test.tsx checks edit toolbar
+ordering and preserved unsaved title alongside existing save-once/idempotency,
+failed/queued/ten-photo and decimal/spacing regressions.
+
+The reproducible photo browser gate now checks create/edit toolbar order,
+hover/focus/click dismissal and overflow at 375px/1280px, and opens the real
+browser filechooser through the paperclip rather than setting the input directly.
+Mocked HTTP only; this is not physical iPhone or live backend QA. Crop and the
+full width/orientation matrix are covered by the v2 checks below. See photo-ux-roadmap.md.
+
+## Photo UX v2 editor and responsive QA (Issue #13, stages 3–4)
+
+crop.test.ts covers integer bounds, centered odd offsets, zoom and clamping for
+3:4/9:16 portrait, square, 4:3/16:9 landscape and tiny images. CropEditor.test.tsx
+covers cookie/no-store normalized source, cancellation/no writes, focus restoration,
+object URL cleanup, exact Apply and null Reset requests, reopened persisted frame,
+unsaved title preservation, stale revision explicit reload and bounded explicit
+retry. PhotosLists.test.tsx checks same-ID revision reload/broken-image recovery on
+Home/My/profile without gallery metadata lookups. Existing upload/cover/delete/
+privacy/session/cancelled-query/decimal/spacing tests remain mandatory.
+
+Browser gate now runs 320/375/390/768/1280 plus 640x360 short landscape. It exercises
+native chooser, opaque local HEIC selection with mocked normalized JPEG, create
+once/partial retry, editor mouse and CDP touch emulation, arrows/sliders, saved frame
+versus preview integer coordinates, same-ID blob refresh, failed apply retention/
+retry, reload/re-edit/cancel/focus, all six shape fixtures, long/unbroken titles,
+zero-photo placeholder, 500 fallback and 404 unavailable, bounded square covers,
+all list projections/no metadata N+1, gallery modal focus and cover/final deletion.
+Mock thumbnail JPEGs use browser canvas, not production ImageMagick. Interior colors
+allow 64/255 channel tolerance; tiny validates geometry only. Normalized fixture
+provenance is in scripts/fixtures/photo-shapes/README.md. CI uploads after screenshots
+as photo-qa-screenshots. Baseline before screenshots were not captured.
+
+Local Chromium unavailable (truncated download); GitHub photo-browser supplies
+reproducible emulated Chromium evidence on exact PR heads. Stage 3 CI run
+38298547952 passed on 525b57b5476869a6ada4491828a7bf3cd6c884c4; final matrix evidence
+belongs in PR #14. Physical iOS/Android picker/touch/raw HEIC/EXIF and paired live
+privacy/reload/races/actual server resampling remain pending; no mocked result is
+claimed as live/physical QA. Backend PR #11 CI owns DB/checksum/native decoder tests.

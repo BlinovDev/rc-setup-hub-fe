@@ -314,3 +314,9 @@ Minimum E2E path:
 Checkpoint:
 
 A production build can be deployed and the primary POC path passes end-to-end.
+
+## Post-POC photo UX v2 (Issue #13)
+
+The four-stage feature roadmap and per-stage gates are in AI/photo-ux-roadmap.md.
+It supersedes prior 3:2/no-crop presentation while retaining natural full images.
+Automated implementation is reviewed through PR #14; physical/live paired QA is pending.

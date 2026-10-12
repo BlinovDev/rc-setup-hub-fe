@@ -6,6 +6,7 @@ import type { components } from "../../../api/generated/schema";
 export const acceptedPhotoTypes =
   ".jpg,.jpeg,.png,.webp,.heic,.heif,image/jpeg,image/png,image/webp,image/heic,image/heif";
 import type { PhotoQueue } from "./usePhotoQueue";
+import { PhotoToolbar } from "./PhotoToolbar";
 function Preview({ file }: { file: File }) {
   const image = useRef<HTMLImageElement>(null);
   const [broken, setBroken] = useState(false);
@@ -36,12 +37,16 @@ export function PhotoPicker({
   disabled = false,
   onUpload,
   onRetry,
+  saved = false,
+  countStatus = "loaded",
 }: {
   queue: PhotoQueue;
   stored?: components["schemas"]["SetupPhoto"][];
   disabled?: boolean;
   onUpload?: () => void;
   onRetry?: (id: string) => void;
+  saved?: boolean;
+  countStatus?: "loaded" | "loading" | "unavailable";
 }) {
   const count =
     new Set([
@@ -53,25 +58,13 @@ export function PhotoPicker({
       className="space-y-3 rounded border p-4"
       aria-label="Photo upload queue"
     >
-      <h3 className="font-semibold">Optional photos</h3>
-      <p>
-        JPEG, PNG, WebP or HEIC/HEIF · 25 MiB per file · up to 10 photos. The
-        server converts the first still image, corrects orientation and removes
-        metadata.
-      </p>
-      <p>{count}/10 photo slots used (saved and queued).</p>
-      <label htmlFor="setup-photo-files">Choose photos</label>
-      <input
-        id="setup-photo-files"
-        type="file"
+      <PhotoToolbar
+        count={count}
+        saved={saved}
+        countStatus={countStatus}
         accept={acceptedPhotoTypes}
-        multiple
         disabled={disabled || queue.busy}
-        onChange={(e) => {
-          queue.select(Array.from(e.target.files ?? []), stored);
-          e.target.value = "";
-        }}
-        className="max-w-full"
+        onSelect={(files) => queue.select(files, stored)}
       />
       {queue.error && <InlineNotice tone="error">{queue.error}</InlineNotice>}
       <ul className="photo-queue">

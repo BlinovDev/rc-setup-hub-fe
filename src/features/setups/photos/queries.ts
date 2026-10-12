@@ -6,7 +6,14 @@ import {
 } from "@tanstack/react-query";
 import { currentUserOptions } from "../../auth/queries";
 import { detailKey, mineKey, userSetupsKey, withSession } from "../queries";
-import { chooseCover, deletePhoto, getPhotos, uploadPhoto } from "./api";
+import {
+  chooseCover,
+  cropPhoto,
+  deletePhoto,
+  getPhotos,
+  uploadPhoto,
+} from "./api";
+import type { components } from "../../../api/generated/schema";
 import { SetupError } from "../api";
 export const photosKey = (id: string) => [...detailKey(id), "photos"] as const;
 export async function refreshPhotos(
@@ -59,4 +66,22 @@ export function usePhotoActions(id: string, ownerId: string) {
     },
   });
   return { upload, mutation };
+}
+export function useCropPhoto(id: string, ownerId: string) {
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      photoId,
+      body,
+    }: {
+      photoId: string;
+      body: components["schemas"]["PhotoCropUpdate"];
+    }) => withSession(client, () => cropPhoto(id, photoId, body)),
+    retry: false,
+    onSuccess: () => refreshPhotos(client, id, ownerId),
+    onError: async (error) => {
+      if (error instanceof SetupError && [404, 409].includes(error.status))
+        await refreshPhotos(client, id, ownerId);
+    },
+  });
 }
