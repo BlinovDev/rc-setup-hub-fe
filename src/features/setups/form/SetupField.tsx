@@ -10,7 +10,7 @@ export function SetupField({
   numeric = false,
   multiline = false,
 }: {
-  name: FieldPathByValue<SetupFormValues, string>;
+  name: FieldPathByValue<SetupFormValues, string | undefined>;
   label: string;
   numeric?: boolean;
   multiline?: boolean;

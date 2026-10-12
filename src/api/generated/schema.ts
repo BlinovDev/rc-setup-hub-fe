@@ -432,6 +432,23 @@ export interface components {
             toe_deg?: number | null;
             /** @description Omitted/null/empty lists are omitted in responses. */
             link_lengths?: components["schemas"]["LinkLength"][] | null;
+            /** @description Optional top arm spacer totals, symmetric across left/right. */
+            top_arm_spacing?: components["schemas"]["ArmSpacing"] | null;
+            /** @description Optional lower arm spacer totals, symmetric across left/right. */
+            lower_arm_spacing?: components["schemas"]["ArmSpacing"] | null;
+        };
+        /**
+         * @description Total spacer thickness ahead of and behind one arm relative to vehicle direction, in millimetres. Either value may be unknown. Both omitted/null values omit the block and parents introduced solely for it. No defaults, rounding, shim calculator or left/right asymmetry. Available independently for either arm on either axle. Explicit zero is preserved.
+         * @example {
+         *       "front_mm": 0,
+         *       "rear_mm": 5.2
+         *     }
+         */
+        ArmSpacing: {
+            /** @description Finite nonnegative total ahead of the arm; omitted/null means unknown. */
+            front_mm?: number | null;
+            /** @description Finite nonnegative total behind the arm; omitted/null means unknown. */
+            rear_mm?: number | null;
         };
         LinkLength: {
             /** @description Trimmed non-empty name without null bytes. */

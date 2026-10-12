@@ -112,3 +112,18 @@ Do not make frontend and backend infer incompatible versions of a contract.
 Authenticated desktop pages retain the existing header identity and sign-out controls and add a footer with YouTube, TikTok and Instagram icon links. Social links use canonical profile URLs without tracking parameters, have accessible names, and open in a new tab with opener isolation.
 
 On mobile, the closed header shows the optional avatar and an account menu button. The account drawer shows avatar/nickname at the top, reserves the middle for future navigation, and places social links followed by Sign out at the bottom. Existing Home/My setups/Friends/Settings bottom navigation stays in place. The modal drawer supports explicit close, Escape, keyboard focus containment and return to the opener; sign-out pending/error/retry behavior remains unchanged.
+
+## Optional arm spacer totals (Issue #9)
+
+Front/rear suspension each independently offer optional top and lower arm
+spacing. No blocks or numeric defaults are present on new/legacy forms. Drivers
+add/remove at most one block per arm/axle and record total spacer thickness ahead
+of/behind the arm in vehicle direction, symmetric across left/right. No shim
+calculator, chassis defaults or asymmetric fields are added.
+
+Blank means unknown; either position may be known independently. Finite
+nonnegative dot/comma values are sent as JSON numbers without rounding; explicit
+zero survives save/detail/edit. Both blank values omit the block and otherwise
+empty parents. Removing/clearing preserves sibling blocks and other technical
+measurements; title-only edits preserve all recorded totals. Detail identifies
+axle, arm and ahead/behind position, showing mm only for recorded values.

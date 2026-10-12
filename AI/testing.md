@@ -162,3 +162,37 @@ RTL/MSW regressions use typing and paste for create/update, all six angles and f
 QA checklist at desktop and ~375px: create with angles `-1.5`, `6.8`, `0`, and links `16.2`; repeat with comma equivalents. Save, open detail, reopen edit, change only the title and save/reopen again. Update an angle to `-0.25`, a link to `0.25`, clear an optional angle, and add/remove front/rear links. Confirm invalid `16,2.3`, zero/negative/blank lengths cannot save and retained values remain editable. Check real mobile keyboard locale/decimal key, typing and actual clipboard paste separately from desktop/mobile-size browser emulation. Live backend persistence and real-device QA must be reported explicitly; mocked API tests alone do not prove database persistence.
 
 Implementation browser checkpoint: headless Chromium with mocked HTTP passed the create/detail/edit/save/reopen flow at 375px and 1280px for both separators, including malformed/zero-length blocking and dynamic link rows. Sequential key input was exercised; inserted text simulated pasted text without claiming an OS-clipboard test. Before the fix, dot decimals submitted successfully and comma decimals failed validation; the originally reported dot rejection was not reproduced. Physical iOS/Android keyboards, actual clipboard paste and live backend/database persistence remain pending QA. No merge or deployment was performed.
+
+## Arm spacing regressions (Issue #9)
+
+Unit coverage in form/armSpacing.test.ts exercises both arms/both axles/both
+positions: finite nonnegative dot/comma fractions, finer precision, zero versus
+blank, partial/all-zero hydration, empty/null/removed blocks and parent pruning,
+legacy data, sibling/measurement preservation, negative/non-finite/malformed
+rejection. Existing decimal, positive link/oil and signed-angle regressions stay
+required. RTL/MSW ArmSpacing.test.tsx covers optional initial/add/remove/re-add,
+blank saving, typed/pasted create numeric payloads, detail/reopen, title-only
+preservation, clear/remove/update and associated invalid-input errors/focus with
+no POST/PATCH writes. TechnicalData.armSpacing.test.tsx covers legacy, empty/null
+blocks, partial unknown values and all-zero detail. These use mocked HTTP, not
+live database persistence or physical devices.
+
+Use Node 24: npm ci; npm run api:generate; npm run format:check; npm run lint;
+npm run typecheck; npm test -- --run; npm run build. After committing the generated
+types, regenerate again and require no diff. Compare api/openapi.yaml bytes with
+backend PR #4 head 7393a6adf0fd743f896d64be2e4870cbbb298683.
+
+Browser checkpoint in this implementation runtime was blocked: Chromium was
+installed but could not launch because Unix socket creation returned Operation
+not permitted. No 375px/desktop browser geometry result is claimed. RTL/MSW
+typing/paste tests passed; physical keyboard/OS clipboard and live DB QA remain
+pending.
+
+For separately authorized paired staging QA: open old setup without blocks;
+add front top 0/5.2 and independent front lower/rear lower, optional rear top;
+save/detail/reopen, title-only save/reopen, dot/comma/fine decimals, both zeros
+and partial unknown values; remove one block/clear one position, check retained
+siblings and old measurements. Block negative/malformed values with clear errors
+and no writes. Check 375px/desktop overflow, label/input/action overlap, fixed
+save/nav reachability and physical mobile decimal keyboard/actual paste.
+Record the explicit compatible BE/FE SHA pair; mocked HTTP is not live QA.

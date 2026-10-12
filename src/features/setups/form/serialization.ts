@@ -1,6 +1,7 @@
 import type { components } from "../../../api/generated/schema";
 import {
   parseOptionalNumber,
+  parseArmSpacingNumber,
   parseSuspensionNumber,
   type SetupFormValues,
 } from "./formSchema";
@@ -12,7 +13,16 @@ const numberInput = (value: number | null | undefined) =>
   value == null ? "" : String(value);
 
 export function setupToForm(setup?: Schemas["Setup"]): SetupFormValues {
+  const spacing = (value?: Schemas["ArmSpacing"] | null) =>
+    value == null || (value.front_mm == null && value.rear_mm == null)
+      ? undefined
+      : {
+          front_mm: numberInput(value.front_mm),
+          rear_mm: numberInput(value.rear_mm),
+        };
   const axle = (value?: Schemas["AxleSuspension"] | null) => ({
+    top_arm_spacing: spacing(value?.top_arm_spacing),
+    lower_arm_spacing: spacing(value?.lower_arm_spacing),
     camber_deg: numberInput(value?.camber_deg),
     caster_deg: numberInput(value?.caster_deg),
     toe_deg: numberInput(value?.toe_deg),
@@ -52,6 +62,16 @@ export function serializeData(values: SetupFormValues): Schemas["SetupDataV1"] {
     value: SetupFormValues["front"],
   ): Schemas["AxleSuspension"] | undefined {
     const result: Schemas["AxleSuspension"] = {};
+    for (const arm of ["top_arm_spacing", "lower_arm_spacing"] as const) {
+      const block = value[arm];
+      if (!block) continue;
+      const totals: Schemas["ArmSpacing"] = {};
+      for (const position of ["front_mm", "rear_mm"] as const) {
+        const number = parseArmSpacingNumber(block[position]);
+        if (number !== undefined) totals[position] = number;
+      }
+      if (Object.keys(totals).length) result[arm] = totals;
+    }
     for (const key of ["camber_deg", "caster_deg", "toe_deg"] as const) {
       const number = parseSuspensionNumber(value[key]);
       if (number !== undefined) result[key] = number;

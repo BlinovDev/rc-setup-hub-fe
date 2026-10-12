@@ -98,3 +98,15 @@ The backend repository `BlinovDev/rc-setup-hub` is the sole GitHub Actions coord
 Every server release is a combined pair of explicit backend and frontend commit SHAs. The coordinator validates both repositories, checks their OpenAPI compatibility, builds the frontend for the selected environment and packages it with the Go server and migrator.
 
 Staging and production are rebuilt separately. Production accepts only SHAs reachable from each repository's `main`.
+
+## F013 — Optional symmetric arm spacer totals
+
+Status: accepted (Issues backend #3 / frontend #9, arm-spacing-v1).
+
+Consume backend PR #4's exact additive schema-v1 contract. Model optional
+top/lower arm blocks on either axle as form UI state; generated ArmSpacing types
+own transport. Preserve explicit zero, decimals and partial unknown values;
+prune empty/removed blocks without defaults. Reuse suspension dot/comma parsing
+with a nonnegative bound, keeping angle/link/oil rules unchanged. No shim
+calculator, chassis rules or left/right asymmetry. Deploy only a compatible
+explicit BE/FE SHA pair after separate authorization.

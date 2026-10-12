@@ -48,6 +48,22 @@ export function TechnicalData({
         ) ?? []),
       ],
     });
+    for (const arm of ["top_arm_spacing", "lower_arm_spacing"] as const) {
+      const spacing = suspension?.[arm];
+      sections.push({
+        title: `${label} ${arm === "top_arm_spacing" ? "top" : "lower"} arm spacing`,
+        values: [
+          [
+            "Front spacers (ahead of arm)",
+            spacing?.front_mm == null ? undefined : `${spacing.front_mm} mm`,
+          ],
+          [
+            "Rear spacers (behind arm)",
+            spacing?.rear_mm == null ? undefined : `${spacing.rear_mm} mm`,
+          ],
+        ],
+      });
+    }
     sections.push({
       title: `${label} shocks`,
       values: [

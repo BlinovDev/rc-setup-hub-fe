@@ -260,3 +260,26 @@ Accept invalidates the detail family; accepted removal cancels then removes it s
 Render only the returned array, with no visibility matrix/filtering or merges with mine/search. Cards use historical chassis, and neither fetch nor seed individual detail caches. Profile, discovery, detail and friendship identities use safe nickname/avatar links.
 
 Accept invalidates the specific other user’s list. Accepted removal (including stale 404) cancels and removes that list before friendship refresh, retaining detail cleanup. Stale Accept 404/409 cancels/removes the affected list conservatively; normal pending delete preserves it. Create/patch invalidate the returned owner’s list; delete identifies the owner from cached detail or current-user cache. All user-list operations are scoped and leave unrelated user lists intact.
+
+## Arm spacing contract (arm-spacing-v1)
+
+The committed contract is copied byte-for-byte from backend PR #4
+(https://github.com/BlinovDev/rc-setup-hub/pull/4), head
+`7393a6adf0fd743f896d64be2e4870cbbb298683`. Its SHA-256 is
+`8c844aab69aa2c04144647e756a59e4cf2931fd5396174f196aaabd932543fce`.
+Generated types include ArmSpacing and optional top_arm_spacing/lower_arm_spacing
+on either AxleSuspension. Backend Issue #3 owns validation/persistence; frontend
+Issue #9 consumes the exact feature-PR contract without requiring a merge.
+
+Example: `{"suspension":{"front":{"top_arm_spacing":{"front_mm":0,
+"rear_mm":5.2}}}}`. Outer front/rear identifies axle; inner front/rear is spacer
+position in vehicle direction. Fields are optional nullable finite >=0 totals
+in mm. Form strings reuse suspension dot/comma parsing and serialize numbers
+only. Unknown/empty/removed blocks are pruned, zero retained. Hydration restores
+partial/all-zero blocks without defaults; existing v1 data remains supported.
+PATCH still replaces the full technical document, preserving untouched fields.
+
+New spacing writes require the updated backend. For separately authorized QA,
+select an explicit compatible backend/FE SHA pair and compare OpenAPI bytes.
+Merge/release backend first or as a compatible pair; do not deploy this frontend
+against the old backend. No merge/deploy is authorized by this task.

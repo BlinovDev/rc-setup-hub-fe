@@ -1,14 +1,15 @@
 import { Button } from "../../../shared/components/Button";
-import { useFieldArray, useFormContext } from "react-hook-form";
+import { useFieldArray, useFormContext, useWatch } from "react-hook-form";
 import type { SetupFormValues } from "./formSchema";
 import { SetupField } from "./SetupField";
 
 export function SuspensionSection({ side }: { side: "front" | "rear" }) {
-  const { control } = useFormContext<SetupFormValues>();
+  const { control, setValue, clearErrors } = useFormContext<SetupFormValues>();
   const { fields, append, remove } = useFieldArray({
     control,
     name: `${side}.link_lengths`,
   });
+  const spacing = useWatch({ control, name: side });
   const label = side === "front" ? "Front" : "Rear";
   return (
     <fieldset id={`setup-${side}`} className="space-y-3 rounded border p-4">
@@ -28,6 +29,54 @@ export function SuspensionSection({ side }: { side: "front" | "rear" }) {
         label={`${label} toe (degrees)`}
         numeric
       />
+      <p>
+        Arm spacers are totals ahead of and behind an arm, relative to vehicle
+        direction. The same totals apply on both left and right sides.
+      </p>
+      {(["top_arm_spacing", "lower_arm_spacing"] as const).map((arm) => {
+        const armLabel = arm === "top_arm_spacing" ? "top" : "lower";
+        const name = `${side}.${arm}` as const;
+        return spacing[arm] ? (
+          <fieldset key={arm} className="min-w-0 space-y-2 rounded border p-3">
+            <legend className="font-semibold">
+              {label} {armLabel} arm spacing
+            </legend>
+            <SetupField
+              name={`${name}.front_mm`}
+              label={`${label} ${armLabel} arm — Front spacers (mm)`}
+              numeric
+            />
+            <SetupField
+              name={`${name}.rear_mm`}
+              label={`${label} ${armLabel} arm — Rear spacers (mm)`}
+              numeric
+            />
+            <Button
+              type="button"
+              onClick={() => {
+                setValue(name, undefined, { shouldDirty: true });
+                clearErrors(name);
+              }}
+            >
+              Remove {label.toLowerCase()} {armLabel} arm spacing
+            </Button>
+          </fieldset>
+        ) : (
+          <Button
+            key={arm}
+            type="button"
+            onClick={() =>
+              setValue(
+                name,
+                { front_mm: "", rear_mm: "" },
+                { shouldDirty: true },
+              )
+            }
+          >
+            Add {armLabel} arm spacing — {label.toLowerCase()} suspension
+          </Button>
+        );
+      })}
       <h3>{label} link lengths</h3>
       {fields.map((field, index) => (
         <div key={field.id} className="space-y-2 rounded border p-3">
