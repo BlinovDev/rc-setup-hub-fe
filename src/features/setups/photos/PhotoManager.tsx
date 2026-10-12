@@ -29,9 +29,18 @@ export function PhotoManager({
     useState<components["schemas"]["SetupPhoto"]>();
   const offered = useRef(new Set<string>());
   const opener = useRef<HTMLButtonElement | null>(null);
+  const manager = useRef<HTMLElement>(null);
   useEffect(() => {
-    if (selected || !photos.isSuccess) return;
-    opener.current?.focus();
+    if (selected) return;
+    if (opener.current) {
+      if (opener.current.isConnected) opener.current.focus();
+      else
+        manager.current
+          ?.querySelector<HTMLButtonElement>("button:not(:disabled)")
+          ?.focus();
+      opener.current = null;
+    }
+    if (!photos.isSuccess) return;
     const next = queue.items.find(
       (item) =>
         item.state === "uploaded" &&
@@ -68,7 +77,11 @@ export function PhotoManager({
   }
   const pending = actions.mutation.isPending || queue.busy || !!selected;
   return (
-    <section className="space-y-4" aria-label="Manage setup photos">
+    <section
+      ref={manager}
+      className="space-y-4"
+      aria-label="Manage setup photos"
+    >
       <PhotoPicker
         saved
         countStatus={

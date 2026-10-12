@@ -201,10 +201,17 @@ it("retains failed draft, retries exactly once and requires explicit reload for 
   expect(photo.crop).toEqual({ x: 0, y: 20, size: 250 });
 });
 it("removes the normalized preview and blocks apply when a crop races with deletion", async () => {
+  let deleted = false;
   server.use(
+    http.get(`${apiUrl}/api/v1/setups/${testSetup.id}/photos`, () =>
+      HttpResponse.json(deleted ? [] : [photo]),
+    ),
     http.put(
       `${apiUrl}/api/v1/setups/${testSetup.id}/photos/${photo.id}/crop`,
-      () => HttpResponse.json({ error: "deleted" }, { status: 404 }),
+      () => {
+        deleted = true;
+        return HttpResponse.json({ error: "deleted" }, { status: 404 });
+      },
     ),
   );
   const user = await open();
@@ -219,4 +226,8 @@ it("removes the normalized preview and blocks apply when a crop races with delet
     screen.getByRole("button", { name: "Apply thumbnail" }),
   ).toBeDisabled();
   expect(URL.revokeObjectURL).toHaveBeenCalled();
+  await user.click(screen.getByRole("button", { name: "Cancel adjustment" }));
+  await waitFor(() =>
+    expect(screen.getByRole("button", { name: "Choose photos" })).toHaveFocus(),
+  );
 });
