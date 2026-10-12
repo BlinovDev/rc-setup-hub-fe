@@ -5,6 +5,7 @@ import { apiUrl } from "../../../api/config";
 import { server } from "../../../test/server";
 import { testSetup, testUser } from "../testFixtures";
 import { mockActiveCatalog, renderSetupRoute } from "../testUtils";
+import { mineKey, userSetupsKey } from "../queries";
 const cover = {
   id: "11111111-1111-4111-8111-111111111111",
   setup_id: testSetup.id,
@@ -122,3 +123,59 @@ it("list thumbnail 401 removes protected list UI", async () => {
     expect(screen.queryByText(testSetup.title)).not.toBeInTheDocument(),
   );
 });
+it.each(["/", "/my/setups", `/users/${testUser.id}`])(
+  "refreshes same-photo revisions and recovers a broken old thumbnail on %s without extra metadata reads",
+  async (path) => {
+    mockActiveCatalog();
+    let revision = 0,
+      reads = 0;
+    const full = () => ({
+      ...testSetup,
+      cover_photo: {
+        ...cover,
+        thumbnail_revision: revision,
+        crop: revision ? { x: 100, y: 0, size: 400 } : null,
+      },
+    });
+    server.use(
+      http.get(`${apiUrl}/api/v1/me/setups`, () => HttpResponse.json([full()])),
+      http.get(`${apiUrl}/api/v1/users/${testUser.id}`, () =>
+        HttpResponse.json(testUser),
+      ),
+      http.get(`${apiUrl}/api/v1/users/${testUser.id}/setups`, () =>
+        HttpResponse.json([full()]),
+      ),
+      http.get(`${apiUrl}/api/v1/friendships`, () =>
+        HttpResponse.json({ incoming: [], outgoing: [], accepted: [] }),
+      ),
+      http.get(`${apiUrl}/api/v1/setups/search`, () =>
+        HttpResponse.json({
+          items: [{ ...full(), owner: testUser }],
+          next_cursor: null,
+        }),
+      ),
+      http.get(`${apiUrl}/api/v1/setups/:id/photos/:photoId/thumbnail`, () => {
+        reads++;
+        return new HttpResponse(new Uint8Array([revision]), {
+          headers: { "Content-Type": "image/jpeg" },
+        });
+      }),
+    );
+    const { client } = renderSetupRoute(path);
+    const image = await screen.findByAltText(`Cover of ${testSetup.title}`);
+    fireEvent.error(image);
+    await screen.findByAltText("Photo could not be displayed");
+    revision = 1;
+    await client.invalidateQueries({
+      queryKey:
+        path === "/my/setups"
+          ? mineKey
+          : path === "/"
+            ? ["setups", "search"]
+            : userSetupsKey(testUser.id),
+    });
+    await screen.findByAltText(`Cover of ${testSetup.title}`);
+    await waitFor(() => expect(reads).toBe(2));
+    expect(URL.revokeObjectURL).toHaveBeenCalled();
+  },
+);

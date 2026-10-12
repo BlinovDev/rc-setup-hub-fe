@@ -8,11 +8,15 @@ function BlobImage({
   alt,
   className,
   onError,
+  width,
+  height,
 }: {
   blob: Blob;
   alt: string;
   className: string;
   onError: () => void;
+  width: number;
+  height: number;
 }) {
   const image = useRef<HTMLImageElement>(null);
   useEffect(() => {
@@ -30,6 +34,8 @@ function BlobImage({
       ref={image}
       alt={alt}
       className={className}
+      width={width}
+      height={height}
       loading="lazy"
       onError={onError}
     />
@@ -81,6 +87,8 @@ export function PhotoImage({
             blob={image.data}
             alt={alt}
             className={thumbnail ? "photo-thumb" : "photo-enlarged"}
+            width={thumbnail ? photo.thumbnail_width : photo.width}
+            height={thumbnail ? photo.thumbnail_height : photo.height}
             onError={() => setBrokenId(identity)}
           />
         ) : (
@@ -95,7 +103,7 @@ export function PhotoImage({
                 ? "Photo could not be displayed"
                 : "No setup photo — placeholder"
             }
-            className="photo-thumb"
+            className={thumbnail ? "photo-thumb" : "photo-enlarged"}
             loading="lazy"
             width={600}
             height={400}

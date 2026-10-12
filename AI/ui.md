@@ -266,14 +266,14 @@ responses; removal of a queued item is a different action. Photo query refresh
 does not remount/reset the setup form. Cancellation focuses the restored delete
 button. Detail gallery is read-only; non-owner receives no management controls.
 
-All cards reserve 3:2 thumbnail space, lazy load, and use a consistent optimized
+All cards reserve 1:1 thumbnail space, lazy load, and use a consistent optimized
 600x400 bundled fallback (public/images/setup-photo-placeholder.webp). It is a
 verified equivalent generated to replace the corrupt supplied PNG, not a
 recovered original or an uploaded photo. Permission/session failures show explicit
 unavailable state instead of a success-looking fallback. The enlarged native
 dialog supports Close/Escape, previous/next, focus containment/restoration and
-mobile/desktop wrapping. No photo captions, manual sorting, crop/editor or new
-permissions are introduced.
+mobile/desktop wrapping. Issue #13 adds thumbnail framing only; no photo captions,
+manual sorting, destructive full-photo cropping or new permissions are introduced.
 
 ## Photo toolbar foundation (Issue #13)
 
@@ -285,6 +285,17 @@ departure. Escape/Close restores its trigger focus. Count/capacity and actionabl
 queue/upload failures remain outside the panel. Saved-photo actions follow the
 compact toolbar; photo refresh leaves the setup form mounted.
 
-The approved square crop/editor supersedes Issue #11's no-crop and 3:2 direction
-once stages 2–4 land. Existing 3:2 frames are still implemented in this foundation.
-Do not mark the overall photo UX complete before AI/photo-ux-roadmap.md gates pass.
+Issue #13 supersedes Issue #11's no-crop/3:2 direction. Mobile Home/My/profile
+cards use an 88px square beside flexible wrapping metadata/actions. At 768px and
+above, a bounded grid uses cards up to 360px and covers up to 300px. Gallery/saved
+and queue thumbnails reserve square slots. Existing valid 600x400 WebP is center
+fitted into square frames; full viewer uses natural dimensions and contain fitting.
+
+The modal crop editor uses the authorized normalized JPEG for all formats, including
+HEIC. Drag/touch pans, arrows move one pixel (Shift ten), zoom changes integer size,
+and horizontal/vertical sliders offer drag alternatives. Apply/Reset persist
+immediately; Cancel/Escape sends no mutation and restores the saved-photo trigger.
+Pending writes suppress duplicate requests and delay dismissal until their result
+is known. Errors show explicit retry; 409 requires Reload crop (discard draft),
+404 disables Apply. Short screens scroll within the dialog; native modal focus plus
+Tab/Shift+Tab handling contains keyboard focus. Full photos are never cropped.

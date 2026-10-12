@@ -92,6 +92,9 @@ afterEach(() => {
 async function open() {
   const user = userEvent.setup();
   renderSetupRoute(`/my/setups/${testSetup.id}/edit`);
+  const title = await screen.findByLabelText("Title");
+  await user.clear(title);
+  await user.type(title, "Unsaved crop title");
   await user.click(
     await screen.findByRole("button", { name: "Adjust thumbnail 1" }),
   );
@@ -113,6 +116,7 @@ it("cancels without mutation, restores focus, disposes normalized media and pres
   fireEvent.change(screen.getByLabelText("Zoom"), { target: { value: "2" } });
   await user.keyboard("{Escape}");
   expect(writes).toEqual([]);
+  expect(screen.getByLabelText("Title")).toHaveValue("Unsaved crop title");
   await waitFor(() =>
     expect(
       screen.getByRole("button", { name: "Adjust thumbnail 1" }),
@@ -142,6 +146,7 @@ it("applies integer keyboard/slider coordinates and reopens the persisted frame;
       screen.queryByRole("dialog", { name: "Adjust thumbnail" }),
     ).not.toBeInTheDocument(),
   );
+  expect(screen.getByLabelText("Title")).toHaveValue("Unsaved crop title");
   await user.click(screen.getByRole("button", { name: "Adjust thumbnail 1" }));
   const img = await screen.findByAltText("Normalized photo crop preview");
   Object.defineProperties(img, {

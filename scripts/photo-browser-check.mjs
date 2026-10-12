@@ -1,6 +1,6 @@
 import { chromium } from "playwright";
 import { spawn } from "node:child_process";
-import { readFile } from "node:fs/promises";
+import { mkdir, readFile } from "node:fs/promises";
 import assert from "node:assert/strict";
 const server = spawn(
   process.execPath,
@@ -13,6 +13,30 @@ const server = spawn(
 const placeholder = await readFile(
   "public/images/setup-photo-placeholder.webp",
 );
+await mkdir("artifacts/photo-qa", { recursive: true });
+const shapes = await Promise.all(
+  [
+    ["portrait-3-4", 300, 400],
+    ["portrait-9-16", 900, 1600],
+    ["square", 400, 400],
+    ["landscape-4-3", 400, 300],
+    ["landscape-16-9", 1600, 900],
+    ["tiny", 7, 4],
+  ].map(async ([name, width, height]) => ({
+    name,
+    width,
+    height,
+    bytes: await readFile(`scripts/fixtures/photo-shapes/${name}.jpg`),
+  })),
+);
+const center = (p) => {
+  const size = Math.min(p.width, p.height);
+  return {
+    x: Math.floor((p.width - size) / 2),
+    y: Math.floor((p.height - size) / 2),
+    size,
+  };
+};
 let browser;
 try {
   for (let attempt = 0; attempt < 100; attempt++) {
@@ -25,9 +49,17 @@ try {
     }
   }
   browser = await chromium.launch({ headless: true });
-  for (const width of [375, 1280]) {
+  for (const [width, height] of [
+    [320, 900],
+    [375, 900],
+    [390, 900],
+    [768, 900],
+    [1280, 900],
+    [640, 360],
+  ]) {
     const context = await browser.newContext({
-      viewport: { width, height: 900 },
+      viewport: { width, height },
+      hasTouch: width < 768,
     });
     await context.addCookies([
       {
@@ -68,21 +100,60 @@ try {
     let uploadCalls = 0;
     let fail = true;
     let cropWrites = 0;
-    const photo = (n) => ({
-      id: `11111111-1111-4111-8111-${String(n).padStart(12, "0")}`,
-      setup_id: id,
-      width: 600,
-      height: 400,
-      crop: null,
-      thumbnail_revision: 0,
-      thumbnail_width: 600,
-      thumbnail_height: 400,
-      content_type: "image/jpeg",
-      is_cover: n === 1,
-      created_at: user.created_at,
-      url: `/api/v1/setups/${id}/photos/${n}/image`,
-      thumbnail_url: `/api/v1/setups/${id}/photos/${n}/thumbnail`,
-    });
+    let cropFailure = 0;
+    let mediaFailure = 0;
+    let metadataReads = 0;
+    const mediaReads = new Map();
+    const fixtureFor = (p) =>
+      shapes[(Number(p.id.slice(-12)) - 1) % shapes.length];
+    const photo = (n) => {
+      const shape = shapes[(n - 1) % shapes.length];
+      return {
+        id: `11111111-1111-4111-8111-${String(n).padStart(12, "0")}`,
+        setup_id: id,
+        width: shape.width,
+        height: shape.height,
+        crop: center(shape),
+        thumbnail_revision: 1,
+        thumbnail_width: Math.min(shape.width, shape.height, 640),
+        thumbnail_height: Math.min(shape.width, shape.height, 640),
+        content_type: "image/jpeg",
+        is_cover: n === 1,
+        created_at: user.created_at,
+        url: `/api/v1/setups/${id}/photos/${n}/image`,
+        thumbnail_url: `/api/v1/setups/${id}/photos/${n}/thumbnail`,
+      };
+    };
+    async function thumbnailBytes(p) {
+      const jpeg = await page.evaluate(
+        async ({ source, crop }) => {
+          const image = new Image();
+          image.src = source;
+          await image.decode();
+          const canvas = document.createElement("canvas");
+          canvas.width = canvas.height = Math.min(crop.size, 640);
+          canvas
+            .getContext("2d")
+            .drawImage(
+              image,
+              crop.x,
+              crop.y,
+              crop.size,
+              crop.size,
+              0,
+              0,
+              canvas.width,
+              canvas.height,
+            );
+          return canvas.toDataURL("image/jpeg", 0.85).split(",")[1];
+        },
+        {
+          source: `data:image/jpeg;base64,${fixtureFor(p).bytes.toString("base64")}`,
+          crop: p.crop ?? center(p),
+        },
+      );
+      return Buffer.from(jpeg, "base64");
+    }
     await page.route("http://127.0.0.1:8080/**", async (route) => {
       const req = route.request(),
         path = new URL(req.url()).pathname;
@@ -152,13 +223,25 @@ try {
           };
           body = photos.at(-1);
           status = 201;
-        } else body = photos;
+        } else {
+          metadataReads++;
+          body = photos;
+        }
       } else if (path.endsWith("/crop")) {
         const target = path.split("/").at(-2);
         const update = req.postDataJSON();
         const current = photos.find((p) => p.id === target);
+        if (cropFailure) {
+          await route.fulfill({
+            status: cropFailure,
+            headers,
+            contentType: "application/json",
+            body: JSON.stringify({ error: "crop failed" }),
+          });
+          return;
+        }
         assert.equal(update.expected_revision, current.thumbnail_revision);
-        const crop = update.crop ?? { x: 100, y: 0, size: 400 };
+        const crop = update.crop ?? center(current);
         assert(
           Number.isInteger(crop.x) &&
             Number.isInteger(crop.y) &&
@@ -207,10 +290,25 @@ try {
         await route.fulfill({ status: 204, headers });
         return;
       } else if (path.endsWith("/thumbnail") || path.endsWith("/image")) {
+        const target = photos.find((p) => p.id === path.split("/").at(-2));
+        assert(target, "media must belong to an existing photo");
+        const isThumbnail = path.endsWith("/thumbnail");
+        if (mediaFailure) {
+          await route.fulfill({
+            status: mediaFailure,
+            headers,
+            contentType: "application/json",
+            body: JSON.stringify({ error: "unavailable" }),
+          });
+          return;
+        }
+        mediaReads.set(target.id, (mediaReads.get(target.id) ?? 0) + 1);
         await route.fulfill({
           headers,
-          contentType: "image/webp",
-          body: placeholder,
+          contentType: "image/jpeg",
+          body: isThumbnail
+            ? await thumbnailBytes(target)
+            : fixtureFor(target).bytes,
         });
         return;
       } else throw Error(`Unhandled ${req.method()} ${path}`);
@@ -292,7 +390,13 @@ try {
     assert.equal(creates, 0, "paperclip must not submit setup");
     await chooser.setFiles([
       { name: "first.png", mimeType: "image/png", buffer: placeholder },
-      { name: "phone.heic", mimeType: "image/heic", buffer: placeholder },
+      {
+        name: "phone.heic",
+        mimeType: "image/heic",
+        buffer: Buffer.from(
+          "opaque HEIC upload; normalized JPEG returned by mock server",
+        ),
+      },
     ]);
     await page
       .getByRole("button", { name: "Create setup", exact: true })
@@ -331,6 +435,20 @@ try {
       .click();
     const viewer = page.getByRole("dialog", { name: "Enlarged setup photo" });
     await viewer.waitFor();
+    const fullImage = viewer.getByAltText("Enlarged setup photo 1");
+    await fullImage.waitFor();
+    await fullImage.evaluate((image) => image.decode());
+    assert(
+      await fullImage.evaluate((image) => {
+        const box = image.getBoundingClientRect();
+        return (
+          Math.abs(
+            box.width / box.height - image.naturalWidth / image.naturalHeight,
+          ) < 0.01 && getComputedStyle(image).objectFit === "contain"
+        );
+      }),
+      "full viewer must keep natural aspect without crop",
+    );
     assert(
       await viewer
         .getByRole("button", { name: "Close photo" })
@@ -369,7 +487,23 @@ try {
     for (const destination of ["/", "/my/setups", `/users/${user.id}`]) {
       await page.goto("http://127.0.0.1:5173" + destination);
       await page.getByAltText(`Cover of ${setup.title}`).waitFor();
+      const frame = await page
+        .getByAltText(`Cover of ${setup.title}`)
+        .evaluate((image) => {
+          const box = image.parentElement.getBoundingClientRect();
+          return { width: box.width, height: box.height };
+        });
+      assert(
+        Math.abs(frame.width - frame.height) < 1,
+        "list cover must be square",
+      );
+      assert(frame.width <= (width < 768 ? 88 : 300) + 1, "bounded cover size");
       await geometry();
+      if (destination === "/my/setups")
+        await page.screenshot({
+          path: `artifacts/photo-qa/list-${width}x${height}.png`,
+          fullPage: true,
+        });
     }
     await page.goto(`http://127.0.0.1:5173/my/setups/${id}/edit`);
     await page
@@ -390,6 +524,218 @@ try {
     await page.goto("http://127.0.0.1:5173/my/setups");
     await page.getByAltText("No setup photo — placeholder").waitFor();
     await geometry();
+    // Every supported image shape uses server-normalized full JPEGs, never local HEIC decoding.
+    photos = shapes.map((_, i) => photo(i + 1));
+    setup = {
+      ...setup,
+      title: "Very long setup title " + "UnbrokenTitle".repeat(14),
+      cover_photo: photos[0],
+    };
+    for (let n = 0; n < shapes.length; n++) {
+      await page.goto(`http://127.0.0.1:5173/my/setups/${id}/edit`);
+      const saved = page.getByAltText(`Saved setup photo ${n + 1}`, {
+        exact: true,
+      });
+      await saved.waitFor();
+      await saved.evaluate(async (image) => {
+        if (!image.complete)
+          await new Promise((resolve, reject) => {
+            image.onload = resolve;
+            image.onerror = reject;
+          });
+      });
+      const oldSource = await saved.getAttribute("src");
+      await page
+        .getByRole("button", { name: `Adjust thumbnail ${n + 1}`, exact: true })
+        .click();
+      await cropDialog.waitFor();
+      const normalized = cropDialog.getByAltText(
+        "Normalized photo crop preview",
+      );
+      await normalized.waitFor();
+      await cropDialog.getByLabel("Zoom", { exact: true }).fill("2");
+      await geometry();
+      // Mouse/pointer pan and touch pointer pan are both dispatched through the actual handlers.
+      const preview = cropDialog.getByRole("group", {
+        name: "Square thumbnail preview",
+      });
+      await preview.scrollIntoViewIfNeeded();
+      const box = await preview.boundingBox();
+      if (width < 768) {
+        const touch = await context.newCDPSession(page);
+        await touch.send("Input.dispatchTouchEvent", {
+          type: "touchStart",
+          touchPoints: [{ x: box.x + 40, y: box.y + 40, id: 1 }],
+        });
+        await touch.send("Input.dispatchTouchEvent", {
+          type: "touchMove",
+          touchPoints: [{ x: box.x + 25, y: box.y + 30, id: 1 }],
+        });
+        await touch.send("Input.dispatchTouchEvent", {
+          type: "touchEnd",
+          touchPoints: [],
+        });
+        await touch.detach();
+      } else {
+        await page.mouse.move(box.x + 60, box.y + 60);
+        await page.mouse.down();
+        await page.mouse.move(box.x + 40, box.y + 50, { steps: 3 });
+        await page.mouse.up();
+      }
+      await preview.focus();
+      await page.keyboard.press("Shift+ArrowRight");
+      const draft = {
+        x: Number(
+          await cropDialog.getByLabel("Horizontal position").inputValue(),
+        ),
+        y: Number(
+          await cropDialog.getByLabel("Vertical position").inputValue(),
+        ),
+        size: Math.round(
+          Math.min(shapes[n].width, shapes[n].height) /
+            Number(
+              await cropDialog.getByLabel("Zoom", { exact: true }).inputValue(),
+            ),
+        ),
+      };
+      const expectedColors = await normalized.evaluate((image, crop) => {
+        const canvas = document.createElement("canvas");
+        canvas.width = canvas.height = 100;
+        const ctx = canvas.getContext("2d");
+        ctx.drawImage(
+          image,
+          crop.x,
+          crop.y,
+          crop.size,
+          crop.size,
+          0,
+          0,
+          100,
+          100,
+        );
+        return [25, 75].flatMap((x) =>
+          [25, 75].map((y) =>
+            Array.from(ctx.getImageData(x, y, 1, 1).data).slice(0, 3),
+          ),
+        );
+      }, draft);
+      await page.screenshot({
+        path: `artifacts/photo-qa/crop-${shapes[n].name}-${width}x${height}.png`,
+        fullPage: true,
+      });
+      if (n === 0) {
+        const previous = JSON.stringify(photos[n]);
+        cropFailure = 503;
+        await cropDialog
+          .getByRole("button", { name: "Apply thumbnail" })
+          .click();
+        await cropDialog
+          .getByRole("button", { name: "Retry adjustment" })
+          .waitFor();
+        assert.equal(
+          JSON.stringify(photos[n]),
+          previous,
+          "failed apply must retain saved crop",
+        );
+        cropFailure = 0;
+        await cropDialog
+          .getByRole("button", { name: "Retry adjustment" })
+          .click();
+      } else
+        await cropDialog
+          .getByRole("button", { name: "Apply thumbnail" })
+          .click();
+      await cropDialog.waitFor({ state: "hidden" });
+      assert.deepEqual(
+        photos[n].crop,
+        draft,
+        "preview coordinate frame must match persisted request",
+      );
+      await page.waitForFunction(
+        ({ alt, old }) => {
+          const image = Array.from(document.images).find((i) => i.alt === alt);
+          return (
+            image?.src !== old && image?.complete && image?.naturalWidth > 0
+          );
+        },
+        { alt: `Saved setup photo ${n + 1}`, old: oldSource },
+      );
+      assert.notEqual(
+        await saved.getAttribute("src"),
+        oldSource,
+        "same-ID thumbnail blob must refresh after crop",
+      );
+      if (n !== 5) {
+        const colors = await saved.evaluate((image) => {
+          const canvas = document.createElement("canvas");
+          canvas.width = canvas.height = 100;
+          const ctx = canvas.getContext("2d");
+          ctx.drawImage(image, 0, 0, 100, 100);
+          return [25, 75].flatMap((x) =>
+            [25, 75].map((y) =>
+              Array.from(ctx.getImageData(x, y, 1, 1).data).slice(0, 3),
+            ),
+          );
+        });
+        colors.forEach((sample, i) =>
+          sample.forEach((channel, c) =>
+            assert(
+              Math.abs(channel - expectedColors[i][c]) <= 64,
+              "preview/thumbnail JPEG color tolerance",
+            ),
+          ),
+        );
+      }
+      await page.reload();
+      await page
+        .getByRole("button", { name: `Adjust thumbnail ${n + 1}`, exact: true })
+        .click();
+      await cropDialog.waitFor();
+      assert.equal(
+        Number(await cropDialog.getByLabel("Horizontal position").inputValue()),
+        draft.x,
+      );
+      assert.equal(
+        Number(await cropDialog.getByLabel("Vertical position").inputValue()),
+        draft.y,
+      );
+      await page.keyboard.press("Escape");
+      await cropDialog.waitFor({ state: "hidden" });
+      assert(
+        await page
+          .getByRole("button", {
+            name: `Adjust thumbnail ${n + 1}`,
+            exact: true,
+          })
+          .evaluate((el) => document.activeElement === el),
+      );
+    }
+    // Cover projections need no gallery metadata calls; error and denied states reserve the same square slot.
+    setup = { ...setup, cover_photo: photos[1] };
+    for (const destination of ["/", "/my/setups", `/users/${user.id}`]) {
+      const metadataBefore = metadataReads;
+      await page.goto("http://127.0.0.1:5173" + destination);
+      const coverImage = page.getByAltText(`Cover of ${setup.title}`);
+      await coverImage.waitFor();
+      await geometry();
+      assert.equal(
+        metadataReads,
+        metadataBefore,
+        "list introduced gallery metadata N+1",
+      );
+    }
+    for (const failure of [500, 404]) {
+      mediaFailure = failure;
+      await page.reload();
+      if (failure === 500)
+        await page.getByAltText("Photo could not be displayed").waitFor();
+      else
+        await page
+          .getByText("Photo not found or unavailable.", { exact: true })
+          .waitFor();
+      await geometry();
+    }
+    mediaFailure = 0;
     console.log(
       `PASS ${width}px placeholder decode/create once/partial retry/gallery keyboard/unsaved fields/all list covers/delete fallback/final/no overflow; mocked HTTP, file-picker automation`,
     );

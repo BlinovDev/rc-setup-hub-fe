@@ -30,7 +30,7 @@ export function PhotoManager({
   const offered = useRef(new Set<string>());
   const opener = useRef<HTMLButtonElement | null>(null);
   useEffect(() => {
-    if (selected || queue.busy || !photos.isSuccess) return;
+    if (selected || !photos.isSuccess) return;
     opener.current?.focus();
     const next = queue.items.find(
       (item) =>
@@ -39,9 +39,9 @@ export function PhotoManager({
         !offered.current.has(item.photo.id),
     );
     if (!next?.photo) return;
-    offered.current.add(next.photo.id);
     const current = photos.data.find((p) => p.id === next.photo!.id);
     if (current) {
+      offered.current.add(next.photo.id);
       opener.current = document.getElementById(
         `crop-${current.id}`,
       ) as HTMLButtonElement | null;
@@ -127,6 +127,7 @@ export function PhotoManager({
           onClose={closeEditor}
           onReload={async () => {
             const result = await photos.refetch();
+            if (!result.isSuccess) throw new Error("Reload failed");
             return result.data?.find((p) => p.id === selected.id);
           }}
         />

@@ -162,8 +162,14 @@ help lives in an information popover usable by hover, focus or tap, with
 Escape, explicit close and outside dismissal. Photo writes still persist
 independently and never reset unsaved setup fields.
 
-The approved follow-up supersedes the earlier no-crop/3:2 design with persisted
-square thumbnails and an owner crop editor, while retaining natural full media.
-That portion is **pending the backend Issue #10 implementation PR and its exact
-OpenAPI contract**. This foundation does not claim crop support or square lists.
-See AI/photo-ux-roadmap.md for staged gates and remaining QA.
+The follow-up supersedes the earlier no-crop/3:2 design: every thumbnail frame
+is square. Owners adjust the square using normalized full-image pixel coordinates;
+full photos remain naturally proportioned and unchanged. Upload completion offers
+the editor without stopping subsequent queued uploads. Cancel/skip keeps the saved
+frame; Apply and Reset to center save immediately through the owner crop endpoint.
+Touch drag, keyboard arrows and position/zoom sliders offer the same bounded frame.
+Failed writes retain the previous saved thumbnail; explicit retry keeps the same
+request. Stale revisions require reload before applying a new draft. Existing
+photos need no backfill/re-upload; null crops use centered presentation until changed.
+Every cover projection and thumbnail media cache identity includes the returned
+revision, with no per-card gallery lookups. See AI/photo-ux-roadmap.md for QA gates.

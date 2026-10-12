@@ -39,6 +39,8 @@ export function CropEditor({
   const [loaded, setLoaded] = useState(false);
   const [decodeError, setDecodeError] = useState(false);
   const [reloading, setReloading] = useState(false);
+  const [reloadError, setReloadError] = useState("");
+  const [missing, setMissing] = useState(false);
   const media = usePhotoMedia(base, false);
   const mutation = useCropPhoto(photo.setup_id, ownerId);
   const lock = useRef(false);
@@ -47,7 +49,8 @@ export function CropEditor({
   const conflict =
     mutation.error instanceof SetupError && mutation.error.status === 409;
   const unavailable =
-    mutation.error instanceof SetupError && mutation.error.status === 404;
+    missing ||
+    (mutation.error instanceof SetupError && mutation.error.status === 404);
   const ready =
     loaded &&
     !decodeError &&
@@ -249,7 +252,7 @@ export function CropEditor({
               <input
                 type="range"
                 min={1}
-                max={Math.min(8, Math.min(base.width, base.height))}
+                max={Math.min(base.width, base.height)}
                 step={0.01}
                 value={Math.min(base.width, base.height) / crop.size}
                 disabled={!ready}
@@ -293,6 +296,7 @@ export function CropEditor({
         </>
       )}
       {mutation.isError && <InlineNotice tone="error">{error}</InlineNotice>}
+      {reloadError && <InlineNotice tone="error">{reloadError}</InlineNotice>}
       {pending && <p role="status">Saving thumbnail adjustment…</p>}
       <div className="flex flex-wrap gap-3">
         <Button disabled={!ready} onClick={() => void save(crop)}>
@@ -317,6 +321,7 @@ export function CropEditor({
             disabled={pending}
             onClick={async () => {
               setReloading(true);
+              setReloadError("");
               try {
                 const current = await onReload();
                 if (current) {
@@ -326,7 +331,11 @@ export function CropEditor({
                   );
                   mutation.reset();
                   request.current = null;
-                }
+                } else setMissing(true);
+              } catch {
+                setReloadError(
+                  "Unable to reload crop. Retry reload; the draft was retained.",
+                );
               } finally {
                 setReloading(false);
               }

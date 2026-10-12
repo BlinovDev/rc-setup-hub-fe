@@ -592,7 +592,7 @@
     margin-bottom: 0.75rem;
   }
   .photo-frame {
-    aspect-ratio: 3 / 2;
+    aspect-ratio: 1;
     width: 100%;
     overflow: hidden;
     position: relative;
@@ -615,13 +615,14 @@
   .photo-grid,
   .photo-queue {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 160px), 220px));
     gap: 1rem;
   }
   .photo-queued-preview {
-    height: 120px;
+    aspect-ratio: 1;
     width: 100%;
-    object-fit: contain;
+    object-fit: cover;
+    object-position: center;
   }
   .photo-open {
     display: block;
@@ -649,8 +650,43 @@
     margin-block: 1rem;
   }
   .photo-enlarged {
+    width: auto;
+    height: auto;
     max-height: 70dvh;
     max-width: 100%;
     object-fit: contain;
+  }
+  .setup-cards {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 1rem;
+  }
+  .setup-card {
+    display: grid;
+    grid-template-columns: 88px minmax(0, 1fr);
+    gap: 1rem;
+    align-items: start;
+    min-width: 0;
+  }
+  .setup-card-content {
+    min-width: 0;
+    overflow-wrap: anywhere;
+  }
+  .setup-card > .photo-frame {
+    width: 88px;
+  }
+  @media (min-width: 768px) {
+    .setup-cards {
+      grid-template-columns: repeat(auto-fill, minmax(min(100%, 260px), 1fr));
+    }
+    .setup-card {
+      grid-template-columns: minmax(0, 1fr);
+      max-width: 360px;
+    }
+    .setup-card > .photo-frame {
+      width: 100%;
+      max-width: 300px;
+      justify-self: center;
+    }
   }
 }
