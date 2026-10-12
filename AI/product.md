@@ -86,7 +86,7 @@ Admin authorization comes from the configured email allowlist, not a database ro
 Do not add by assumption:
 - comments, likes, ratings or favorites;
 - chat or notifications;
-- image uploads;
+- arbitrary attachments beyond approved optional setup photos;
 - setup version history;
 - teams/groups;
 - multiple RC disciplines;
@@ -127,3 +127,28 @@ zero survives save/detail/edit. Both blank values omit the block and otherwise
 empty parents. Removing/clearing preserves sibling blocks and other technical
 measurements; title-only edits preserve all recorded totals. Detail identifies
 axle, arm and ahead/behind position, showing mm only for recorded values.
+
+## Optional setup photos (Issue #11, setup-photos-v1)
+
+Setups can have 0–10 optional photos, separate from technical schema-v1 data.
+Create saves the setup once before uploading queued files against its returned
+ID. Upload failures retain that setup and completed photos; per-file retry reuses
+the same UUID/bytes. Queue removal sends no DELETE. Optional rejected selections
+never block an otherwise valid setup save. Stored+queued capacity is explained
+and over-limit selections are rejected in full without silently dropping files.
+
+On owner edit pages uploads/cover/delete save immediately; text/technical fields
+use Save setup independently. Photo refresh never resets unsaved form values.
+Leaving edit does not undo persisted photo changes; remaining local queue is lost.
+First upload/cover choice/delete-cover oldest fallback/final no-cover are owned by
+the backend. No captions or ordering UI. JPEG/JPG, PNG, WebP and HEIC/HEIF hints,
+25 MiB and 50 MP server limits; backend converts the first still frame, normalizes
+orientation, strips metadata and returns JPEG full/thumbnail output. No claim of
+all-format support, no raw public originals, no tokens in links or storage.
+
+Home, My setups and visible-user cards use joined cover thumbnails. Zero photos
+and decode/server-load failures use a bundled monochrome model placeholder;
+401/403/404 media reads instead show session/unavailable states. Placeholder is
+not an uploaded photo and never counts toward the limit. Detail has a responsive
+gallery and enlarged viewer with Close/Escape, contained focus/restoration and
+previous/next. Current backend visibility remains authoritative on every read.

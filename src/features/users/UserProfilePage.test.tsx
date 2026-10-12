@@ -145,7 +145,9 @@ it.each(["unrelated", "friend", "owner"])(
     );
     const { client, router } = renderSetupRoute(`/users/${ownerId}`);
     await screen.findByText("public setup");
-    expect(document.querySelector("img")).toBeNull();
+    expect(screen.getAllByAltText("No setup photo — placeholder")).toHaveLength(
+      returned.length,
+    );
     expect(screen.getAllByRole("article")).toHaveLength(returned.length);
     expect(screen.getByText("Custom / not listed")).toBeInTheDocument();
     if (returned.length > 1)

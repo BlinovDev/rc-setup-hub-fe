@@ -15,7 +15,8 @@
     "format:check": "prettier --check .",
     "typecheck": "tsc -p tsconfig.app.json && tsc -p tsconfig.node.json",
     "test": "vitest",
-    "api:generate": "openapi-typescript api/openapi.yaml -o src/api/generated/schema.ts"
+    "api:generate": "openapi-typescript api/openapi.yaml -o src/api/generated/schema.ts",
+    "test:photos:browser": "node scripts/photo-browser-check.mjs"
   },
   "dependencies": {
     "@tanstack/react-query": "5.104.0",
@@ -44,6 +45,7 @@
     "jsdom": "30.1.1",
     "msw": "2.15.0",
     "openapi-typescript": "7.13.0",
+    "playwright": "1.62.1",
     "prettier": "3.9.9",
     "tailwindcss": "4.3.3",
     "typescript": "5.9.3",

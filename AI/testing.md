@@ -196,3 +196,52 @@ siblings and old measurements. Block negative/malformed values with clear errors
 and no writes. Check 375px/desktop overflow, label/input/action overlap, fixed
 save/nav reachability and physical mobile decimal keyboard/actual paste.
 Record the explicit compatible BE/FE SHA pair; mocked HTTP is not live QA.
+
+## Setup photo regressions (Issue #11)
+
+Photos.test.tsx covers create once before uploads, partial success, per-file retry
+with stable request UUIDs/no repeated completed upload, queued removal/no DELETE,
+optional rejected selection saving, stored+queued capacity/no silent drop, size
+hints, immediate cover/delete/fallback/final state, scoped cache invalidation and
+preserved unsaved decimals/arm spacing, server 400/409/503/500 and pending duplicate
+suppression, non-owner UI, stale mutation reload, media 401/404, session-identity
+queue discard and access-loss object URL cleanup. Viewer tests cover Close/Escape,
+previous/next, contained focus and opener restoration; jsdom shims only native
+dialog/object URL boundaries.
+
+Node-environment api.test.ts validates actual multipart file bytes/filename/type,
+request UUID and cookie credentials through RTL-independent MSW HTTP boundary.
+jsdom File cannot be encoded as real bytes by Undici; UI queue tests inspect UUID
+wire fields, and native Node plus Chromium cover the true multipart path.
+PhotosLists.test.tsx covers cover/placeholder/broken media in Home/My/profile,
+lazy/aspect slot, no per-card metadata requests and thumbnail session expiry.
+All existing numeric/arm spacing/friendship/privacy/cache tests remain required.
+
+Playwright 1.62.1 is pinned for a targeted feature browser gate, not a broad
+Phase-8 rollout. npm run test:photos:browser starts local Vite and intercepts only
+mock backend HTTP; runs at 375px and 1280px. Check strict placeholder decode,
+automated file picker, save-once/partial retry, gallery modal keyboard/focus,
+unsaved fields across cover mutation, all list covers, cover/final deletion and
+no horizontal overflow. It asserts browser-managed cookie transmission. CI
+photo-browser installs Chromium; local browser prerequisites may be unavailable.
+These are mocked HTTP/file-picker automation, not physical iPhone, raw HEIC decode,
+Google login, live database/service or OS clipboard QA.
+
+Placeholder repair: supplied immutable PNG was flagged as undecodable in Issue
+#11 and is never shipped/silently tolerated. Built-in image generation produced a
+valid equivalent, visually inspected and fully decoded with Pillow; optimized
+600x400 WebP, 7,882 bytes. Generation prompt: extremely minimalist monochrome
+studio photograph of one small RC drift model car, centered three-quarter view,
+light neutral grey seamless background, generous negative space, no text/logos,
+watermark, people or props. Full PNG is not bundled; the optimized asset is local
+and requires no external image-generation runtime. Browser verifies its decode.
+
+Node 24 gates: npm ci; npm run api:generate; npm run format:check; npm run lint;
+npm run typecheck; npm test -- --run; npm run build; regenerate committed types
+again with no diff, and compare exact backend contract bytes. Browser gate also
+required for this PR. Paired live QA after separately authorized deployment:
+legacy setup, one/ten/eleven files, first/change/delete/final covers everywhere,
+interrupt/retry without duplicate setup/photo, real iPhone HEIC/rotated picture,
+public/friends/private and known full/thumbnail URLs/unfriend, technical edits,
+delete, persistence/restart and coherent backup/restore. Check real phone picker,
+keyboard, actual clipboard, 375px/desktop viewer/actions/focus/errors/placeholder.

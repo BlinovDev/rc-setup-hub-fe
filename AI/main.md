@@ -33,7 +33,7 @@ Do not add unless a later accepted decision requires them:
 - notifications;
 - groups/teams;
 - chat;
-- image uploads;
+- arbitrary attachments beyond optional setup photos (Issue #11);
 - normalized electronics catalog;
 - user-created chassis catalog entries;
 - offline write synchronization;

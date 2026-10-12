@@ -110,3 +110,17 @@ prune empty/removed blocks without defaults. Reuse suspension dot/comma parsing
 with a nonnegative bound, keeping angle/link/oil rules unchanged. No shim
 calculator, chassis rules or left/right asymmetry. Deploy only a compatible
 explicit BE/FE SHA pair after separate authorization.
+
+## F014 — Optional photos with immediate independent persistence
+
+Status: accepted (backend #5/frontend #11, setup-photos-v1).
+
+Use exact backend PR #6 contract and generated types. Save new setup once, then
+upload selected files with stable retry UUIDs and retained partial successes.
+Existing owner photo writes save immediately and never reset unsaved technical
+values. Separate gallery metadata and ephemeral authenticated media queries
+follow the existing detail/session/friendship cancellation boundary. All list
+covers use returned projections without per-item metadata lookup. Valid bundled
+monochrome placeholder replaces the corrupt asset; it has no database identity
+and no place in the ten-photo limit. No raw/public images, tokens/storage,
+captions/sorting or mixed-version deployment.

@@ -1,3 +1,4 @@
+import { PhotoImage } from "./photos/PhotoImage";
 import { VisibilityBadge } from "../../shared/components/VisibilityBadge";
 import { InlineNotice, LoadingState } from "../../shared/components/Feedback";
 import { Button } from "../../shared/components/Button";
@@ -43,6 +44,10 @@ export function MySetupsPage() {
         <ul className="space-y-4">
           {setups.data.map((setup) => (
             <li key={setup.id} className="rounded border p-4">
+              <PhotoImage
+                photo={setup.cover_photo}
+                alt={`Cover of ${setup.title}`}
+              />
               <h3 className="text-xl font-semibold break-words">
                 {setup.title}
               </h3>

@@ -365,6 +365,101 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/setups/{id}/photos": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List authorized gallery in upload order */
+        get: operations["listSetupPhotos"];
+        put?: never;
+        /**
+         * Upload one photo as the owner
+         * @description Use one UUID request_id per selected file and reuse it for retries. Same bytes return the same photo; changed bytes or a deleted photo return 409. 25 MiB file plus 64 KiB multipart overhead, 50 megapixels. JPEG/PNG/WebP/HEIC/HEIF content only. First frame becomes stripped oriented resized JPEG; first photo is cover. Setup must already exist. Maximum ten photos. Owner is checked before decoding. Busy uploads return 503; write failures are retryable 500.
+         */
+        post: operations["uploadSetupPhoto"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/setups/{id}/photos/{photo_id}/cover": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Choose cover as owner; no body */
+        put: operations["chooseSetupCover"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/setups/{id}/photos/{photo_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Delete as owner; cover falls back to oldest remaining photo */
+        delete: operations["deleteSetupPhoto"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/setups/{id}/photos/{photo_id}/image": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Read authorized processed JPEG
+         * @description Checks current session and setup visibility on every read. No public static media. Cache-Control no-store, private; no ETag/Last-Modified. Lost access and unknown photo are identical 404.
+         */
+        get: operations["readSetupPhotoImage"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/setups/{id}/photos/{photo_id}/thumbnail": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Read authorized processed JPEG
+         * @description Checks current session and setup visibility on every read. No public static media. Cache-Control no-store, private; no ETag/Last-Modified. Lost access and unknown photo are identical 404.
+         */
+        get: operations["readSetupPhotoThumbnail"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -486,8 +581,29 @@ export interface components {
             /** @description Trimmed technical text without null bytes. Null, omitted or empty text is omitted in responses. */
             radio?: string | null;
         };
+        SetupPhoto: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            setup_id: string;
+            width: number;
+            height: number;
+            thumbnail_width: number;
+            thumbnail_height: number;
+            /** @constant */
+            content_type: "image/jpeg";
+            is_cover: boolean;
+            /** Format: date-time */
+            created_at: string;
+            /** @description Authenticated full processed image path; never raw source */
+            url: string;
+            /** @description Authenticated thumbnail path */
+            thumbnail_url: string;
+        };
         /** @description Complete setup with application owner UUID and read-only historical chassis display. No owner email or provider identity is exposed. */
         Setup: {
+            /** @description Compact joined cover metadata; null when there are no photos. */
+            cover_photo: components["schemas"]["SetupPhoto"] | null;
             /** Format: uuid */
             id: string;
             /**
@@ -562,6 +678,8 @@ export interface components {
         };
         /** @description Public browse summary. Technical data/notes are available only via the detail endpoint. */
         SetupSearchItem: {
+            /** @description Compact joined cover metadata; null when there are no photos. */
+            cover_photo: components["schemas"]["SetupPhoto"] | null;
             /** Format: uuid */
             id: string;
             /** @description Whitespace is trimmed. Must remain non-empty and contain no null bytes. */
@@ -1273,6 +1391,186 @@ export interface operations {
                     "application/yaml": string;
                 };
             };
+        };
+    };
+    listSetupPhotos: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SetupPhoto"][];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+            500: components["responses"]["InternalError"];
+        };
+    };
+    uploadSetupPhoto: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": {
+                    /** Format: uuid */
+                    request_id: string;
+                    /** Format: binary */
+                    file: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Success */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SetupPhoto"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            500: components["responses"]["InternalError"];
+            /** @description Upload capacity busy; retry the same request_id */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+        };
+    };
+    chooseSetupCover: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+                photo_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SetupPhoto"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            500: components["responses"]["InternalError"];
+        };
+    };
+    deleteSetupPhoto: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+                photo_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Deleted; cleanup queued durably if filesystem removal fails */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            500: components["responses"]["InternalError"];
+        };
+    };
+    readSetupPhotoImage: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+                photo_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description JPEG bytes; no-store, private */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "image/jpeg": string;
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+            500: components["responses"]["InternalError"];
+        };
+    };
+    readSetupPhotoThumbnail: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+                photo_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description JPEG bytes; no-store, private */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "image/jpeg": string;
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+            500: components["responses"]["InternalError"];
         };
     };
 }

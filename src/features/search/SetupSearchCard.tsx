@@ -1,3 +1,4 @@
+import { PhotoImage } from "../setups/photos/PhotoImage";
 import { PublicIdentity } from "../users/PublicIdentity";
 import { Link } from "react-router";
 import type { components } from "../../api/generated/schema";
@@ -8,6 +9,7 @@ export function SetupSearchCard({
 }) {
   return (
     <article className="rounded border p-4 space-y-2">
+      <PhotoImage photo={item.cover_photo} alt={`Cover of ${item.title}`} />
       <h3 className="text-xl font-semibold">
         <Link className="underline" to={`/setups/${item.id}`}>
           {item.title}

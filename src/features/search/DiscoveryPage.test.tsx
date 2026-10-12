@@ -14,6 +14,7 @@ import {
 } from "../setups/testUtils";
 const brandB = "c61393b6-daa0-4eb8-923c-57aedbb46a60";
 const item = {
+  cover_photo: null,
   id: testSetup.id,
   title: "Public track",
   visibility: "public",
