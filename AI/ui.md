@@ -299,3 +299,13 @@ Pending writes suppress duplicate requests and delay dismissal until their resul
 is known. Errors show explicit retry; 409 requires Reload crop (discard draft),
 404 disables Apply. Short screens scroll within the dialog; native modal focus plus
 Tab/Shift+Tab handling contains keyboard focus. Full photos are never cropped.
+
+## Owned list navigation (Issue #15)
+
+My setups uses two accessible sibling view links per card: title and square
+cover/placeholder, both to /setups/:setupId. Edit setup and Delete remain outside
+those links; no interactive card wrapper or nested controls. The cover link keeps
+the existing bounded mobile square/desktop sizing, long titles wrap, and every
+link/action retains keyboard focus styling. Shared detail is read-only for owners
+and permitted non-owners; only owners see Edit setup to /my/setups/:setupId/edit.
+The direct foreign-editor route retains generic unavailable behavior.

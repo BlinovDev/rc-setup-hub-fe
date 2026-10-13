@@ -98,6 +98,15 @@ it.each(["/", "/my/setups", `/users/${testUser.id}`])(
     await screen.findByText(testSetup.title);
     const image = await screen.findByAltText(`Cover of ${testSetup.title}`);
     expect(image).toHaveAttribute("loading", "lazy");
+    if (path === "/my/setups") {
+      expect(image.closest("a")).toHaveAttribute(
+        "href",
+        `/setups/${testSetup.id}`,
+      );
+      expect(
+        screen.getByAltText("No setup photo — placeholder").closest("a"),
+      ).toHaveAttribute("href", `/setups/${full[1]!.id}`);
+    }
     expect(screen.getByAltText("No setup photo — placeholder")).toHaveAttribute(
       "width",
       "600",

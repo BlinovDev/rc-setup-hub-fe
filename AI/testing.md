@@ -289,3 +289,17 @@ reproducible emulated Chromium evidence on exact PR heads. Stage 3 CI run
 belongs in PR #14. Physical iOS/Android picker/touch/raw HEIC/EXIF and paired live
 privacy/reload/races/actual server resampling remain pending; no mocked result is
 claimed as live/physical QA. Backend PR #11 CI owns DB/checksum/native decoder tests.
+
+## Owned list view regression (Issue #15)
+
+MySetupsPage navigation tests open title/placeholder links into read-only technical
+detail/gallery, then use explicit Edit to hydrate the existing editor without
+writes. PhotosLists asserts real cover/placeholder hrefs. Detail tests cover direct
+owner public/friends/private reads and permitted non-owner public/friends detail
+without mutation UI. The existing direct foreign-edit test also rejects the photo
+manager and checks no gallery/mutation requests. Existing 401/unavailable, independent
+Edit/Delete cancellation/confirmation and invalid-route regressions remain required.
+The existing browser gate adds placeholder/cover/title navigation, reload→Edit,
+keyboard cover/title/Edit/Delete order, Delete cancellation, square link bounds,
+long titles, foreign detail/direct edit and no writes across the responsive matrix
+(including 375px/1280px). HTTP is mocked; physical-device/live backend QA is separate.

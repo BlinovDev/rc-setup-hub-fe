@@ -173,3 +173,12 @@ request. Stale revisions require reload before applying a new draft. Existing
 photos need no backfill/re-upload; null crops use centered presentation until changed.
 Every cover projection and thumbnail media cache identity includes the returned
 revision, with no per-card gallery lookups. See AI/photo-ux-roadmap.md for QA gates.
+
+## Owned setup viewing (Issue #15)
+
+My setups title and cover/placeholder links open the shared read-only
+/setups/:setupId detail, including technical data and gallery. Edit setup is a
+separate shortcut in the list and an owner-only action on detail, leading to the
+existing editor. Delete remains an independent confirmed action. Viewing sends
+no setup/photo writes. Permitted non-owners have no modification controls and
+cannot open the editor; backend authorization remains authoritative.

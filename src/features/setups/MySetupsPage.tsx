@@ -44,13 +44,24 @@ export function MySetupsPage() {
         <ul className="setup-cards">
           {setups.data.map((setup) => (
             <li key={setup.id} className="setup-card rounded border p-4">
-              <PhotoImage
-                photo={setup.cover_photo}
-                alt={`Cover of ${setup.title}`}
-              />
+              <Link
+                className="setup-cover-link"
+                to={`/setups/${setup.id}`}
+                aria-label={`View ${setup.title}`}
+              >
+                <PhotoImage
+                  photo={setup.cover_photo}
+                  alt={`Cover of ${setup.title}`}
+                />
+              </Link>
               <div className="setup-card-content space-y-2">
                 <h3 className="text-xl font-semibold break-words">
-                  {setup.title}
+                  <Link
+                    className="inline-flex min-h-11 items-center underline"
+                    to={`/setups/${setup.id}`}
+                  >
+                    {setup.title}
+                  </Link>
                 </h3>
                 <p>{chassisLabel(setup)}</p>
                 <VisibilityBadge value={setup.visibility} />
