@@ -303,3 +303,7 @@ The existing browser gate adds placeholder/cover/title navigation, reload→Edit
 keyboard cover/title/Edit/Delete order, Delete cancellation, square link bounds,
 long titles, foreign detail/direct edit and no writes across the responsive matrix
 (including 375px/1280px). HTTP is mocked; physical-device/live backend QA is separate.
+
+Browser thumbnail fixture generation uses a separate non-navigating renderer page;
+route handlers drain before their app context closes. App navigation must not
+destroy a canvas evaluation used by the mock backend.

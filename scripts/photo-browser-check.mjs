@@ -49,6 +49,8 @@ try {
     }
   }
   browser = await chromium.launch({ headless: true });
+  // Keep fixture rendering independent of app navigation and cancelled media reads.
+  const mediaRenderer = await browser.newPage();
   for (const [width, height] of [
     [320, 900],
     [375, 900],
@@ -127,7 +129,7 @@ try {
       };
     };
     async function thumbnailBytes(p) {
-      const jpeg = await page.evaluate(
+      const jpeg = await mediaRenderer.evaluate(
         async ({ source, crop }) => {
           const image = new Image();
           image.src = source;
@@ -877,6 +879,7 @@ try {
     console.log(
       `PASS ${width}x${height} placeholder/create once/partial retry/crop shapes/pointer+touch+keyboard/preview match/revision refresh/reload/failure retry/gallery focus/unsaved fields/square lists/no N+1/cover-delete/no overflow; mocked HTTP, emulated Chromium`,
     );
+    await page.unrouteAll({ behavior: "wait" });
     await context.close();
   }
 } finally {
