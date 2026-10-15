@@ -672,7 +672,7 @@
     min-width: 0;
     overflow-wrap: anywhere;
   }
-  .setup-card > .photo-frame {
+  .setup-card > :is(.photo-frame, .setup-cover-link) {
     width: 88px;
   }
   @media (min-width: 768px) {
@@ -683,7 +683,7 @@
       grid-template-columns: minmax(0, 1fr);
       max-width: 360px;
     }
-    .setup-card > .photo-frame {
+    .setup-card > :is(.photo-frame, .setup-cover-link) {
       width: 100%;
       max-width: 300px;
       justify-self: center;

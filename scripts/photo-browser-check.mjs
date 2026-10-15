@@ -49,6 +49,8 @@ try {
     }
   }
   browser = await chromium.launch({ headless: true });
+  // Keep fixture rendering independent of app navigation and cancelled media reads.
+  const mediaRenderer = await browser.newPage();
   for (const [width, height] of [
     [320, 900],
     [375, 900],
@@ -103,6 +105,8 @@ try {
     let cropFailure = 0;
     let mediaFailure = 0;
     let metadataReads = 0;
+    let mutationCalls = 0;
+    const otherOwner = "22222222-2222-4222-8222-222222222222";
     const mediaReads = new Map();
     const fixtureFor = (p) =>
       shapes[(Number(p.id.slice(-12)) - 1) % shapes.length];
@@ -125,7 +129,7 @@ try {
       };
     };
     async function thumbnailBytes(p) {
-      const jpeg = await page.evaluate(
+      const jpeg = await mediaRenderer.evaluate(
         async ({ source, crop }) => {
           const image = new Image();
           image.src = source;
@@ -172,12 +176,15 @@ try {
         req.headers().cookie?.includes("rc_session=photo-smoke"),
         "cookie credentials omitted",
       );
+      if (req.method() !== "GET") mutationCalls++;
       let body,
         status = 200;
       if (path === "/api/v1/me") body = user;
       else if (path === "/api/v1/chassis/brands") body = [];
       else if (path === "/api/v1/friendships")
         body = { incoming: [], outgoing: [], accepted: [] };
+      else if (path === `/api/v1/users/${otherOwner}`)
+        body = { id: otherOwner, nickname: "Other owner", avatar_url: null };
       else if (path === `/api/v1/users/${user.id}`)
         body = { id: user.id, nickname: user.nickname, avatar_url: null };
       else if (
@@ -335,6 +342,29 @@ try {
       600,
     );
     await geometry();
+    const placeholderLink = page.getByRole("link", {
+      name: `View ${setup.title}`,
+      exact: true,
+    });
+    assert.equal(await placeholderLink.getAttribute("href"), `/setups/${id}`);
+    await placeholderLink.click();
+    await page
+      .getByRole("heading", { name: setup.title, exact: true })
+      .waitFor();
+    assert.equal(await page.getByLabel("Title", { exact: true }).count(), 0);
+    assert.equal(
+      await page
+        .getByRole("button", { name: "Choose photos", exact: true })
+        .count(),
+      0,
+    );
+    await page.getByRole("link", { name: "Edit setup", exact: true }).click();
+    await page.getByLabel("Title", { exact: true }).waitFor();
+    assert.equal(
+      await page.getByLabel("Title", { exact: true }).inputValue(),
+      setup.title,
+    );
+    assert.equal(mutationCalls, 0);
     await page.goto("http://127.0.0.1:5173/my/setups/new");
     const toolbarCheck = async () => {
       const picker = page.getByRole("button", {
@@ -744,9 +774,112 @@ try {
       await geometry();
     }
     mediaFailure = 0;
+    // Owned list view links and separate actions, including long titles and square covers.
+    const beforeNavigationWrites = mutationCalls;
+    await page.goto("http://127.0.0.1:5173/my/setups");
+    const view = page.getByRole("link", {
+      name: `View ${setup.title}`,
+      exact: true,
+    });
+    const titleLink = page.getByRole("link", {
+      name: setup.title,
+      exact: true,
+    });
+    await view.waitFor();
+    assert.equal(await titleLink.getAttribute("href"), `/setups/${id}`);
+    assert.equal(await view.getAttribute("href"), `/setups/${id}`);
+    const coverBox = await view.boundingBox();
+    assert(
+      Math.abs(coverBox.width - coverBox.height) < 1,
+      "view link must retain square cover slot",
+    );
+    assert(
+      coverBox.width <= (width < 768 ? 89 : 301),
+      "cover link grew beyond card bounds",
+    );
+    await view.focus();
+    await page.keyboard.press("Tab");
+    assert(await titleLink.evaluate((el) => document.activeElement === el));
+    await page.keyboard.press("Tab");
+    assert(
+      await page
+        .getByRole("link", { name: "Edit setup", exact: true })
+        .evaluate((el) => document.activeElement === el),
+    );
+    await page.keyboard.press("Tab");
+    assert(
+      await page
+        .getByRole("button", { name: "Delete setup", exact: true })
+        .evaluate((el) => document.activeElement === el),
+    );
+    await page.keyboard.press("Enter");
+    await page.getByRole("button", { name: "Cancel", exact: true }).click();
+    assert.equal(new URL(page.url()).pathname, "/my/setups");
+    await titleLink.focus();
+    await page.keyboard.press("Enter");
+    await page
+      .getByRole("heading", { name: setup.title, exact: true })
+      .waitFor();
+    assert.equal(new URL(page.url()).pathname, `/setups/${id}`);
+    assert.equal(await page.getByLabel("Title", { exact: true }).count(), 0);
+    assert.equal(
+      await page
+        .getByRole("button", { name: "Choose photos", exact: true })
+        .count(),
+      0,
+    );
+    await geometry();
+    await page.reload();
+    await page.getByRole("link", { name: "Edit setup", exact: true }).click();
+    await page.getByLabel("Title", { exact: true }).waitFor();
+    await page
+      .getByRole("link", { name: "Back to my setups", exact: true })
+      .click();
+    await page
+      .getByRole("link", { name: `View ${setup.title}`, exact: true })
+      .click();
+    await page
+      .getByRole("heading", { name: setup.title, exact: true })
+      .waitFor();
+    await geometry();
+    // Readable foreign detail and direct foreign edit use the existing ownership guard.
+    setup = { ...setup, owner_id: otherOwner };
+    await page.reload();
+    await page.getByText("Other owner", { exact: true }).waitFor();
+    assert.equal(
+      await page.getByRole("link", { name: "Edit setup", exact: true }).count(),
+      0,
+    );
+    assert.equal(
+      await page
+        .getByRole("button", { name: "Choose photos", exact: true })
+        .count(),
+      0,
+    );
+    await page.goto(`http://127.0.0.1:5173/my/setups/${id}/edit`);
+    await page
+      .getByText("Setup not found or unavailable.", { exact: true })
+      .waitFor();
+    assert.equal(await page.getByLabel("Title", { exact: true }).count(), 0);
+    assert.equal(
+      await page
+        .getByRole("button", { name: "Choose photos", exact: true })
+        .count(),
+      0,
+    );
+    assert.equal(
+      mutationCalls,
+      beforeNavigationWrites,
+      "view/edit navigation sent mutations",
+    );
+    await geometry();
+    console.log(
+      `PASS ${width}x${height} owned placeholder/cover/title navigation, keyboard order, separate Delete cancellation, read-only detail/reload/Edit, foreign detail/edit, no mutations`,
+    );
     console.log(
       `PASS ${width}x${height} placeholder/create once/partial retry/crop shapes/pointer+touch+keyboard/preview match/revision refresh/reload/failure retry/gallery focus/unsaved fields/square lists/no N+1/cover-delete/no overflow; mocked HTTP, emulated Chromium`,
     );
+    await page.unrouteAll({ behavior: "wait" });
     await context.close();
   }
 } finally {

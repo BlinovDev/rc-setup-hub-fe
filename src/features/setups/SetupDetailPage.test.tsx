@@ -86,21 +86,31 @@ it("unsupported schema version preserves safe general data without interpreting 
   expect(screen.getByText(testSetup.title)).toBeInTheDocument();
   expect(screen.queryByText("Front suspension")).not.toBeInTheDocument();
 });
-it("another owner's setup has no owner-only edit action", async () => {
-  const ownerId = testSetup.chassis_model_id;
-  mockDetail({ owner_id: ownerId });
-  server.use(
-    http.get(`${apiUrl}/api/v1/users/${ownerId}`, () =>
-      HttpResponse.json({ ...publicOwner, id: ownerId, avatar_url: null }),
-    ),
-  );
-  renderSetupRoute(path);
-  await screen.findByText(/Safe owner/);
-  expect(
-    screen.queryByRole("link", { name: "Edit setup" }),
-  ).not.toBeInTheDocument();
-  expect(screen.queryByRole("img")).not.toBeInTheDocument();
-});
+it.each(["public", "friends"])(
+  "permitted %s non-owner detail has no modification UI",
+  async (visibility) => {
+    const ownerId = testSetup.chassis_model_id;
+    mockDetail({ owner_id: ownerId, visibility });
+    server.use(
+      http.get(`${apiUrl}/api/v1/users/${ownerId}`, () =>
+        HttpResponse.json({ ...publicOwner, id: ownerId, avatar_url: null }),
+      ),
+    );
+    renderSetupRoute(path);
+    await screen.findByText(/Safe owner/);
+    expect(
+      screen.queryByRole("link", { name: "Edit setup" }),
+    ).not.toBeInTheDocument();
+    expect(screen.queryByRole("img")).not.toBeInTheDocument();
+    expect(screen.queryByLabelText("Title")).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "Choose photos" }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "Delete setup" }),
+    ).not.toBeInTheDocument();
+  },
+);
 it.each([400, 404, 500, "network"])(
   "owner %s failure does not hide the setup",
   async (failure) => {
@@ -215,3 +225,20 @@ it("clipboard failure exposes a selectable stable URL and retry", async () => {
   await screen.findByText("Link copied.");
   expect(copy).toHaveBeenCalledTimes(2);
 });
+
+it.each(["public", "friends", "private"])(
+  "direct own %s detail stays read-only",
+  async (visibility) => {
+    mockDetail({ visibility });
+    renderSetupRoute(path);
+    await screen.findByRole("heading", { name: testSetup.title });
+    expect(screen.getByRole("link", { name: "Edit setup" })).toHaveAttribute(
+      "href",
+      `/my/setups/${testSetup.id}/edit`,
+    );
+    expect(screen.queryByLabelText("Title")).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "Delete setup" }),
+    ).not.toBeInTheDocument();
+  },
+);

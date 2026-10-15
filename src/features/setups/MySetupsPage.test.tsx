@@ -5,7 +5,7 @@ import { delay, http, HttpResponse } from "msw";
 import { expect, it } from "vitest";
 import { apiUrl } from "../../api/config";
 import { server } from "../../test/server";
-import { testSetup } from "./testFixtures";
+import { testSetup, testUser } from "./testFixtures";
 import { renderSetupRoute } from "./testUtils";
 import { detailKey, mineKey } from "./queries";
 it("shows loading followed by empty state with a create action", async () => {
@@ -183,3 +183,66 @@ it("delete 401 removes protected setup UI", async () => {
   await screen.findByRole("button", { name: "Sign in with Google" });
   expect(screen.queryByText(testSetup.title)).not.toBeInTheDocument();
 });
+
+it.each(["title", "placeholder"])(
+  "opens an owned setup read-only through its %s, then explicitly edits",
+  async (target) => {
+    let writes = 0;
+    server.use(
+      http.get(`${apiUrl}/api/v1/me/setups`, () =>
+        HttpResponse.json([testSetup]),
+      ),
+      http.get(`${apiUrl}/api/v1/setups/${testSetup.id}`, () =>
+        HttpResponse.json(testSetup),
+      ),
+      http.get(`${apiUrl}/api/v1/users/${testUser.id}`, () =>
+        HttpResponse.json({
+          id: testUser.id,
+          nickname: testUser.nickname,
+          avatar_url: null,
+        }),
+      ),
+      http.all(`${apiUrl}/api/v1/setups/${testSetup.id}/*`, ({ request }) => {
+        if (request.method !== "GET") writes++;
+        return HttpResponse.json([]);
+      }),
+      http.patch(`${apiUrl}/api/v1/setups/${testSetup.id}`, () => {
+        writes++;
+        return HttpResponse.json(testSetup);
+      }),
+    );
+    const { router } = renderSetupRoute("/my/setups");
+    const user = userEvent.setup();
+    const title = await screen.findByRole("link", { name: testSetup.title });
+    const cover = screen.getByRole("link", { name: `View ${testSetup.title}` });
+    for (const link of [title, cover])
+      expect(link).toHaveAttribute("href", `/setups/${testSetup.id}`);
+    expect(cover).toContainElement(
+      screen.getByAltText("No setup photo — placeholder"),
+    );
+    const edit = screen.getByRole("link", { name: "Edit setup" });
+    expect(edit).toHaveAttribute("href", `/my/setups/${testSetup.id}/edit`);
+    expect(cover).not.toContainElement(edit);
+    expect(cover).not.toContainElement(
+      screen.getByRole("button", { name: "Delete setup" }),
+    );
+    await user.click(target === "title" ? title : cover);
+    await screen.findByRole("heading", { name: testSetup.title });
+    expect(router.state.location.pathname).toBe(`/setups/${testSetup.id}`);
+    expect(screen.getByText("25 mm")).toBeInTheDocument();
+    await screen.findByText("No photos yet.");
+    expect(screen.queryByLabelText("Title")).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "Choose photos" }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "Delete setup" }),
+    ).not.toBeInTheDocument();
+    await user.click(screen.getByRole("link", { name: "Edit setup" }));
+    expect(await screen.findByLabelText("Title")).toHaveValue(testSetup.title);
+    expect(router.state.location.pathname).toBe(
+      `/my/setups/${testSetup.id}/edit`,
+    );
+    expect(writes).toBe(0);
+  },
+);

@@ -208,17 +208,38 @@ it("validates route UUID before requesting detail", async () => {
   );
 });
 it("does not render editable controls for a readable non-owned setup", async () => {
+  let writes = 0,
+    galleries = 0;
   server.use(
+    http.all(`${apiUrl}/api/v1/setups/${testSetup.id}/*`, ({ request }) => {
+      if (request.method !== "GET") writes++;
+      else galleries++;
+      return HttpResponse.json([]);
+    }),
+    http.patch(`${apiUrl}/api/v1/setups/${testSetup.id}`, () => {
+      writes++;
+      return HttpResponse.json(testSetup);
+    }),
     http.get(`${apiUrl}/api/v1/setups/${testSetup.id}`, () =>
       HttpResponse.json({ ...testSetup, owner_id: activeBrand }),
     ),
   );
   renderSetupRoute(route);
-  await screen.findByRole("alert");
+  expect(await screen.findByRole("alert")).toHaveTextContent(
+    "Setup not found or unavailable.",
+  );
   expect(screen.queryByLabelText("Title")).not.toBeInTheDocument();
   expect(
     screen.queryByRole("button", { name: "Delete setup" }),
   ).not.toBeInTheDocument();
+  expect(
+    screen.queryByRole("region", { name: "Manage setup photos" }),
+  ).not.toBeInTheDocument();
+  expect(
+    screen.queryByRole("button", { name: "Choose photos" }),
+  ).not.toBeInTheDocument();
+  expect(galleries).toBe(0);
+  expect(writes).toBe(0);
 });
 it("does not reinterpret unsupported schema metadata", async () => {
   server.use(
