@@ -307,3 +307,13 @@ long titles, foreign detail/direct edit and no writes across the responsive matr
 Browser thumbnail fixture generation uses a separate non-navigating renderer page;
 route handlers drain before their app context closes. App navigation must not
 destroy a canvas evaluation used by the mock backend.
+
+## Engineering skill foundation checks
+
+For repository-local instruction/provenance changes, run
+`python3 scripts/verify-engineering-skills.py` and
+`python3 -m unittest discover -s scripts -p 'test_engineering_skills.py' -v`
+from repository root. These validate packaging, not Codex runtime behavior.
+Fresh Cloud discovery/invocation smoke prompts and explicitly unverified capabilities
+are documented in `AI/engineering-skills.md`. Existing application verification
+requirements above remain unchanged.

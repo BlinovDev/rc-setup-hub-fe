@@ -69,3 +69,14 @@ Rules:
 - Never store authentication tokens in localStorage or sessionStorage.
 - All authenticated browser API requests must use credentials.
 - If implementation and OpenAPI appear inconsistent, stop and report the mismatch instead of guessing.
+
+## Repository engineering skills
+
+Use the relevant skill in `.agents/skills/` after the required project context above:
+`rc-implement` for authorized changes; `rc-architect` for design analysis;
+`rc-regression` for bug reproduction/tests; `rc-blast-radius` for impact analysis;
+`rc-review` for independent code review; `rc-thermo-review` for strict architecture review.
+Read the selected `SKILL.md`; explicit invocation uses `$skill-name`. Analysis/review
+skills are read-only. Skills supplement these instructions and AI decisions; they
+do not relax verification or authorize merges, deployment, or broad refactoring.
+Discovery checks, Cloud smoke prompts and upstream maintenance: `AI/engineering-skills.md`.
