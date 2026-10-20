@@ -343,3 +343,16 @@ crop and show explicit retry. No automatic crop mutation retry. After success, t
 revision in metadata replaces loaded thumbnail blob/render identities. Do not deploy
 the v2 frontend against a photo-v1 backend. Compatible pair: BE head above / FE PR #14
 head recorded in its description (no circular commit SHA in source). No deploy here.
+
+## Upload validation diagnostics (backend Issue #14)
+
+The committed contract includes the backend Issue #14 upload-error description;
+DTOs are unchanged. `uploadPhoto` reads the existing typed APIError.error field only
+for HTTP 400, translates an allowlist of known strings and never exposes arbitrary
+server messages. Recognized reasons cover unsupported/undecodable content, input
+bytes, pixel count, photo count and multipart size/completeness. Older/unknown 400
+responses use the existing fallback, so rollout is compatible in either order.
+Non-JSON proxy 413 has its own message. 401/403/404/409/503/server/network handling,
+credentials, browser-generated multipart boundary and per-file retry UUID remain.
+The backend PR contains the processing fix and root-cause evidence; frontend alone
+improves reporting but cannot repair the decoder cache-file limit.
