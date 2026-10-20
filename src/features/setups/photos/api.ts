@@ -1,6 +1,31 @@
 import { apiClient } from "../../../api/client";
 import { SetupError } from "../api";
 import type { components } from "../../../api/generated/schema";
+// Only translate known validation strings; never render arbitrary server details.
+const uploadValidationMessages: Record<string, string> = {
+  "invalid photo: unsupported image format":
+    "Unsupported photo format. Choose JPEG, PNG, WebP or HEIC/HEIF.",
+  "invalid photo: image could not be decoded":
+    "This image could not be decoded. Export it as JPEG and choose the exported file.",
+  "invalid photo: file must be nonempty and at most 25 MiB":
+    "The photo must be nonempty and at most 25 MiB. Choose a smaller file.",
+  "file exceeds 25 MiB or is empty":
+    "The photo must be nonempty and at most 25 MiB. Choose a smaller file.",
+  "invalid photo: image must be at most 50 megapixels":
+    "The photo exceeds 50 megapixels. Choose a lower-resolution image.",
+  "a setup may have at most 10 photos":
+    "This setup already has 10 photos. Remove a saved photo before uploading another.",
+  "invalid or oversized multipart body":
+    "The upload was incomplete or exceeded the request limit. Retry or choose a smaller file.",
+};
+class PhotoUploadError extends SetupError {
+  constructor(
+    status: number,
+    public readonly validationMessage?: string,
+  ) {
+    super(status);
+  }
+}
 export async function cropPhoto(
   id: string,
   photoId: string,
@@ -28,7 +53,7 @@ export async function uploadPhoto(id: string, file: File, requestId: string) {
   const form = new FormData();
   form.append("request_id", requestId);
   form.append("file", file);
-  const { data, response } = await apiClient.POST(
+  const { data, error, response } = await apiClient.POST(
     "/api/v1/setups/{id}/photos",
     {
       params: { path: { id } },
@@ -36,7 +61,15 @@ export async function uploadPhoto(id: string, file: File, requestId: string) {
       bodySerializer: () => form,
     },
   );
-  if (response.status !== 201 || !data) throw new SetupError(response.status);
+  if (response.status !== 201 || !data) {
+    const message =
+      response.status === 400 &&
+      error?.error &&
+      Object.hasOwn(uploadValidationMessages, error.error)
+        ? uploadValidationMessages[error.error]
+        : undefined;
+    throw new PhotoUploadError(response.status, message);
+  }
   return data;
 }
 export async function chooseCover(id: string, photoId: string) {
@@ -79,7 +112,11 @@ export async function getPhotoImage(
   return data;
 }
 export function photoError(error: unknown) {
+  if (error instanceof PhotoUploadError && error.validationMessage)
+    return error.validationMessage;
   if (error instanceof SetupError) {
+    if (error.status === 413)
+      return "The server rejected the upload size. Choose a smaller photo; if it is under 25 MiB, report this error.";
     if (error.status === 400)
       return "Photo rejected: use JPEG, PNG, WebP or HEIC/HEIF, at most 25 MiB and 50 megapixels. The setup can have at most 10 photos.";
     if (error.status === 401) return "Your session expired. Sign in again.";

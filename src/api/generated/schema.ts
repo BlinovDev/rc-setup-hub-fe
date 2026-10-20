@@ -377,7 +377,7 @@ export interface paths {
         put?: never;
         /**
          * Upload one photo as the owner
-         * @description Use one UUID request_id per selected file and reuse it for retries. Same bytes return the same photo; changed bytes or a deleted photo return 409. 25 MiB file plus 64 KiB multipart overhead, 50 megapixels. JPEG/PNG/WebP/HEIC/HEIF content only. First frame becomes stripped oriented resized JPEG; first photo is cover. Setup must already exist. Maximum ten photos. Owner is checked before decoding. Busy uploads return 503; write failures are retryable 500.
+         * @description Use one UUID request_id per selected file and reuse it for retries. Same bytes return the same photo; changed bytes or a deleted photo return 409. 25 MiB file plus 64 KiB multipart overhead, 50 megapixels. JPEG/PNG/WebP/HEIC/HEIF content only. First frame becomes stripped oriented resized JPEG; first photo is cover. Setup must already exist. Maximum ten photos. Owner is checked before decoding. Busy uploads return 503; write failures are retryable 500. Validation error strings distinguish unsupported format, undecodable image, file size, pixel limit and photo count. Resource termination/timeouts are retryable server errors, not invalid-image responses. Filenames and multipart MIME types never select the decoder.
          */
         post: operations["uploadSetupPhoto"];
         delete?: never;

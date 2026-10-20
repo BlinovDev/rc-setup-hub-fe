@@ -317,3 +317,15 @@ from repository root. These validate packaging, not Codex runtime behavior.
 Fresh Cloud discovery/invocation smoke prompts and explicitly unverified capabilities
 are documented in `AI/engineering-skills.md`. Existing application verification
 requirements above remain unchanged.
+
+## iPhone upload diagnostics regression (backend Issue #14)
+
+Photo API boundary tests preserve original file bytes, filename, MIME, credentials
+and multipart boundary for iOS-style JPEG, HEIF named .jpeg, and JPEG with .heic
+metadata. Error cases check known format/decode/size/pixel/count reasons, unknown
+400 fallback, proxy 413, busy/server responses and suppression of arbitrary details.
+The backend owns realistic HEIF/JPEG decoding fixtures and phone-resolution tests;
+frontend MIME tests use synthetic bytes to test transport, not native decoding.
+Run all existing Node 24 checks and photo browser gate. Physical iPhone/native HEIF
+and paired staging QA remain manual: use the checklist in backend
+AI/issue-14-investigation.md. No staging/production deployment is authorized here.

@@ -182,3 +182,13 @@ separate shortcut in the list and an owner-only action on detail, leading to the
 existing editor. Delete remains an independent confirmed action. Viewing sends
 no setup/photo writes. Permitted non-owners have no modification controls and
 cannot open the editor; backend authorization remains authoritative.
+
+## Upload diagnostics (backend Issue #14)
+
+The original selected File is sent unchanged, including HEIF/JPEG bytes and iOS
+filename/MIME metadata. The server remains the content/validation authority.
+Known upload rejection reasons now explain format, decoding, size, dimensions or
+the ten-photo count separately. Unknown validation responses retain a safe generic
+fallback; raw server details never appear in the UI. HTTP 413 explains request-size
+rejection. Busy/server/network failures preserve the existing explicit retry flow,
+request UUID, setup and completed uploads. Existing limits/privacy are unchanged.
