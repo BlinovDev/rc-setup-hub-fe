@@ -121,6 +121,7 @@ export function SetupDetailPage({
         <TechnicalData
           data={setup.data}
           differentialManufacturer={setup.rear_differential_manufacturer}
+          mountManufacturers={setup.lower_arm_mount_manufacturers}
         />
       ) : (
         <p>This setup data version is not supported.</p>

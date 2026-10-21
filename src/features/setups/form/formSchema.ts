@@ -78,6 +78,11 @@ const spacerTotal = z.string().refine((value) => {
 }, "Enter a finite spacer total greater than or equal to zero.");
 const armSpacing = z.object({ front_mm: spacerTotal, rear_mm: spacerTotal });
 const axle = z.object({
+  lowerArmMount: z.object({
+    manufacturerId: z.string().uuid().nullable(),
+    model: text(200),
+    configurationNotes: text(10000),
+  }),
   top_arm_spacing: armSpacing.optional(),
   lower_arm_spacing: armSpacing.optional(),
   camber_deg: angle,

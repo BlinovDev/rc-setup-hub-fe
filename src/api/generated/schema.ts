@@ -553,6 +553,7 @@ export interface components {
             rear?: components["schemas"]["AxleSuspension"] | null;
         };
         AxleSuspension: {
+            lower_arm_mount?: components["schemas"]["LowerArmMount"] | null;
             /** @description Optional finite angle in degrees. Omitted/null means unknown and is omitted in responses; zero is a real value and is preserved. */
             camber_deg?: number | null;
             /** @description Optional finite angle in degrees. Omitted/null means unknown and is omitted in responses; zero is a real value and is preserved. */
@@ -569,6 +570,18 @@ export interface components {
             top_arm_spacing?: components["schemas"]["ArmSpacing"] | null;
             /** @description Optional lower arm spacer totals, symmetric across left/right. */
             lower_arm_spacing?: components["schemas"]["ArmSpacing"] | null;
+        };
+        /** @description One optional descriptive lower arm mount configuration per axle. All fields are independent. No separate mounts/inserts or adjustment geometry. Strings use Unicode character limits and reject null bytes. Empty/null blocks and newly empty parents are omitted without changing legacy empty axle shapes. Additive schema-v1 JSONB extension; no defaults, migration or backfill. */
+        LowerArmMount: {
+            /**
+             * Format: uuid
+             * @description Existing chassis brand UUID. New selections must exist and be active. Unchanged historical inactive references on the same axle survive PATCH. Null/omitted is unknown; output UUID is canonical.
+             */
+            manufacturer_id?: string | null;
+            /** @description Trimmed free-text model/part number. Empty/null/omitted is omitted. */
+            model?: string | null;
+            /** @description Trimmed free-text configuration notes. Empty/null/omitted is omitted. */
+            configuration_notes?: string | null;
         };
         /**
          * @description Total spacer thickness ahead of and behind one arm relative to vehicle direction, in millimetres. Either value may be unknown. Both omitted/null values omit the block and parents introduced solely for it. No defaults, rounding, shim calculator or left/right asymmetry. Available independently for either arm on either axle. Explicit zero is preserved.
@@ -682,8 +695,15 @@ export interface components {
             id: string;
             name: string;
         };
+        /** @description Read-only joined historical brands for each axle's lower_arm_mount. Includes inactive brands; an absent/unresolvable reference is null. */
+        LowerArmMountManufacturers: {
+            front: components["schemas"]["DifferentialManufacturer"] | null;
+            rear: components["schemas"]["DifferentialManufacturer"] | null;
+        };
         /** @description Complete setup with application owner UUID and read-only historical chassis display. No owner email or provider identity is exposed. */
         Setup: {
+            /** @description Read-only historical catalog display; null when neither axle has a resolvable manufacturer. Never stored in technical data or accepted in writes. */
+            lower_arm_mount_manufacturers: components["schemas"]["LowerArmMountManufacturers"] | null;
             /** @description Read-only joined display for data.rear_differential.manufacturer_id, including inactive brands. Null when no manufacturer is selected or resolvable. Never accepted in create or PATCH input. */
             rear_differential_manufacturer: components["schemas"]["DifferentialManufacturer"] | null;
             /** @description Compact joined cover metadata; null when there are no photos. */

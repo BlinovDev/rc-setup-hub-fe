@@ -125,8 +125,8 @@ export function SetupForm({
             </p>
             <SetupField name="notes" label="Notes" multiline />
           </fieldset>
-          <SuspensionSection side="front" />
-          <SuspensionSection side="rear" />
+          <SuspensionSection side="front" setup={setup} />
+          <SuspensionSection side="rear" setup={setup} />
           <RearDifferentialSection setup={setup} />
           {(["frontShock", "rearShock"] as const).map((side, index) => (
             <fieldset

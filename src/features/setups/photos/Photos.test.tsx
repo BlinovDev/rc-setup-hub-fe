@@ -334,6 +334,14 @@ it("cover/delete save immediately, preserve unsaved technical values, and narrow
   const user = userEvent.setup();
   await screen.findByLabelText("Title");
   await user.type(screen.getByLabelText("Title"), " unsaved");
+  fireEvent.change(
+    screen.getByLabelText("Front lower arm mount configuration notes"),
+    { target: { value: "Unsaved front mount config" } },
+  );
+  fireEvent.change(
+    screen.getByLabelText("Rear lower arm mount model / part number"),
+    { target: { value: "Unsaved rear mount" } },
+  );
   fireEvent.change(screen.getByLabelText("Front piston notes"), {
     target: { value: "Unsaved piston" },
   });
@@ -360,6 +368,12 @@ it("cover/delete save immediately, preserve unsaved technical values, and narrow
     "Unsaved differential tuning",
   );
   expect(screen.getByLabelText("Title")).toHaveValue("Track setup unsaved");
+  expect(
+    screen.getByLabelText("Front lower arm mount configuration notes"),
+  ).toHaveValue("Unsaved front mount config");
+  expect(
+    screen.getByLabelText("Rear lower arm mount model / part number"),
+  ).toHaveValue("Unsaved rear mount");
   expect(screen.getByLabelText("Front piston notes")).toHaveValue(
     "Unsaved piston",
   );
@@ -396,6 +410,12 @@ it("cover/delete save immediately, preserve unsaved technical values, and narrow
     "Unsaved differential tuning",
   );
   expect(screen.getByLabelText("Title")).toHaveValue("Track setup unsaved");
+  expect(
+    screen.getByLabelText("Front lower arm mount configuration notes"),
+  ).toHaveValue("Unsaved front mount config");
+  expect(
+    screen.getByLabelText("Rear lower arm mount model / part number"),
+  ).toHaveValue("Unsaved rear mount");
   expect(screen.getByLabelText("Front piston notes")).toHaveValue(
     "Unsaved piston",
   );
@@ -580,6 +600,14 @@ it("a stale cover failure refreshes gallery state while keeping unsaved fields",
   const user = userEvent.setup();
   await screen.findByLabelText("Title");
   await user.type(screen.getByLabelText("Title"), " unsaved");
+  fireEvent.change(
+    screen.getByLabelText("Front lower arm mount configuration notes"),
+    { target: { value: "Unsaved front mount config" } },
+  );
+  fireEvent.change(
+    screen.getByLabelText("Rear lower arm mount model / part number"),
+    { target: { value: "Unsaved rear mount" } },
+  );
   fireEvent.change(screen.getByLabelText("Front piston notes"), {
     target: { value: "Unsaved piston" },
   });
@@ -597,6 +625,12 @@ it("a stale cover failure refreshes gallery state while keeping unsaved fields",
     "Unsaved differential tuning",
   );
   expect(screen.getByLabelText("Title")).toHaveValue("Track setup unsaved");
+  expect(
+    screen.getByLabelText("Front lower arm mount configuration notes"),
+  ).toHaveValue("Unsaved front mount config");
+  expect(
+    screen.getByLabelText("Rear lower arm mount model / part number"),
+  ).toHaveValue("Unsaved rear mount");
   expect(screen.getByLabelText("Front piston notes")).toHaveValue(
     "Unsaved piston",
   );
@@ -608,6 +642,10 @@ it("changing session identity discards local queued previews and fields", async 
   const user = userEvent.setup();
   await screen.findByLabelText("Title");
   await user.type(screen.getByLabelText("Title"), "Private draft");
+  fireEvent.change(
+    screen.getByLabelText("Front lower arm mount configuration notes"),
+    { target: { value: "Private mount draft" } },
+  );
   fireEvent.change(screen.getByLabelText("Rear differential tuning notes"), {
     target: { value: "Private differential tuning" },
   });
@@ -626,6 +664,9 @@ it("changing session identity discards local queued previews and fields", async 
   expect(screen.getByLabelText("Rear differential tuning notes")).toHaveValue(
     "",
   );
+  expect(
+    screen.getByLabelText("Front lower arm mount configuration notes"),
+  ).toHaveValue("");
   expect(screen.getByLabelText("Title")).toHaveValue("");
   expect(URL.revokeObjectURL).toHaveBeenCalled();
 });

@@ -82,6 +82,18 @@ try {
     const manufacturerId = "33333333-3333-4333-8333-333333333333";
     const manufacturerName =
       "Historical differential manufacturer " + "long-name-".repeat(10);
+    const mountModel = "Mount-".repeat(30) + "😀";
+    const mountNotes = "配置 A\nMount B " + "configuration-".repeat(40);
+    const mountDisplays = (data) => {
+      const front = data?.suspension?.front?.lower_arm_mount?.manufacturer_id;
+      const rear = data?.suspension?.rear?.lower_arm_mount?.manufacturer_id;
+      return front || rear
+        ? {
+            front: front ? { id: front, name: manufacturerName } : null,
+            rear: rear ? { id: rear, name: manufacturerName } : null,
+          }
+        : null;
+    };
     const differentialModel = "Diff-".repeat(35);
     const differentialNotes = "Oil 10000\nTwo gears " + "tuning-".repeat(45);
     let manufacturerActive = true;
@@ -97,6 +109,7 @@ try {
       chassis_model_id: null,
       cover_photo: null,
       rear_differential_manufacturer: null,
+      lower_arm_mount_manufacturers: null,
       data: {
         suspension: {
           front: { top_arm_spacing: { front_mm: 0, rear_mm: 5.2 } },
@@ -218,11 +231,19 @@ try {
         setup = {
           ...setup,
           ...req.postDataJSON(),
+          lower_arm_mount_manufacturers: mountDisplays(req.postDataJSON().data),
           rear_differential_manufacturer: {
             id: manufacturerId,
             name: manufacturerName,
           },
         };
+        for (const axle of ["front", "rear"]) {
+          assert.deepEqual(setup.data.suspension[axle].lower_arm_mount, {
+            manufacturer_id: manufacturerId,
+            model: mountModel,
+            configuration_notes: mountNotes,
+          });
+        }
         assert.deepEqual(setup.data.rear_differential, {
           type: "gear",
           manufacturer_id: manufacturerId,
@@ -238,6 +259,7 @@ try {
           setup = {
             ...setup,
             ...update,
+            lower_arm_mount_manufacturers: mountDisplays(update.data),
             rear_differential_manufacturer: update.data?.rear_differential
               ?.manufacturer_id
               ? { id: manufacturerId, name: manufacturerName }
@@ -445,6 +467,22 @@ try {
     };
     await toolbarCheck();
     await page.getByLabel("Title", { exact: true }).fill("New with photos");
+    for (const axle of ["Front", "Rear"]) {
+      await page
+        .getByLabel(`${axle} lower arm mount manufacturer`, { exact: true })
+        .selectOption(manufacturerId);
+      await page
+        .getByLabel(`${axle} lower arm mount model / part number`, {
+          exact: true,
+        })
+        .fill(mountModel);
+      await page
+        .getByLabel(`${axle} lower arm mount configuration notes`, {
+          exact: true,
+        })
+        .fill(mountNotes);
+    }
+
     await page
       .getByLabel("Rear differential type", { exact: true })
       .selectOption("gear");
@@ -539,6 +577,19 @@ try {
       await section.getByText("1.23456789", { exact: true }).waitFor();
       await section.getByText("X-ring", { exact: true }).waitFor();
     }
+    for (const axle of ["Front", "Rear"]) {
+      const section = page
+        .getByRole("heading", { name: `${axle} lower arm mount`, exact: true })
+        .locator("..");
+      await section.getByText(manufacturerName, { exact: true }).waitFor();
+      await section.getByText(mountModel, { exact: true }).waitFor();
+      assert.equal(
+        await section
+          .getByText(mountNotes, { exact: true })
+          .evaluate((el) => getComputedStyle(el).whiteSpace),
+        "pre-wrap",
+      );
+    }
     const differentialDetail = page
       .getByRole("heading", { name: "Rear differential", exact: true })
       .locator("..");
@@ -600,6 +651,13 @@ try {
     await toolbarCheck();
     await page.getByLabel("Title", { exact: true }).fill("Unsaved photo title");
     await page
+      .getByLabel("Front lower arm mount configuration notes", { exact: true })
+      .fill("Unsaved front mount config");
+    await page
+      .getByLabel("Rear lower arm mount model / part number", { exact: true })
+      .fill("Unsaved rear mount");
+
+    await page
       .getByLabel("Rear differential tuning notes", { exact: true })
       .fill("Unsaved differential tuning");
     await page
@@ -612,6 +670,21 @@ try {
       await page.getByLabel("Title", { exact: true }).inputValue(),
       "Unsaved photo title",
     );
+    assert.equal(
+      await page
+        .getByLabel("Front lower arm mount configuration notes", {
+          exact: true,
+        })
+        .inputValue(),
+      "Unsaved front mount config",
+    );
+    assert.equal(
+      await page
+        .getByLabel("Rear lower arm mount model / part number", { exact: true })
+        .inputValue(),
+      "Unsaved rear mount",
+    );
+
     assert.equal(
       await page
         .getByLabel("Rear differential tuning notes", { exact: true })
@@ -1123,6 +1196,95 @@ try {
       path: `artifacts/photo-qa/shock-hardware-${width}x${height}.png`,
       fullPage: true,
     });
+
+    for (const axle of ["Front", "Rear"]) {
+      const side = axle.toLowerCase();
+      const group = page.getByRole("group", {
+        name: `${axle} lower arm mount`,
+        exact: true,
+      });
+      const expected = JSON.parse(JSON.stringify(setup.data));
+      const writes = setupPatches;
+      await page
+        .getByLabel(`${axle} lower arm mount model / part number`, {
+          exact: true,
+        })
+        .fill("x".repeat(201));
+      await page
+        .getByRole("button", { name: "Save setup", exact: true })
+        .click();
+      assert.equal(setupPatches, writes);
+      assert(
+        await page
+          .getByLabel(`${axle} lower arm mount model / part number`, {
+            exact: true,
+          })
+          .evaluate((el) => document.activeElement === el),
+      );
+      assert.equal(
+        await page
+          .getByLabel(`${axle} lower arm mount model / part number`, {
+            exact: true,
+          })
+          .getAttribute("aria-invalid"),
+        "true",
+      );
+      await group
+        .getByRole("button", {
+          name: `Clear ${side} lower arm mount`,
+          exact: true,
+        })
+        .click();
+      await group
+        .getByRole("button", {
+          name: `Change ${side} lower arm mount manufacturer`,
+          exact: true,
+        })
+        .click();
+      await page
+        .getByLabel(`${axle} lower arm mount manufacturer`, { exact: true })
+        .selectOption(manufacturerId);
+      await group
+        .getByRole("button", {
+          name: "Cancel manufacturer change",
+          exact: true,
+        })
+        .click();
+      await group
+        .getByText(`${axle} lower arm mount manufacturer: Not specified`, {
+          exact: true,
+        })
+        .waitFor();
+      await page
+        .getByRole("button", { name: "Save setup", exact: true })
+        .click();
+      await page.getByText("Setup saved.", { exact: true }).waitFor();
+      delete expected.suspension[side].lower_arm_mount;
+      if (!Object.keys(expected.suspension[side]).length)
+        delete expected.suspension[side];
+      if (!Object.keys(expected.suspension).length) delete expected.suspension;
+      assert.deepEqual(setup.data, expected);
+      await page
+        .getByLabel(`${axle} lower arm mount configuration notes`, {
+          exact: true,
+        })
+        .fill("Notes only\nNo model required");
+      await page
+        .getByRole("button", { name: "Save setup", exact: true })
+        .click();
+      await page.getByText("Setup saved.", { exact: true }).waitFor();
+      assert.deepEqual(setup.data.suspension[side].lower_arm_mount, {
+        configuration_notes: "Notes only\nNo model required",
+      });
+      await geometry();
+    }
+    await page.screenshot({
+      path: `artifacts/photo-qa/lower-arm-mounts-${width}x${height}.png`,
+      fullPage: true,
+    });
+    console.log(
+      `PASS ${width}x${height} lower arm mounts on both axles, create/detail/edit, shared catalog/historical names, Unicode/wrapping, validation/focus, clear/cancel/partial re-add and full-data/photo preservation`,
+    );
     console.log(
       `PASS ${width}x${height} shock piston/seal both axles, decimal precision, optional clear/re-add, validation/focus and full-data preservation`,
     );
