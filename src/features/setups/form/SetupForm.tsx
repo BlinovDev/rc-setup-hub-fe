@@ -14,6 +14,7 @@ import { setupFormSchema, type SetupFormValues } from "./formSchema";
 import { setupToForm } from "./serialization";
 import { SetupField } from "./SetupField";
 import { SuspensionSection } from "./SuspensionSection";
+import { ShockHardwareFields } from "./ShockHardwareFields";
 import { RearDifferentialSection } from "./RearDifferentialSection";
 
 export function SetupForm({
@@ -136,6 +137,7 @@ export function SetupForm({
               <legend className="font-semibold">
                 {index === 0 ? "Front" : "Rear"} shocks
               </legend>
+              <ShockHardwareFields side={side} />
               <SetupField
                 name={`${side}.manufacturer`}
                 label={`${index === 0 ? "Front" : "Rear"} shock manufacturer`}

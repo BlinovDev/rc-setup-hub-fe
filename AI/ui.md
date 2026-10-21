@@ -46,6 +46,12 @@ loads only on explicit Change, supports retry/cancel, and retains the historical
 name/reference when inactive. Detail is read-only and uses the returned name
 projection, with an unavailable-name fallback and no extra catalog lookup.
 
+Each axle's shock section includes independent optional piston hole count, diameter
+(mm), multiline notes, seal type and product description. Clear piston/seal affects
+only that block. Counts are positive int32 integers; diameters accept dot/comma
+without rounding or rewriting while typing. Blank fields stay unknown; detail shows
+only present values. Existing shock manufacturer/model controls remain unchanged.
+
 ## State, identity and accessibility
 
 Every data route has loading, retryable error, session expiry, relevant unavailable,

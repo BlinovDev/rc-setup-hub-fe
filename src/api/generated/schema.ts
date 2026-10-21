@@ -593,6 +593,8 @@ export interface components {
             rear?: components["schemas"]["Shock"] | null;
         };
         Shock: {
+            piston?: components["schemas"]["ShockPiston"] | null;
+            seal?: components["schemas"]["ShockSeal"] | null;
             /** @description Trimmed technical text without null bytes. Null, omitted or empty text is omitted in responses. */
             manufacturer?: string | null;
             /** @description Trimmed technical text without null bytes. Null, omitted or empty text is omitted in responses. */
@@ -600,6 +602,28 @@ export interface components {
             spring?: components["schemas"]["Spring"] | null;
             /** @description Optional viscosity in cSt. Must be positive when supplied. Null/omitted means unknown and is omitted on output. */
             oil_cst?: number | null;
+        };
+        /** @description Independent optional fields on either shock axle. Empty/null blocks are omitted; no default measurements or schema-v1 migration/backfill. */
+        ShockPiston: {
+            /**
+             * Format: int32
+             * @description Optional positive hole count. Null/omitted means unknown, never zero; numeric strings and fractional JSON numbers are rejected.
+             */
+            holes?: number | null;
+            /** @description Optional finite positive hole diameter in mm, without rounding. */
+            hole_diameter_mm?: number | null;
+            /** @description Trimmed free-form piston notes without null bytes. Empty/null/omitted text is omitted. */
+            notes?: string | null;
+        };
+        /** @description Independent optional seal type and product description. Empty/null blocks are omitted. Existing shock, spring and oil fields retain their meaning. */
+        ShockSeal: {
+            /**
+             * @description Optional seal type. Null/omitted means unknown; empty string is invalid.
+             * @enum {string|null}
+             */
+            type?: "o-ring" | "x-ring" | null;
+            /** @description Trimmed free text identifying a specific product/model, without null bytes. Empty/null/omitted text is omitted; type is not required. */
+            description?: string | null;
         };
         Spring: {
             /** @description Trimmed technical text without null bytes. Null, omitted or empty text is omitted in responses. */

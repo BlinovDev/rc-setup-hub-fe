@@ -334,6 +334,9 @@ it("cover/delete save immediately, preserve unsaved technical values, and narrow
   const user = userEvent.setup();
   await screen.findByLabelText("Title");
   await user.type(screen.getByLabelText("Title"), " unsaved");
+  fireEvent.change(screen.getByLabelText("Front piston notes"), {
+    target: { value: "Unsaved piston" },
+  });
   fireEvent.change(screen.getByLabelText("Rear differential tuning notes"), {
     target: { value: "Unsaved differential tuning" },
   });
@@ -357,6 +360,9 @@ it("cover/delete save immediately, preserve unsaved technical values, and narrow
     "Unsaved differential tuning",
   );
   expect(screen.getByLabelText("Title")).toHaveValue("Track setup unsaved");
+  expect(screen.getByLabelText("Front piston notes")).toHaveValue(
+    "Unsaved piston",
+  );
   expect(screen.getByLabelText("Front camber (degrees)")).toHaveValue("-6,8");
   expect(
     screen.getByLabelText("Front top arm — Rear spacers (mm)"),
@@ -390,6 +396,9 @@ it("cover/delete save immediately, preserve unsaved technical values, and narrow
     "Unsaved differential tuning",
   );
   expect(screen.getByLabelText("Title")).toHaveValue("Track setup unsaved");
+  expect(screen.getByLabelText("Front piston notes")).toHaveValue(
+    "Unsaved piston",
+  );
   await user.click(screen.getByRole("button", { name: "Save setup" }));
   await screen.findByText("Setup saved.");
   expect(patch).not.toHaveProperty("photos");
@@ -571,6 +580,9 @@ it("a stale cover failure refreshes gallery state while keeping unsaved fields",
   const user = userEvent.setup();
   await screen.findByLabelText("Title");
   await user.type(screen.getByLabelText("Title"), " unsaved");
+  fireEvent.change(screen.getByLabelText("Front piston notes"), {
+    target: { value: "Unsaved piston" },
+  });
   fireEvent.change(screen.getByLabelText("Rear differential tuning notes"), {
     target: { value: "Unsaved differential tuning" },
   });
@@ -585,6 +597,9 @@ it("a stale cover failure refreshes gallery state while keeping unsaved fields",
     "Unsaved differential tuning",
   );
   expect(screen.getByLabelText("Title")).toHaveValue("Track setup unsaved");
+  expect(screen.getByLabelText("Front piston notes")).toHaveValue(
+    "Unsaved piston",
+  );
   expect(writes).toBe(1);
 });
 it("changing session identity discards local queued previews and fields", async () => {
