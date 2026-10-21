@@ -150,6 +150,10 @@ export const setupFormSchema = z
       brandId: z.string().uuid().nullable(),
       modelId: z.string().uuid().nullable(),
     }),
+    frontSteeringKnuckle: z.object({
+      manufacturerId: z.string().uuid().nullable(),
+      description: text(200),
+    }),
     rearDifferential: z.object({
       type: z.enum(["", ...differentialTypes]),
       manufacturerId: z.string().uuid().nullable(),
