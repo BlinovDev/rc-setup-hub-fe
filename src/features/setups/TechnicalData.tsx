@@ -76,6 +76,18 @@ export function TechnicalData({
         ["Spring manufacturer", shock?.spring?.manufacturer],
         ["Spring color", shock?.spring?.color],
         ["Oil (cSt)", shock?.oil_cst],
+        ["Piston holes", shock?.piston?.holes],
+        ["Piston hole diameter (mm)", shock?.piston?.hole_diameter_mm],
+        ["Piston notes", shock?.piston?.notes?.trim() || undefined],
+        [
+          "Seal type",
+          shock?.seal?.type === "o-ring"
+            ? "O-ring"
+            : shock?.seal?.type === "x-ring"
+              ? "X-ring"
+              : undefined,
+        ],
+        ["Seal description", shock?.seal?.description?.trim() || undefined],
       ],
     });
   }

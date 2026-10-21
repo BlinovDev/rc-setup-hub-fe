@@ -85,6 +85,7 @@ try {
     const differentialModel = "Diff-".repeat(35);
     const differentialNotes = "Oil 10000\nTwo gears " + "tuning-".repeat(45);
     let manufacturerActive = true;
+    let setupPatches = 0;
     let setup = {
       id,
       owner_id: user.id,
@@ -232,6 +233,7 @@ try {
         status = 201;
       } else if (path === `/api/v1/setups/${id}`) {
         if (req.method() === "PATCH") {
+          setupPatches++;
           const update = req.postDataJSON();
           setup = {
             ...setup,
@@ -455,6 +457,23 @@ try {
     await page
       .getByLabel("Rear differential tuning notes", { exact: true })
       .fill(differentialNotes);
+    for (const axle of ["Front", "Rear"]) {
+      await page
+        .getByLabel(`${axle} piston hole count`, { exact: true })
+        .fill("6");
+      await page
+        .getByLabel(`${axle} piston hole diameter (mm)`, { exact: true })
+        .fill("1,23456789");
+      await page
+        .getByLabel(`${axle} piston notes`, { exact: true })
+        .fill("Two stages\n" + "PistonNotes".repeat(30));
+      await page
+        .getByLabel(`${axle} seal type`, { exact: true })
+        .selectOption("x-ring");
+      await page
+        .getByLabel(`${axle} seal description`, { exact: true })
+        .fill("Seal".repeat(45));
+    }
     await page.getByLabel("Front toe (degrees)", { exact: true }).fill("0");
     await page
       .getByLabel("Rear camber (degrees)", { exact: true })
@@ -513,6 +532,13 @@ try {
     assert.equal(cropWrites, 1);
     await geometry();
     await page.goto(`http://127.0.0.1:5173/setups/${id}`);
+    for (const axle of ["Front", "Rear"]) {
+      const section = page
+        .getByRole("heading", { name: `${axle} shocks`, exact: true })
+        .locator("..");
+      await section.getByText("1.23456789", { exact: true }).waitFor();
+      await section.getByText("X-ring", { exact: true }).waitFor();
+    }
     const differentialDetail = page
       .getByRole("heading", { name: "Rear differential", exact: true })
       .locator("..");
@@ -1035,6 +1061,72 @@ try {
     await page.getByRole("button", { name: "Save setup", exact: true }).click();
     await page.getByText("Setup saved.", { exact: true }).waitFor();
     assert.deepEqual(setup.data.rear_differential, { type: "spool" });
+    for (const axle of ["Front", "Rear"]) {
+      assert.equal(
+        await page
+          .getByLabel(`${axle} piston hole count`, { exact: true })
+          .inputValue(),
+        "6",
+      );
+    }
+    const beforeHardware = JSON.parse(JSON.stringify(setup.data));
+    const writesBeforeHardware = setupPatches;
+    await page
+      .getByLabel("Front piston hole count", { exact: true })
+      .fill("1.5");
+    await page.getByRole("button", { name: "Save setup", exact: true }).click();
+    assert.equal(
+      await page
+        .getByLabel("Front piston hole count", { exact: true })
+        .getAttribute("aria-invalid"),
+      "true",
+    );
+    assert(
+      await page
+        .getByLabel("Front piston hole count", { exact: true })
+        .evaluate((el) => document.activeElement === el),
+    );
+    assert.equal(setupPatches, writesBeforeHardware);
+    for (const axle of ["front", "rear"]) {
+      await page
+        .getByRole("button", { name: `Clear ${axle} piston`, exact: true })
+        .click();
+      await page
+        .getByRole("button", { name: `Clear ${axle} seal`, exact: true })
+        .click();
+      delete beforeHardware.shocks[axle].piston;
+      delete beforeHardware.shocks[axle].seal;
+      if (!Object.keys(beforeHardware.shocks[axle]).length)
+        delete beforeHardware.shocks[axle];
+    }
+    if (!Object.keys(beforeHardware.shocks).length)
+      delete beforeHardware.shocks;
+    await page.getByRole("button", { name: "Save setup", exact: true }).click();
+    await page.getByText("Setup saved.", { exact: true }).waitFor();
+    assert.deepEqual(setup.data, beforeHardware);
+    await page
+      .getByLabel("Front piston notes", { exact: true })
+      .fill("Notes only\nNo count");
+    await page
+      .getByLabel("Rear seal description", { exact: true })
+      .fill("Product only");
+    await page.getByRole("button", { name: "Save setup", exact: true }).click();
+    await page.getByText("Setup saved.", { exact: true }).waitFor();
+    assert.deepEqual(setup.data.shocks.front.piston, {
+      notes: "Notes only\nNo count",
+    });
+    assert.deepEqual(setup.data.shocks.rear.seal, {
+      description: "Product only",
+    });
+    await geometry();
+    await page.screenshot({
+      path: `artifacts/photo-qa/shock-hardware-${width}x${height}.png`,
+      fullPage: true,
+    });
+    console.log(
+      `PASS ${width}x${height} shock piston/seal both axles, decimal precision, optional clear/re-add, validation/focus and full-data preservation`,
+    );
+
     await geometry();
     console.log(
       `PASS ${width}x${height} differential create/detail/edit, multiline/wrapping, historical catalog, validation/focus, optional notes-only/clear/re-add, keyboard, numeric/full-data and unsaved-photo preservation`,

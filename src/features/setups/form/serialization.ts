@@ -1,6 +1,8 @@
 import type { components } from "../../../api/generated/schema";
 import {
   parseOptionalNumber,
+  parsePistonHoles,
+  parsePistonDiameter,
   parseArmSpacingNumber,
   parseSuspensionNumber,
   type SetupFormValues,
@@ -31,7 +33,14 @@ export function setupToForm(setup?: Schemas["Setup"]): SetupFormValues {
       length_mm: String(link.length_mm),
     })),
   });
-  const shock = (value?: Schemas["Shock"] | null) => ({
+  const shock = (
+    value?: Schemas["Shock"] | null,
+  ): SetupFormValues["frontShock"] => ({
+    pistonHoles: numberInput(value?.piston?.holes),
+    pistonDiameter: numberInput(value?.piston?.hole_diameter_mm),
+    pistonNotes: value?.piston?.notes ?? "",
+    sealType: value?.seal?.type ?? "",
+    sealDescription: value?.seal?.description ?? "",
     manufacturer: value?.manufacturer ?? "",
     model: value?.model ?? "",
     springManufacturer: value?.spring?.manufacturer ?? "",
@@ -95,6 +104,19 @@ export function serializeData(values: SetupFormValues): Schemas["SetupDataV1"] {
     value: SetupFormValues["frontShock"],
   ): Schemas["Shock"] | undefined {
     const result: Schemas["Shock"] = {};
+    const piston: Schemas["ShockPiston"] = {};
+    const holes = parsePistonHoles(value.pistonHoles);
+    const diameter = parsePistonDiameter(value.pistonDiameter);
+    const notes = optionalText(value.pistonNotes);
+    if (holes !== undefined) piston.holes = holes;
+    if (diameter !== undefined) piston.hole_diameter_mm = diameter;
+    if (notes !== undefined) piston.notes = notes;
+    if (Object.keys(piston).length) result.piston = piston;
+    const seal: Schemas["ShockSeal"] = {};
+    if (value.sealType) seal.type = value.sealType;
+    const description = optionalText(value.sealDescription);
+    if (description !== undefined) seal.description = description;
+    if (Object.keys(seal).length) result.seal = seal;
     const manufacturer = optionalText(value.manufacturer),
       model = optionalText(value.model);
     if (manufacturer !== undefined) result.manufacturer = manufacturer;

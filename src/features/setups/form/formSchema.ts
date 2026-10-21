@@ -97,7 +97,43 @@ const axle = z.object({
     )
     .max(100, "Use at most 100 links."),
 });
+export function parsePistonHoles(input: string): number | undefined {
+  const value = input.trim();
+  if (!value) return undefined;
+  if (!/^\d+$/.test(value) || Number(value) < 1 || Number(value) > 2147483647)
+    throw new Error("Enter a whole hole count from 1 to 2147483647.");
+  return Number(value);
+}
+export function parsePistonDiameter(input: string): number | undefined {
+  const value = parseSuspensionNumber(input);
+  if (value !== undefined && value <= 0)
+    throw new Error("Enter a finite diameter greater than zero.");
+  return value;
+}
+const optionalMeasurement = (
+  parse: (value: string) => number | undefined,
+  message: string,
+) =>
+  z.string().refine((value) => {
+    try {
+      parse(value);
+      return true;
+    } catch {
+      return false;
+    }
+  }, message);
 const shock = z.object({
+  pistonHoles: optionalMeasurement(
+    parsePistonHoles,
+    "Enter a whole hole count from 1 to 2147483647.",
+  ),
+  pistonDiameter: optionalMeasurement(
+    parsePistonDiameter,
+    "Enter a finite diameter greater than zero.",
+  ),
+  pistonNotes: text(10000),
+  sealType: z.enum(["", "o-ring", "x-ring"]),
+  sealDescription: text(200),
   manufacturer: text(200),
   model: text(200),
   springManufacturer: text(200),
