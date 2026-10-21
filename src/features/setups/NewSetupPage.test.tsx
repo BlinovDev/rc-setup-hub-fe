@@ -1,5 +1,5 @@
 import { userSetupsKey } from "./queries";
-import { fireEvent, screen } from "@testing-library/react";
+import { fireEvent, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { http, HttpResponse } from "msw";
 import { expect, it } from "vitest";
@@ -77,7 +77,10 @@ it("blocks a selected brand without model and validates required title", async (
     await screen.findByText("This field is required."),
   ).toBeInTheDocument();
   input("Title", "Title");
-  await screen.findByRole("option", { name: "MST" });
+  await within(screen.getByRole("group", { name: "Chassis" })).findByRole(
+    "option",
+    { name: "MST" },
+  );
   await userEvent
     .setup()
     .selectOptions(screen.getByLabelText("Brand"), activeBrand);
@@ -104,7 +107,10 @@ it("creates a realistic document with active chassis, links, shocks and electron
   renderSetupRoute("/my/setups/new");
   await screen.findByLabelText("Title");
   input("Title", "  Race  ");
-  await screen.findByRole("option", { name: "MST" });
+  await within(screen.getByRole("group", { name: "Chassis" })).findByRole(
+    "option",
+    { name: "MST" },
+  );
   const events = userEvent.setup();
   await events.selectOptions(screen.getByLabelText("Brand"), activeBrand);
   await screen.findByRole("option", { name: "RMX" });

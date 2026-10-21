@@ -44,6 +44,12 @@ export function setupToForm(setup?: Schemas["Setup"]): SetupFormValues {
     notes: setup?.notes ?? "",
     changeChassis: !setup,
     selection: { brandId: null, modelId: null },
+    rearDifferential: {
+      type: setup?.data.rear_differential?.type ?? "",
+      manufacturerId: setup?.data.rear_differential?.manufacturer_id ?? null,
+      model: setup?.data.rear_differential?.model ?? "",
+      tuningNotes: setup?.data.rear_differential?.tuning_notes ?? "",
+    },
     front: axle(setup?.data.suspension?.front),
     rear: axle(setup?.data.suspension?.rear),
     frontShock: shock(setup?.data.shocks?.front),
@@ -105,6 +111,16 @@ export function serializeData(values: SetupFormValues): Schemas["SetupDataV1"] {
     return Object.keys(result).length ? result : undefined;
   }
   const data: Schemas["SetupDataV1"] = {};
+  const differential: Schemas["RearDifferential"] = {};
+  const diff = values.rearDifferential;
+  if (diff.type) differential.type = diff.type;
+  if (diff.manufacturerId !== null)
+    differential.manufacturer_id = diff.manufacturerId;
+  const model = optionalText(diff.model),
+    tuning = optionalText(diff.tuningNotes);
+  if (model !== undefined) differential.model = model;
+  if (tuning !== undefined) differential.tuning_notes = tuning;
+  if (Object.keys(differential).length) data.rear_differential = differential;
   const suspension: Schemas["Suspension"] = {},
     shocks: Schemas["Shocks"] = {},
     electronics: Schemas["Electronics"] = {};

@@ -79,6 +79,12 @@ try {
       created_at: "2026-10-12T12:00:00Z",
     };
     const id = "c61393b6-daa0-4eb8-923c-57aedbb46a47";
+    const manufacturerId = "33333333-3333-4333-8333-333333333333";
+    const manufacturerName =
+      "Historical differential manufacturer " + "long-name-".repeat(10);
+    const differentialModel = "Diff-".repeat(35);
+    const differentialNotes = "Oil 10000\nTwo gears " + "tuning-".repeat(45);
+    let manufacturerActive = true;
     let setup = {
       id,
       owner_id: user.id,
@@ -89,6 +95,7 @@ try {
       chassis: null,
       chassis_model_id: null,
       cover_photo: null,
+      rear_differential_manufacturer: null,
       data: {
         suspension: {
           front: { top_arm_spacing: { front_mm: 0, rear_mm: 5.2 } },
@@ -180,7 +187,10 @@ try {
       let body,
         status = 200;
       if (path === "/api/v1/me") body = user;
-      else if (path === "/api/v1/chassis/brands") body = [];
+      else if (path === "/api/v1/chassis/brands")
+        body = manufacturerActive
+          ? [{ id: manufacturerId, name: manufacturerName }]
+          : [];
       else if (path === "/api/v1/friendships")
         body = { incoming: [], outgoing: [], accepted: [] };
       else if (path === `/api/v1/users/${otherOwner}`)
@@ -204,12 +214,34 @@ try {
         };
       else if (path === "/api/v1/setups" && req.method() === "POST") {
         creates++;
-        setup = { ...setup, ...req.postDataJSON() };
+        setup = {
+          ...setup,
+          ...req.postDataJSON(),
+          rear_differential_manufacturer: {
+            id: manufacturerId,
+            name: manufacturerName,
+          },
+        };
+        assert.deepEqual(setup.data.rear_differential, {
+          type: "gear",
+          manufacturer_id: manufacturerId,
+          model: differentialModel,
+          tuning_notes: differentialNotes,
+        });
         body = setup;
         status = 201;
       } else if (path === `/api/v1/setups/${id}`) {
-        if (req.method() === "PATCH")
-          setup = { ...setup, ...req.postDataJSON() };
+        if (req.method() === "PATCH") {
+          const update = req.postDataJSON();
+          setup = {
+            ...setup,
+            ...update,
+            rear_differential_manufacturer: update.data?.rear_differential
+              ?.manufacturer_id
+              ? { id: manufacturerId, name: manufacturerName }
+              : null,
+          };
+        }
         body = setup;
       } else if (path === `/api/v1/setups/${id}/photos`) {
         if (req.method() === "POST") {
@@ -411,6 +443,27 @@ try {
     };
     await toolbarCheck();
     await page.getByLabel("Title", { exact: true }).fill("New with photos");
+    await page
+      .getByLabel("Rear differential type", { exact: true })
+      .selectOption("gear");
+    await page
+      .getByLabel("Rear differential manufacturer", { exact: true })
+      .selectOption(manufacturerId);
+    await page
+      .getByLabel("Rear differential model", { exact: true })
+      .fill(differentialModel);
+    await page
+      .getByLabel("Rear differential tuning notes", { exact: true })
+      .fill(differentialNotes);
+    await page.getByLabel("Front toe (degrees)", { exact: true }).fill("0");
+    await page
+      .getByLabel("Rear camber (degrees)", { exact: true })
+      .fill("-1,25");
+    await geometry();
+    await page.screenshot({
+      path: `artifacts/photo-qa/differential-create-${width}x${height}.png`,
+      fullPage: true,
+    });
     const chooserEvent = page.waitForEvent("filechooser");
     await page
       .getByRole("button", { name: "Choose photos", exact: true })
@@ -460,6 +513,23 @@ try {
     assert.equal(cropWrites, 1);
     await geometry();
     await page.goto(`http://127.0.0.1:5173/setups/${id}`);
+    const differentialDetail = page
+      .getByRole("heading", { name: "Rear differential", exact: true })
+      .locator("..");
+    await differentialDetail
+      .getByText(manufacturerName, { exact: true })
+      .waitFor();
+    assert.equal(
+      await differentialDetail
+        .getByText(differentialNotes, { exact: true })
+        .evaluate((el) => getComputedStyle(el).whiteSpace),
+      "pre-wrap",
+    );
+    await geometry();
+    await page.screenshot({
+      path: `artifacts/photo-qa/differential-detail-${width}x${height}.png`,
+      fullPage: true,
+    });
     await page
       .getByRole("button", { name: "Enlarge photo 1 (cover)", exact: true })
       .click();
@@ -504,6 +574,9 @@ try {
     await toolbarCheck();
     await page.getByLabel("Title", { exact: true }).fill("Unsaved photo title");
     await page
+      .getByLabel("Rear differential tuning notes", { exact: true })
+      .fill("Unsaved differential tuning");
+    await page
       .getByRole("button", { name: "Make photo 2 cover", exact: true })
       .click();
     await page
@@ -513,7 +586,17 @@ try {
       await page.getByLabel("Title", { exact: true }).inputValue(),
       "Unsaved photo title",
     );
+    assert.equal(
+      await page
+        .getByLabel("Rear differential tuning notes", { exact: true })
+        .inputValue(),
+      "Unsaved differential tuning",
+    );
     await geometry();
+    await page.screenshot({
+      path: `artifacts/photo-qa/differential-edit-${width}x${height}.png`,
+      fullPage: true,
+    });
     for (const destination of ["/", "/my/setups", `/users/${user.id}`]) {
       await page.goto("http://127.0.0.1:5173" + destination);
       await page.getByAltText(`Cover of ${setup.title}`).waitFor();
@@ -873,6 +956,83 @@ try {
       "view/edit navigation sent mutations",
     );
     await geometry();
+    // Differential-specific edit validation and historical catalog behavior at every viewport.
+    setup = { ...setup, owner_id: user.id };
+    manufacturerActive = false;
+    await page.goto(`http://127.0.0.1:5173/my/setups/${id}/edit`);
+    await page.getByLabel("Rear differential model", { exact: true }).waitFor();
+    assert.equal(
+      await page
+        .getByLabel("Rear differential model", { exact: true })
+        .inputValue(),
+      differentialModel,
+    );
+    await page
+      .getByRole("button", {
+        name: "Change differential manufacturer",
+        exact: true,
+      })
+      .click();
+    await page
+      .getByText("No active manufacturers available.", { exact: true })
+      .waitFor();
+    assert.equal(
+      await page
+        .getByLabel("Rear differential manufacturer", { exact: true })
+        .inputValue(),
+      manufacturerId,
+    );
+    await page
+      .getByRole("button", { name: "Cancel manufacturer change", exact: true })
+      .click();
+    const beforeInvalid = mutationCalls;
+    await page
+      .getByLabel("Rear differential model", { exact: true })
+      .fill("x".repeat(201));
+    await page.getByRole("button", { name: "Save setup", exact: true }).click();
+    await page
+      .getByText("Use at most 200 characters.", { exact: true })
+      .waitFor();
+    assert.equal(mutationCalls, beforeInvalid);
+    assert(
+      await page
+        .getByLabel("Rear differential model", { exact: true })
+        .evaluate((el) => el === document.activeElement),
+    );
+    const expectedOtherData = structuredClone(setup.data);
+    delete expectedOtherData.rear_differential;
+    await page
+      .getByRole("button", { name: "Clear rear differential", exact: true })
+      .click();
+    await page
+      .getByLabel("Rear differential tuning notes", { exact: true })
+      .fill("Spring only\nNo type required");
+    await page.getByRole("button", { name: "Save setup", exact: true }).click();
+    await page.getByText("Setup saved.", { exact: true }).waitFor();
+    assert.deepEqual(setup.data, {
+      ...expectedOtherData,
+      rear_differential: { tuning_notes: "Spring only\nNo type required" },
+    });
+    await page
+      .getByRole("button", { name: "Clear rear differential", exact: true })
+      .click();
+    await page.getByRole("button", { name: "Save setup", exact: true }).click();
+    await page.getByText("Setup saved.", { exact: true }).waitFor();
+    assert.deepEqual(setup.data, expectedOtherData);
+    const typeSelect = page.getByLabel("Rear differential type", {
+      exact: true,
+    });
+    await typeSelect.focus();
+    await page.keyboard.press("End");
+    await page.keyboard.press("Enter");
+    assert.equal(await typeSelect.inputValue(), "spool");
+    await page.getByRole("button", { name: "Save setup", exact: true }).click();
+    await page.getByText("Setup saved.", { exact: true }).waitFor();
+    assert.deepEqual(setup.data.rear_differential, { type: "spool" });
+    await geometry();
+    console.log(
+      `PASS ${width}x${height} differential create/detail/edit, multiline/wrapping, historical catalog, validation/focus, optional notes-only/clear/re-add, keyboard, numeric/full-data and unsaved-photo preservation`,
+    );
     console.log(
       `PASS ${width}x${height} owned placeholder/cover/title navigation, keyboard order, separate Delete cancellation, read-only detail/reload/Edit, foreign detail/edit, no mutations`,
     );

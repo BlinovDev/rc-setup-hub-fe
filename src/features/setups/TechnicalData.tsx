@@ -1,3 +1,4 @@
+import { differentialLabels, manufacturerLabel } from "./differential";
 import type { components } from "../../api/generated/schema";
 function Values({
   title,
@@ -17,7 +18,7 @@ function Values({
         {present.map(([label, value], index) => (
           <div key={index}>
             <dt>{label}:</dt>
-            <dd>{value}</dd>
+            <dd className="whitespace-pre-wrap">{value}</dd>
           </div>
         ))}
       </dl>
@@ -26,8 +27,11 @@ function Values({
 }
 export function TechnicalData({
   data,
+  differentialManufacturer,
 }: {
   data: components["schemas"]["SetupDataV1"];
+  differentialManufacturer?:
+    components["schemas"]["DifferentialManufacturer"] | null;
 }) {
   const sections: {
     title: string;
@@ -75,6 +79,27 @@ export function TechnicalData({
       ],
     });
   }
+  const differential = data.rear_differential;
+  sections.push({
+    title: "Rear differential",
+    values: [
+      [
+        "Type",
+        differential?.type ? differentialLabels[differential.type] : undefined,
+      ],
+      [
+        "Manufacturer",
+        differential?.manufacturer_id
+          ? manufacturerLabel(
+              differential.manufacturer_id,
+              differentialManufacturer,
+            )
+          : undefined,
+      ],
+      ["Model", differential?.model?.trim() || undefined],
+      ["Tuning notes", differential?.tuning_notes?.trim() || undefined],
+    ],
+  });
   sections.push({
     title: "Electronics",
     values: (["motor", "esc", "servo", "gyro", "radio"] as const).map((key) => [

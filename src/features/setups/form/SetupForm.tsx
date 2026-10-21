@@ -14,6 +14,7 @@ import { setupFormSchema, type SetupFormValues } from "./formSchema";
 import { setupToForm } from "./serialization";
 import { SetupField } from "./SetupField";
 import { SuspensionSection } from "./SuspensionSection";
+import { RearDifferentialSection } from "./RearDifferentialSection";
 
 export function SetupForm({
   setup,
@@ -58,6 +59,7 @@ export function SetupForm({
             ["general", "General"],
             ["front", "Front"],
             ["rear", "Rear"],
+            ["rear-differential", "Rear differential"],
             ["front-shocks", "Front shocks"],
             ["rear-shocks", "Rear shocks"],
             ["electronics", "Electronics"],
@@ -124,6 +126,7 @@ export function SetupForm({
           </fieldset>
           <SuspensionSection side="front" />
           <SuspensionSection side="rear" />
+          <RearDifferentialSection setup={setup} />
           {(["frontShock", "rearShock"] as const).map((side, index) => (
             <fieldset
               id={`setup-${index === 0 ? "front" : "rear"}-shocks`}

@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { differentialTypes } from "../differential";
 
 export function parseOptionalNumber(input: string): number | undefined {
   const value = input.trim();
@@ -112,6 +113,12 @@ export const setupFormSchema = z
     selection: z.object({
       brandId: z.string().uuid().nullable(),
       modelId: z.string().uuid().nullable(),
+    }),
+    rearDifferential: z.object({
+      type: z.enum(["", ...differentialTypes]),
+      manufacturerId: z.string().uuid().nullable(),
+      model: text(200),
+      tuningNotes: text(10000),
     }),
     front: axle,
     rear: axle,

@@ -118,7 +118,10 @@ export function SetupDetailPage({
       )}
       <Gallery key={setup.id} setupId={setup.id} />
       {setup.schema_version === 1 ? (
-        <TechnicalData data={setup.data} />
+        <TechnicalData
+          data={setup.data}
+          differentialManufacturer={setup.rear_differential_manufacturer}
+        />
       ) : (
         <p>This setup data version is not supported.</p>
       )}
