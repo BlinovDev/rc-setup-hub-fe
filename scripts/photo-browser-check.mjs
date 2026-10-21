@@ -957,7 +957,13 @@ try {
     );
     await geometry();
     // Differential-specific edit validation and historical catalog behavior at every viewport.
-    setup = { ...setup, owner_id: user.id };
+    // The preceding read-only layout fixture deliberately has a title above the write limit.
+    // Start this independent validation scenario with a valid title so model is first invalid.
+    setup = {
+      ...setup,
+      owner_id: user.id,
+      title: "Differential browser setup",
+    };
     manufacturerActive = false;
     await page.goto(`http://127.0.0.1:5173/my/setups/${id}/edit`);
     await page.getByLabel("Rear differential model", { exact: true }).waitFor();
