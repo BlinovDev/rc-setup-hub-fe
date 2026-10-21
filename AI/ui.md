@@ -46,6 +46,12 @@ loads only on explicit Change, supports retry/cancel, and retains the historical
 name/reference when inactive. Detail is read-only and uses the returned name
 projection, with an unavailable-name fallback and no extra catalog lookup.
 
+Front steering knuckles use independent optional catalog manufacturer and free-text
+part number/description (200 Unicode characters). Clear affects only the knuckle.
+The shared component manufacturer selector retains historical references, loads
+active choices on explicit Change in edit, and supports retry/cancel. Read-only
+detail uses the joined name projection without additional catalog requests.
+
 Each axle's shock section includes independent optional piston hole count, diameter
 (mm), multiline notes, seal type and product description. Clear piston/seal affects
 only that block. Counts are positive int32 integers; diameters accept dot/comma

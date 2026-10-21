@@ -121,6 +121,7 @@ export function SetupDetailPage({
         <TechnicalData
           data={setup.data}
           differentialManufacturer={setup.rear_differential_manufacturer}
+          knuckleManufacturer={setup.front_steering_knuckle_manufacturer}
         />
       ) : (
         <p>This setup data version is not supported.</p>

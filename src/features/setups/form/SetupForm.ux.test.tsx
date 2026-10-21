@@ -22,7 +22,7 @@ it("offers section anchors to all visible sections", () => {
   const links = within(
     screen.getByRole("navigation", { name: "Setup sections" }),
   ).getAllByRole("link");
-  expect(links).toHaveLength(7);
+  expect(links).toHaveLength(8);
   for (const link of links) {
     const target = document.querySelector(link.getAttribute("href")!);
     expect(target).toBeVisible();

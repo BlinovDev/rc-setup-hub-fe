@@ -28,8 +28,11 @@ function Values({
 export function TechnicalData({
   data,
   differentialManufacturer,
+  knuckleManufacturer,
 }: {
   data: components["schemas"]["SetupDataV1"];
+  knuckleManufacturer?:
+    components["schemas"]["DifferentialManufacturer"] | null;
   differentialManufacturer?:
     components["schemas"]["DifferentialManufacturer"] | null;
 }) {
@@ -91,6 +94,19 @@ export function TechnicalData({
       ],
     });
   }
+  const knuckle = data.front_steering_knuckle;
+  sections.push({
+    title: "Front steering knuckle",
+    values: [
+      [
+        "Manufacturer",
+        knuckle?.manufacturer_id
+          ? manufacturerLabel(knuckle.manufacturer_id, knuckleManufacturer)
+          : undefined,
+      ],
+      ["Part number / description", knuckle?.description?.trim() || undefined],
+    ],
+  });
   const differential = data.rear_differential;
   sections.push({
     title: "Rear differential",
