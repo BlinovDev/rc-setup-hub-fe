@@ -34,7 +34,7 @@ The frontend uses the backend HttpOnly session cookie and never stores auth toke
 
 Status: accepted.
 
-The committed `api/openapi.yaml` is the machine-readable backend contract. Phase 0 established generated transport types in `src/api/generated/schema.ts` via `npm run api:generate`; these types are the source of truth for frontend transport typing.
+The committed `api/openapi.yaml` is the machine-readable backend contract. Generated types in `src/api/generated/schema.ts` come from `npm run api:generate` and own frontend transport typing.
 
 Do not maintain parallel hand-written API DTOs for the same contract.
 
@@ -80,13 +80,13 @@ Status: accepted.
 
 Do not add offline sync, complex global state, a large design system, micro-frontends, or generalized form engines unless real requirements justify them.
 
-## F011 — API foundation established in Phase 0
+## F011 — Shared credentialed API client
 
 Status: accepted.
 
 Use `VITE_API_URL` for the non-secret backend origin, defaulting to `http://localhost:8080`. The existing `openapi-fetch` client uses generated OpenAPI types and enforces `credentials: "include"`.
 
-OpenAPI generation and the shared client belong to the completed Phase 0 foundation. Phase 1 builds current-user queries, authentication state, login/logout and session behavior on that foundation.
+Feature queries/mutations reuse this foundation; do not create a competing client or token flow.
 
 
 ## F012 — Backend repository coordinates combined deployments
@@ -103,7 +103,8 @@ Staging and production are rebuilt separately. Production accepts only SHAs reac
 
 Status: accepted (Issues backend #3 / frontend #9, arm-spacing-v1).
 
-Consume backend PR #4's exact additive schema-v1 contract. Model optional
+The additive schema-v1 contract originated in backend PR #4; current committed
+OpenAPI/types remain authoritative. Model optional
 top/lower arm blocks on either axle as form UI state; generated ArmSpacing types
 own transport. Preserve explicit zero, decimals and partial unknown values;
 prune empty/removed blocks without defaults. Reuse suspension dot/comma parsing
@@ -115,7 +116,8 @@ explicit BE/FE SHA pair after separate authorization.
 
 Status: accepted (backend #5/frontend #11, setup-photos-v1).
 
-Use exact backend PR #6 contract and generated types. Save new setup once, then
+The photo contract originated in backend PR #6; use current committed OpenAPI
+and generated types. Save new setup once, then
 upload selected files with stable retry UUIDs and retained partial successes.
 Existing owner photo writes save immediately and never reset unsaved technical
 values. Separate gallery metadata and ephemeral authenticated media queries
@@ -129,12 +131,13 @@ captions/sorting or mixed-version deployment.
 
 Status: implemented (backend #10 / frontend #13, setup-photo-ux-v2).
 
-Supersedes prior 3:2/no-crop thumbnail presentation. Use exact backend PR #11 crop
-contract, generated types, server-normalized full JPEG previews and integer square
+Supersedes prior 3:2/no-crop thumbnail presentation. The crop extension originated
+in backend PR #11; use current committed
+OpenAPI/generated types, server-normalized full JPEG previews and integer square
 coordinates/revisions. Apply/reset persist independently; Cancel preserves the
 current frame and full media never changes. Touch/keyboard/slider controls are
 bounded. Revision-bearing media identities refresh all joined list covers without
 metadata N+1; old null crops remain centered until adjusted, no backfill/re-upload.
 Photo limits, privacy, idempotent uploads and unsaved setup fields remain intact.
 Mobile lists use compact square rows; desktop uses bounded square cards. Production
-still waits for reviewed physical/paired live QA; no merge/deploy in this task.
+requires reviewed physical/paired live QA under the shared workflow/release gates.

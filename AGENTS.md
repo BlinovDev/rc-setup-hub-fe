@@ -1,82 +1,48 @@
-# RC Setup Hub Frontend — Codex instructions
+# RC Setup Hub frontend — task router
 
-This repository is the separate user-facing client for RC Setup Hub. Keep changes small, testable, and easy to review.
+Read the task/Issue and [workflow](AI/workflow.md), then only the rows needed below.
+Inspect current code/tests and applicable nested instructions before editing. Do
+not load all AI documents or historical roadmaps. No prior chat context is required.
 
-## Read before changing code
+| Task | Context to load |
+| --- | --- |
+| Product / user interaction | [Frontend rules](AI/product.md), relevant [decisions](AI/decisions.md), [UI](AI/ui.md) |
+| Implementation / structure | [Architecture](AI/architecture.md), [development](AI/development.md) |
+| API / auth / cache / forms | [API integration](AI/api.md), affected [OpenAPI](api/openapi.yaml) schemas/generated types |
+| Checks / defect regression | [Testing](AI/testing.md), nearest feature tests |
+| Release / staging | [Deployment](AI/deployment.md), backend coordinator policy linked there |
+| Documentation / instructions | [Workflow](AI/workflow.md), [context smoke](AI/context-smoke.md); edit only affected sources |
 
-Start with `AI/main.md` and `AI/product.md`. For feature delivery or work that may reach staging/production, also read `AI/workflow.md`. Then read the documents relevant to the task:
+## Non-negotiable boundaries
 
-- product/business rules: `AI/product.md`
-- feature delivery lifecycle: `AI/workflow.md`
-- architecture: `AI/architecture.md`
-- backend/API integration: `AI/api.md`
-- UI/routes: `AI/ui.md`
-- development rules: `AI/development.md`
-- testing: `AI/testing.md`
-- implementation sequence: `AI/roadmap.md`
-- accepted decisions: `AI/decisions.md`
+- Implement approved acceptance criteria only; small, responsive, mobile-first changes.
+- Backend owns auth, authorization, visibility and validation. Use its HttpOnly
+  cookie with credentials included. No auth/session tokens in browser storage/state.
+- Use the shared typed API client and feature query/mutation modules; no scattered
+  fetch calls or handwritten copies of generated transport DTOs. Never hand-edit
+  generated types. Do not inspect backend source unless explicitly authorized.
+- Preserve React/TypeScript/Vite, TanStack Query ownership, React Hook Form/Zod and
+  feature modules. Preserve zero versus omitted numbers and unrelated unsaved fields.
+- Keep no-store private media, image limits, retry UUIDs, scoped cache invalidation,
+  accessibility and safe errors. No secrets or raw server details in the client.
+- Docs by exception: change one canonical source for an enduring rule/contract.
+  Ordinary fixes/refactors with unchanged invariants may have zero evergreen-doc edits.
+- Add/update tests for behavior changes; run Node 24 checks. Mocked browser results
+  do not prove physical iPhone, real OAuth or paired live backend behavior.
+- Branch and PR against main; cross-link the owning issue and companion PR. Never
+  merge, deploy or touch live systems without explicit authorization; CI is not approval.
 
-Do not silently contradict accepted decisions or business rules. If a task conflicts with `AI/decisions.md` or materially changes `AI/product.md`, make that change explicit in the specification/PR instead of guessing.
+## Relevant engineering skill only
 
-For new feature requests, treat GitHub Issue/PR state and repository docs as durable context. Do not rely on previous chat history being available.
+For authorized changes read [rc-implement](.agents/skills/rc-implement/SKILL.md);
+for defects [rc-regression](.agents/skills/rc-regression/SKILL.md).
+Design/impact/review tasks select the corresponding skill from
+[engineering skills](AI/engineering-skills.md). Reviews are read-only; a self-check
+is not independent review. No mandatory chain of all six skills.
 
-## Core development rules
+## Check entry points (repository root)
 
-- For roadmap work, implement one roadmap phase at a time.
-- For post-roadmap feature work, implement only the approved acceptance criteria.
-- Do not implement unrelated features opportunistically.
-- Keep the frontend repository independent from the Go backend repository.
-- The backend remains the source of truth for authentication, authorization, visibility, validation, friendship state, and persisted data.
-- Never store auth/session tokens in `localStorage`, `sessionStorage`, or frontend state.
-- Authenticated API requests must use the backend HttpOnly session cookie with credentials enabled.
-- Generated API types are the source of truth. Do not hand-write duplicate transport interfaces for schemas that already exist in generated types.
-- Keep API access behind the shared API client and feature-specific query/mutation modules. Components must not scatter raw `fetch` calls.
-- Use TanStack Query for server state. Do not introduce Redux/Zustand unless an accepted decision later requires it.
-- Use React Hook Form for non-trivial forms and Zod for client-side form parsing/validation where useful.
-- Preserve backend semantics: an omitted numeric setup value is different from an explicit numeric `0`.
-- Do not reproduce backend authorization logic as a security mechanism.
-- Prefer feature-oriented modules over large global technical buckets.
-- Keep UI responsive and mobile-first.
-- Add or update tests for every behavior change.
-- Never commit secrets, real OAuth credentials, or production endpoints.
-- Update `AI/product.md` in the same PR when user-visible behavior or a business rule changes.
-- For cross-repository API changes, consume the updated backend OpenAPI contract and link the backend PR.
-
-## Completion rule
-
-A task is complete only when:
-1. implementation matches its acceptance criteria;
-2. relevant tests pass;
-3. production build succeeds for code changes;
-4. no unrelated feature scope was added;
-5. documentation is updated when product behavior or the client contract changed;
-6. staging/QA/production gates in `AI/workflow.md` are respected when applicable.
-
-When asked to implement a roadmap phase, first read the referenced AI docs, implement only that phase, run its verification commands, and report changed files and test/build results.
-
-## Backend API contract
-
-The frontend must use `api/openapi.yaml` as the machine-readable backend contract.
-
-Rules:
-- Do not infer API shapes from assumptions.
-- Do not inspect or depend on Go backend source code unless explicitly asked.
-- Do not manually recreate API response/request interfaces when they can be generated from OpenAPI.
-- Generated API types belong under `src/api/generated/`.
-- Do not manually edit generated files.
-- Backend authorization rules must not be duplicated as frontend security logic.
-- HttpOnly cookie authentication is backend-owned.
-- Never store authentication tokens in localStorage or sessionStorage.
-- All authenticated browser API requests must use credentials.
-- If implementation and OpenAPI appear inconsistent, stop and report the mismatch instead of guessing.
-
-## Repository engineering skills
-
-Use the relevant skill in `.agents/skills/` after the required project context above:
-`rc-implement` for authorized changes; `rc-architect` for design analysis;
-`rc-regression` for bug reproduction/tests; `rc-blast-radius` for impact analysis;
-`rc-review` for independent code review; `rc-thermo-review` for strict architecture review.
-Read the selected `SKILL.md`; explicit invocation uses `$skill-name`. Analysis/review
-skills are read-only. Skills supplement these instructions and AI decisions; they
-do not relax verification or authorize merges, deployment, or broad refactoring.
-Discovery checks, Cloud smoke prompts and upstream maintenance: `AI/engineering-skills.md`.
+Docs: `python3 scripts/verify-docs.py`; instruction/provenance changes also run
+`python3 scripts/verify-engineering-skills.py` and the tests in [testing](AI/testing.md).
+For code use the Node 24 sequence and browser gate documented there; start locally
+with [README](README.md). Report actual results and unavailable prerequisites.
