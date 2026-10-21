@@ -58,6 +58,11 @@ export function setupToForm(setup?: Schemas["Setup"]): SetupFormValues {
     notes: setup?.notes ?? "",
     changeChassis: !setup,
     selection: { brandId: null, modelId: null },
+    frontSteeringKnuckle: {
+      manufacturerId:
+        setup?.data.front_steering_knuckle?.manufacturer_id ?? null,
+      description: setup?.data.front_steering_knuckle?.description ?? "",
+    },
     rearDifferential: {
       type: setup?.data.rear_differential?.type ?? "",
       manufacturerId: setup?.data.rear_differential?.manufacturer_id ?? null,
@@ -146,6 +151,13 @@ export function serializeData(values: SetupFormValues): Schemas["SetupDataV1"] {
     return Object.keys(result).length ? result : undefined;
   }
   const data: Schemas["SetupDataV1"] = {};
+  const knuckle: Schemas["SteeringKnuckle"] = {};
+  const frontKnuckle = values.frontSteeringKnuckle;
+  if (frontKnuckle.manufacturerId !== null)
+    knuckle.manufacturer_id = frontKnuckle.manufacturerId;
+  const description = optionalText(frontKnuckle.description);
+  if (description !== undefined) knuckle.description = description;
+  if (Object.keys(knuckle).length) data.front_steering_knuckle = knuckle;
   const differential: Schemas["RearDifferential"] = {};
   const diff = values.rearDifferential;
   if (diff.type) differential.type = diff.type;

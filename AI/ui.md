@@ -52,6 +52,11 @@ independent; Clear affects only that axle's mount. Reuse the component manufactu
 selector, retaining historical references with lazy edit loading and retry/cancel.
 Detail uses the joined per-axle name projection without catalog requests. No separate
 mounts, inserts or geometry controls.
+Front steering knuckles use independent optional catalog manufacturer and free-text
+part number/description (200 Unicode characters). Clear affects only the knuckle.
+The shared component manufacturer selector retains historical references, loads
+active choices on explicit Change in edit, and supports retry/cancel. Read-only
+detail uses the joined name projection without additional catalog requests.
 
 Each axle's shock section includes independent optional piston hole count, diameter
 (mm), multiline notes, seal type and product description. Clear piston/seal affects

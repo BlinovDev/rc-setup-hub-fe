@@ -15,6 +15,7 @@ import { setupToForm } from "./serialization";
 import { SetupField } from "./SetupField";
 import { SuspensionSection } from "./SuspensionSection";
 import { ShockHardwareFields } from "./ShockHardwareFields";
+import { FrontSteeringKnuckleSection } from "./FrontSteeringKnuckleSection";
 import { RearDifferentialSection } from "./RearDifferentialSection";
 
 export function SetupForm({
@@ -59,6 +60,7 @@ export function SetupForm({
           {[
             ["general", "General"],
             ["front", "Front"],
+            ["front-knuckle", "Front knuckle"],
             ["rear", "Rear"],
             ["rear-differential", "Rear differential"],
             ["front-shocks", "Front shocks"],
@@ -126,6 +128,7 @@ export function SetupForm({
             <SetupField name="notes" label="Notes" multiline />
           </fieldset>
           <SuspensionSection side="front" setup={setup} />
+          <FrontSteeringKnuckleSection setup={setup} />
           <SuspensionSection side="rear" setup={setup} />
           <RearDifferentialSection setup={setup} />
           {(["frontShock", "rearShock"] as const).map((side, index) => (

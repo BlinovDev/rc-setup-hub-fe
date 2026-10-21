@@ -94,6 +94,7 @@ try {
           }
         : null;
     };
+    const knuckleDescription = "Part-".repeat(35) + "\nFront alloy";
     const differentialModel = "Diff-".repeat(35);
     const differentialNotes = "Oil 10000\nTwo gears " + "tuning-".repeat(45);
     let manufacturerActive = true;
@@ -108,6 +109,7 @@ try {
       chassis: null,
       chassis_model_id: null,
       cover_photo: null,
+      front_steering_knuckle_manufacturer: null,
       rear_differential_manufacturer: null,
       lower_arm_mount_manufacturers: null,
       data: {
@@ -232,6 +234,10 @@ try {
           ...setup,
           ...req.postDataJSON(),
           lower_arm_mount_manufacturers: mountDisplays(req.postDataJSON().data),
+          front_steering_knuckle_manufacturer: {
+            id: manufacturerId,
+            name: manufacturerName,
+          },
           rear_differential_manufacturer: {
             id: manufacturerId,
             name: manufacturerName,
@@ -244,6 +250,10 @@ try {
             configuration_notes: mountNotes,
           });
         }
+        assert.deepEqual(setup.data.front_steering_knuckle, {
+          manufacturer_id: manufacturerId,
+          description: knuckleDescription,
+        });
         assert.deepEqual(setup.data.rear_differential, {
           type: "gear",
           manufacturer_id: manufacturerId,
@@ -260,6 +270,10 @@ try {
             ...setup,
             ...update,
             lower_arm_mount_manufacturers: mountDisplays(update.data),
+            front_steering_knuckle_manufacturer: update.data
+              ?.front_steering_knuckle?.manufacturer_id
+              ? { id: manufacturerId, name: manufacturerName }
+              : null,
             rear_differential_manufacturer: update.data?.rear_differential
               ?.manufacturer_id
               ? { id: manufacturerId, name: manufacturerName }
@@ -467,6 +481,13 @@ try {
     };
     await toolbarCheck();
     await page.getByLabel("Title", { exact: true }).fill("New with photos");
+    await page
+      .getByLabel("Front knuckle manufacturer", { exact: true })
+      .selectOption(manufacturerId);
+    await page
+      .getByLabel("Front knuckle part number / description", { exact: true })
+      .fill(knuckleDescription);
+
     for (const axle of ["Front", "Rear"]) {
       await page
         .getByLabel(`${axle} lower arm mount manufacturer`, { exact: true })
@@ -590,6 +611,13 @@ try {
         "pre-wrap",
       );
     }
+    const knuckleDetail = page
+      .getByRole("heading", { name: "Front steering knuckle", exact: true })
+      .locator("..");
+    await knuckleDetail.getByText(manufacturerName, { exact: true }).waitFor();
+    await knuckleDetail
+      .getByText(knuckleDescription, { exact: true })
+      .waitFor();
     const differentialDetail = page
       .getByRole("heading", { name: "Rear differential", exact: true })
       .locator("..");
@@ -651,6 +679,10 @@ try {
     await toolbarCheck();
     await page.getByLabel("Title", { exact: true }).fill("Unsaved photo title");
     await page
+      .getByLabel("Front knuckle part number / description", { exact: true })
+      .fill("Unsaved knuckle part");
+
+    await page
       .getByLabel("Front lower arm mount configuration notes", { exact: true })
       .fill("Unsaved front mount config");
     await page
@@ -670,6 +702,13 @@ try {
       await page.getByLabel("Title", { exact: true }).inputValue(),
       "Unsaved photo title",
     );
+    assert.equal(
+      await page
+        .getByLabel("Front knuckle part number / description", { exact: true })
+        .inputValue(),
+      "Unsaved knuckle part",
+    );
+
     assert.equal(
       await page
         .getByLabel("Front lower arm mount configuration notes", {
@@ -1284,6 +1323,63 @@ try {
     });
     console.log(
       `PASS ${width}x${height} lower arm mounts on both axles, create/detail/edit, shared catalog/historical names, Unicode/wrapping, validation/focus, clear/cancel/partial re-add and full-data/photo preservation`,
+    );
+    const knuckleGroup = page.getByRole("group", {
+      name: "Front steering knuckle",
+      exact: true,
+    });
+    const preservedBeforeKnuckle = JSON.parse(JSON.stringify(setup.data));
+    const patchesBeforeKnuckle = setupPatches;
+    await page
+      .getByLabel("Front knuckle part number / description", { exact: true })
+      .fill("x".repeat(201));
+    await page.getByRole("button", { name: "Save setup", exact: true }).click();
+    assert.equal(setupPatches, patchesBeforeKnuckle);
+    assert(
+      await page
+        .getByLabel("Front knuckle part number / description", { exact: true })
+        .evaluate((el) => document.activeElement === el),
+    );
+    assert.equal(
+      await page
+        .getByLabel("Front knuckle part number / description", { exact: true })
+        .getAttribute("aria-invalid"),
+      "true",
+    );
+    await knuckleGroup
+      .getByRole("button", { name: "Clear front knuckle", exact: true })
+      .click();
+    await knuckleGroup
+      .getByRole("button", { name: "Change knuckle manufacturer", exact: true })
+      .click();
+    await page
+      .getByLabel("Front knuckle manufacturer", { exact: true })
+      .selectOption(manufacturerId);
+    await knuckleGroup
+      .getByRole("button", { name: "Cancel manufacturer change", exact: true })
+      .click();
+    await knuckleGroup
+      .getByText("Front knuckle manufacturer: Not specified", { exact: true })
+      .waitFor();
+    await page.getByRole("button", { name: "Save setup", exact: true }).click();
+    await page.getByText("Setup saved.", { exact: true }).waitFor();
+    delete preservedBeforeKnuckle.front_steering_knuckle;
+    assert.deepEqual(setup.data, preservedBeforeKnuckle);
+    await page
+      .getByLabel("Front knuckle part number / description", { exact: true })
+      .fill("Part only\nNo manufacturer required");
+    await page.getByRole("button", { name: "Save setup", exact: true }).click();
+    await page.getByText("Setup saved.", { exact: true }).waitFor();
+    assert.deepEqual(setup.data.front_steering_knuckle, {
+      description: "Part only\nNo manufacturer required",
+    });
+    await geometry();
+    await page.screenshot({
+      path: `artifacts/photo-qa/knuckle-${width}x${height}.png`,
+      fullPage: true,
+    });
+    console.log(
+      `PASS ${width}x${height} knuckle create/edit/detail, shared catalog, historical display, Unicode/wrapping, validation/focus, clear/cancel/re-add, photo and full-data preservation`,
     );
     console.log(
       `PASS ${width}x${height} shock piston/seal both axles, decimal precision, optional clear/re-add, validation/focus and full-data preservation`,

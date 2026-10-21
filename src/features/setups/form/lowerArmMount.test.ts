@@ -56,6 +56,7 @@ for (const side of ["front", "rear"] as const) {
     };
     const data: Schemas["SetupDataV1"] = {
       ...testSetup.data,
+      front_steering_knuckle: { description: "Existing knuckle" },
       rear_differential: {
         type: "lsd",
         manufacturer_id: id,

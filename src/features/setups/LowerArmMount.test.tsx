@@ -28,6 +28,7 @@ const setup: Schemas["Setup"] = {
   },
   data: {
     ...testSetup.data,
+    front_steering_knuckle: { description: "Existing knuckle" },
     suspension: {
       front: {
         ...testSetup.data.suspension?.front,

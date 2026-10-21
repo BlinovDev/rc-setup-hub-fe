@@ -526,10 +526,21 @@ export interface components {
         };
         /** @description Schema version 1 technical document. All sections are optional; null sections are omitted on output. Unknown fields are rejected on input. Explicit numeric zero is preserved; omitted/null optional numeric values are unknown. PATCH replaces this entire document, without a deep merge. */
         SetupDataV1: {
+            front_steering_knuckle?: components["schemas"]["SteeringKnuckle"] | null;
             rear_differential?: components["schemas"]["RearDifferential"] | null;
             suspension?: components["schemas"]["Suspension"] | null;
             shocks?: components["schemas"]["Shocks"] | null;
             electronics?: components["schemas"]["Electronics"] | null;
+        };
+        /** @description Optional front-only steering knuckle. Fields are independent; empty/null blocks are omitted. Additive schema-v1 extension without migration or defaults. No rear knuckle field. Supplied data replaces the entire technical document. */
+        SteeringKnuckle: {
+            /**
+             * Format: uuid
+             * @description Existing chassis brand UUID. New selections must exist and be active; unchanged historical inactive references survive PATCH. Null/omitted is unknown. Output UUID is canonical.
+             */
+            manufacturer_id?: string | null;
+            /** @description Trimmed free-text part number/product description. Empty/null/omitted is omitted. At most 200 Unicode characters without null bytes. */
+            description?: string | null;
         };
         /** @description Optional rear-only differential. All fields are independent and optional. Empty or null blocks are omitted on output. Additive schema-v1 JSONB extension; no default differential or migration/backfill. Supplied data still replaces the complete technical document. */
         RearDifferential: {
@@ -704,6 +715,8 @@ export interface components {
         Setup: {
             /** @description Read-only historical catalog display; null when neither axle has a resolvable manufacturer. Never stored in technical data or accepted in writes. */
             lower_arm_mount_manufacturers: components["schemas"]["LowerArmMountManufacturers"] | null;
+            /** @description Read-only joined historical brand display for data.front_steering_knuckle.manufacturer_id, including inactive brands. Null when absent or unresolvable. Never accepted in writes. */
+            front_steering_knuckle_manufacturer: components["schemas"]["DifferentialManufacturer"] | null;
             /** @description Read-only joined display for data.rear_differential.manufacturer_id, including inactive brands. Null when no manufacturer is selected or resolvable. Never accepted in create or PATCH input. */
             rear_differential_manufacturer: components["schemas"]["DifferentialManufacturer"] | null;
             /** @description Compact joined cover metadata; null when there are no photos. */

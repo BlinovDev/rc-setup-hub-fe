@@ -22,10 +22,11 @@ export function ManufacturerField({
   displayLabel = "Manufacturer",
 }: {
   name:
+    | "frontSteeringKnuckle.manufacturerId"
     | "rearDifferential.manufacturerId"
     | `${"front" | "rear"}.lowerArmMount.manufacturerId`;
   label: string;
-  action: "differential" | `${"front" | "rear"} lower arm mount`;
+  action: "differential" | "knuckle" | `${"front" | "rear"} lower arm mount`;
   existing: boolean;
   savedId?: string | null | undefined;
   display?:

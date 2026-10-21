@@ -122,6 +122,7 @@ export function SetupDetailPage({
           data={setup.data}
           differentialManufacturer={setup.rear_differential_manufacturer}
           mountManufacturers={setup.lower_arm_mount_manufacturers}
+          knuckleManufacturer={setup.front_steering_knuckle_manufacturer}
         />
       ) : (
         <p>This setup data version is not supported.</p>

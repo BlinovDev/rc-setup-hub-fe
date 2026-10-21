@@ -342,6 +342,10 @@ it("cover/delete save immediately, preserve unsaved technical values, and narrow
     screen.getByLabelText("Rear lower arm mount model / part number"),
     { target: { value: "Unsaved rear mount" } },
   );
+  fireEvent.change(
+    screen.getByLabelText("Front knuckle part number / description"),
+    { target: { value: "Unsaved knuckle part" } },
+  );
   fireEvent.change(screen.getByLabelText("Front piston notes"), {
     target: { value: "Unsaved piston" },
   });
@@ -374,6 +378,9 @@ it("cover/delete save immediately, preserve unsaved technical values, and narrow
   expect(
     screen.getByLabelText("Rear lower arm mount model / part number"),
   ).toHaveValue("Unsaved rear mount");
+  expect(
+    screen.getByLabelText("Front knuckle part number / description"),
+  ).toHaveValue("Unsaved knuckle part");
   expect(screen.getByLabelText("Front piston notes")).toHaveValue(
     "Unsaved piston",
   );
@@ -416,6 +423,9 @@ it("cover/delete save immediately, preserve unsaved technical values, and narrow
   expect(
     screen.getByLabelText("Rear lower arm mount model / part number"),
   ).toHaveValue("Unsaved rear mount");
+  expect(
+    screen.getByLabelText("Front knuckle part number / description"),
+  ).toHaveValue("Unsaved knuckle part");
   expect(screen.getByLabelText("Front piston notes")).toHaveValue(
     "Unsaved piston",
   );
@@ -608,6 +618,10 @@ it("a stale cover failure refreshes gallery state while keeping unsaved fields",
     screen.getByLabelText("Rear lower arm mount model / part number"),
     { target: { value: "Unsaved rear mount" } },
   );
+  fireEvent.change(
+    screen.getByLabelText("Front knuckle part number / description"),
+    { target: { value: "Unsaved knuckle part" } },
+  );
   fireEvent.change(screen.getByLabelText("Front piston notes"), {
     target: { value: "Unsaved piston" },
   });
@@ -631,6 +645,9 @@ it("a stale cover failure refreshes gallery state while keeping unsaved fields",
   expect(
     screen.getByLabelText("Rear lower arm mount model / part number"),
   ).toHaveValue("Unsaved rear mount");
+  expect(
+    screen.getByLabelText("Front knuckle part number / description"),
+  ).toHaveValue("Unsaved knuckle part");
   expect(screen.getByLabelText("Front piston notes")).toHaveValue(
     "Unsaved piston",
   );
@@ -642,6 +659,10 @@ it("changing session identity discards local queued previews and fields", async 
   const user = userEvent.setup();
   await screen.findByLabelText("Title");
   await user.type(screen.getByLabelText("Title"), "Private draft");
+  fireEvent.change(
+    screen.getByLabelText("Front knuckle part number / description"),
+    { target: { value: "Private knuckle draft" } },
+  );
   fireEvent.change(
     screen.getByLabelText("Front lower arm mount configuration notes"),
     { target: { value: "Private mount draft" } },
@@ -666,6 +687,9 @@ it("changing session identity discards local queued previews and fields", async 
   );
   expect(
     screen.getByLabelText("Front lower arm mount configuration notes"),
+  ).toHaveValue("");
+  expect(
+    screen.getByLabelText("Front knuckle part number / description"),
   ).toHaveValue("");
   expect(screen.getByLabelText("Title")).toHaveValue("");
   expect(URL.revokeObjectURL).toHaveBeenCalled();
