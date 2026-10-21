@@ -1,0 +1,31 @@
+name: Add frontend issues to Project 2
+
+on:
+  issues:
+    types: [opened, reopened, transferred]
+
+permissions: {}
+
+concurrency:
+  group: project-2-issue-${{ github.event.issue.node_id }}
+  cancel-in-progress: false
+
+jobs:
+  add-to-project:
+    if: github.repository == 'BlinovDev/rc-setup-hub-fe'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - name: Require Project credential
+        env:
+          PROJECT_TOKEN: ${{ secrets.PROJECT_2_TOKEN }}
+        run: |
+          if [ -z "$PROJECT_TOKEN" ]; then
+            echo '::error::Configure repository secret PROJECT_2_TOKEN; see AI/project-intake.md.'
+            exit 1
+          fi
+      - name: Add issue without changing status
+        uses: actions/add-to-project@5afcf98fcd03f1c2f92c3c83f58ae24323cc57fd # v2.0.0
+        with:
+          project-url: https://github.com/users/BlinovDev/projects/2
+          github-token: ${{ secrets.PROJECT_2_TOKEN }}
