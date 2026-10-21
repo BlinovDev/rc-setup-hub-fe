@@ -41,3 +41,6 @@ implementation history, test/QA evidence and SHA pairs. Reconcile disagreements
 instead of guessing. Edit the owning section, link rather than duplicate, and do
 not append phase diaries/test counts/pending status. No arbitrary Markdown line cap.
 Historical [plans](archive/README.md) are traceability only, not instructions/backlog.
+
+Project Issue intake uses the [frontend setup](project-intake.md); ChatGPT Inbox
+access follows the linked backend contract and requires a separate live read test.
