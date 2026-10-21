@@ -271,6 +271,11 @@ it("cover/delete save immediately, preserve unsaved technical values, and narrow
     ...testSetup,
     data: {
       ...testSetup.data,
+      rear_differential: {
+        type: "gear",
+        model: "Saved differential",
+        tuning_notes: "Saved tuning",
+      },
       suspension: {
         ...testSetup.data.suspension,
         front: {
@@ -329,6 +334,9 @@ it("cover/delete save immediately, preserve unsaved technical values, and narrow
   const user = userEvent.setup();
   await screen.findByLabelText("Title");
   await user.type(screen.getByLabelText("Title"), " unsaved");
+  fireEvent.change(screen.getByLabelText("Rear differential tuning notes"), {
+    target: { value: "Unsaved differential tuning" },
+  });
   await user.clear(screen.getByLabelText("Front camber (degrees)"));
   await user.type(screen.getByLabelText("Front camber (degrees)"), "-6,8");
   await user.clear(screen.getByLabelText("Front top arm — Rear spacers (mm)"));
@@ -344,6 +352,9 @@ it("cover/delete save immediately, preserve unsaved technical values, and narrow
     expect(
       screen.getByRole("button", { name: "Make photo 1 cover" }),
     ).toBeEnabled(),
+  );
+  expect(screen.getByLabelText("Rear differential tuning notes")).toHaveValue(
+    "Unsaved differential tuning",
   );
   expect(screen.getByLabelText("Title")).toHaveValue("Track setup unsaved");
   expect(screen.getByLabelText("Front camber (degrees)")).toHaveValue("-6,8");
@@ -375,6 +386,9 @@ it("cover/delete save immediately, preserve unsaved technical values, and narrow
     screen.getByRole("button", { name: "Confirm delete photo 1" }),
   );
   await waitFor(() => expect(stored).toHaveLength(0));
+  expect(screen.getByLabelText("Rear differential tuning notes")).toHaveValue(
+    "Unsaved differential tuning",
+  );
   expect(screen.getByLabelText("Title")).toHaveValue("Track setup unsaved");
   await user.click(screen.getByRole("button", { name: "Save setup" }));
   await screen.findByText("Setup saved.");
@@ -557,6 +571,9 @@ it("a stale cover failure refreshes gallery state while keeping unsaved fields",
   const user = userEvent.setup();
   await screen.findByLabelText("Title");
   await user.type(screen.getByLabelText("Title"), " unsaved");
+  fireEvent.change(screen.getByLabelText("Rear differential tuning notes"), {
+    target: { value: "Unsaved differential tuning" },
+  });
   await user.click(
     await screen.findByRole("button", { name: "Make photo 2 cover" }),
   );
@@ -564,6 +581,9 @@ it("a stale cover failure refreshes gallery state while keeping unsaved fields",
     "Photo or setup not found or unavailable. Reload photos.",
   );
   await waitFor(() => expect(galleries).toBeGreaterThan(1));
+  expect(screen.getByLabelText("Rear differential tuning notes")).toHaveValue(
+    "Unsaved differential tuning",
+  );
   expect(screen.getByLabelText("Title")).toHaveValue("Track setup unsaved");
   expect(writes).toBe(1);
 });
@@ -573,6 +593,9 @@ it("changing session identity discards local queued previews and fields", async 
   const user = userEvent.setup();
   await screen.findByLabelText("Title");
   await user.type(screen.getByLabelText("Title"), "Private draft");
+  fireEvent.change(screen.getByLabelText("Rear differential tuning notes"), {
+    target: { value: "Private differential tuning" },
+  });
   await user.upload(screen.getByLabelText("Photo files"), file());
   await screen.findByText("Queued — not uploaded");
   await act(() => {
@@ -584,6 +607,9 @@ it("changing session identity discards local queued previews and fields", async 
   });
   await waitFor(() =>
     expect(screen.queryByText("Queued — not uploaded")).not.toBeInTheDocument(),
+  );
+  expect(screen.getByLabelText("Rear differential tuning notes")).toHaveValue(
+    "",
   );
   expect(screen.getByLabelText("Title")).toHaveValue("");
   expect(URL.revokeObjectURL).toHaveBeenCalled();

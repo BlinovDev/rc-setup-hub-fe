@@ -29,7 +29,7 @@ error states remain independent; no hidden counts or email/provider identity.
 
 Photos toolbar precedes General. Keep setup sections open with anchor navigation:
 General/title/chassis/visibility/notes; front/rear suspension/links; front/rear shocks/
-springs/oil; electronics. One logical document, one mobile Save/Create bar above fixed
+springs/oil; optional rear differential; electronics. One logical document, one mobile Save/Create bar above fixed
 navigation, inline desktop actions. Reserve padding so final controls stay reachable.
 
 Use text inputs with inputMode=decimal for suspension; do not rewrite while typing,
@@ -38,6 +38,13 @@ nonnegative optional spacing retain separate rules. Associated errors and first-
 focus work for malformed/nonfinite/nonpositive input. Arm fieldsets identify axle/arm
 and ahead/behind spacers in mm with left/right symmetry; removal clears values/errors,
 re-add is blank, partial/all-zero detail is retained. See [product](product.md).
+
+Rear differential fields are independent and optional: type, catalog manufacturer,
+model and multiline tuning notes. Clear removes the block without resetting other
+fields. Reuse the cached chassis-brand catalog; existing manufacturer selection
+loads only on explicit Change, supports retry/cancel, and retains the historical
+name/reference when inactive. Detail is read-only and uses the returned name
+projection, with an unavailable-name fallback and no extra catalog lookup.
 
 ## State, identity and accessibility
 

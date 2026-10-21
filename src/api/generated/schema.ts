@@ -526,9 +526,27 @@ export interface components {
         };
         /** @description Schema version 1 technical document. All sections are optional; null sections are omitted on output. Unknown fields are rejected on input. Explicit numeric zero is preserved; omitted/null optional numeric values are unknown. PATCH replaces this entire document, without a deep merge. */
         SetupDataV1: {
+            rear_differential?: components["schemas"]["RearDifferential"] | null;
             suspension?: components["schemas"]["Suspension"] | null;
             shocks?: components["schemas"]["Shocks"] | null;
             electronics?: components["schemas"]["Electronics"] | null;
+        };
+        /** @description Optional rear-only differential. All fields are independent and optional. Empty or null blocks are omitted on output. Additive schema-v1 JSONB extension; no default differential or migration/backfill. Supplied data still replaces the complete technical document. */
+        RearDifferential: {
+            /**
+             * @description Optional rear differential type; null/omitted means unknown.
+             * @enum {string|null}
+             */
+            type?: "gear" | "lsd" | "ball" | "spool" | null;
+            /**
+             * Format: uuid
+             * @description Reference to the existing chassis brands catalog. New selections must exist and be active. Unchanged historical inactive references are retained on PATCH. Null/omitted means unknown; output UUID is canonical.
+             */
+            manufacturer_id?: string | null;
+            /** @description Trimmed free text without null bytes; empty/null/omitted is omitted. */
+            model?: string | null;
+            /** @description Trimmed free-form tuning notes without null bytes. Empty/null/omitted is omitted. No type-specific tuning fields are required. */
+            tuning_notes?: string | null;
         };
         Suspension: {
             front?: components["schemas"]["AxleSuspension"] | null;
@@ -634,8 +652,16 @@ export interface components {
             /** @description Authenticated thumbnail path with revision query identity. Server always reads the current authorized thumbnail, not historical revisions. */
             thumbnail_url: string;
         };
+        /** @description Read-only historical brand display from the existing catalog. */
+        DifferentialManufacturer: {
+            /** Format: uuid */
+            id: string;
+            name: string;
+        };
         /** @description Complete setup with application owner UUID and read-only historical chassis display. No owner email or provider identity is exposed. */
         Setup: {
+            /** @description Read-only joined display for data.rear_differential.manufacturer_id, including inactive brands. Null when no manufacturer is selected or resolvable. Never accepted in create or PATCH input. */
+            rear_differential_manufacturer: components["schemas"]["DifferentialManufacturer"] | null;
             /** @description Compact joined cover metadata; null when there are no photos. */
             cover_photo: components["schemas"]["SetupPhoto"] | null;
             /** Format: uuid */
