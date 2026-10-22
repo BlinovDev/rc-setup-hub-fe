@@ -31,6 +31,7 @@ Photos toolbar precedes General. Keep setup sections open with anchor navigation
 General/title/chassis/visibility/notes; front/rear suspension/links; front/rear shocks/
 springs/oil; optional rear differential; electronics. One logical document, one mobile Save/Create bar above fixed
 navigation, inline desktop actions. Reserve padding so final controls stay reachable.
+On short screens, keep section navigation in normal flow so it cannot cover fields.
 
 Use text inputs with inputMode=decimal for suspension; do not rewrite while typing,
 force integer steps or round precision. Signed angles, positive links/oil and

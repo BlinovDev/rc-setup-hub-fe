@@ -690,3 +690,10 @@
     }
   }
 }
+
+/* A wrapped section menu must not consume a short landscape editor viewport. */
+@media (max-height: 480px) {
+  .section-nav {
+    position: static;
+  }
+}
