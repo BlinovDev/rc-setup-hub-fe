@@ -46,6 +46,12 @@ loads only on explicit Change, supports retry/cancel, and retains the historical
 name/reference when inactive. Detail is read-only and uses the returned name
 projection, with an unavailable-name fallback and no extra catalog lookup.
 
+Each suspension axle has one optional lower arm mount description: catalog
+manufacturer, model/part number and multiline configuration notes. Fields are
+independent; Clear affects only that axle's mount. Reuse the component manufacturer
+selector, retaining historical references with lazy edit loading and retry/cancel.
+Detail uses the joined per-axle name projection without catalog requests. No separate
+mounts, inserts or geometry controls.
 Front steering knuckles use independent optional catalog manufacturer and free-text
 part number/description (200 Unicode characters). Clear affects only the knuckle.
 The shared component manufacturer selector retains historical references, loads

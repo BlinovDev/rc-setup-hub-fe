@@ -8,6 +8,7 @@ export const testUser = {
 } satisfies components["schemas"]["User"];
 export const testSetup = {
   rear_differential_manufacturer: null,
+  lower_arm_mount_manufacturers: null,
   front_steering_knuckle_manufacturer: null,
   cover_photo: null,
   id: "c61393b6-daa0-4eb8-923c-57aedbb46a47",

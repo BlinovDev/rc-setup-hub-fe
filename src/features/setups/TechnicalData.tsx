@@ -28,11 +28,14 @@ function Values({
 export function TechnicalData({
   data,
   differentialManufacturer,
+  mountManufacturers,
   knuckleManufacturer,
 }: {
   data: components["schemas"]["SetupDataV1"];
   knuckleManufacturer?:
     components["schemas"]["DifferentialManufacturer"] | null;
+  mountManufacturers?:
+    components["schemas"]["LowerArmMountManufacturers"] | null;
   differentialManufacturer?:
     components["schemas"]["DifferentialManufacturer"] | null;
 }) {
@@ -53,6 +56,26 @@ export function TechnicalData({
         ...(suspension?.link_lengths?.map(
           (link) => [link.name, `${link.length_mm} mm`] as [string, string],
         ) ?? []),
+      ],
+    });
+    const mount = suspension?.lower_arm_mount;
+    sections.push({
+      title: `${label} lower arm mount`,
+      values: [
+        [
+          "Manufacturer",
+          mount?.manufacturer_id
+            ? manufacturerLabel(
+                mount.manufacturer_id,
+                mountManufacturers?.[axle],
+              )
+            : undefined,
+        ],
+        ["Model / part number", mount?.model?.trim() || undefined],
+        [
+          "Configuration notes",
+          mount?.configuration_notes?.trim() || undefined,
+        ],
       ],
     });
     for (const arm of ["top_arm_spacing", "lower_arm_spacing"] as const) {

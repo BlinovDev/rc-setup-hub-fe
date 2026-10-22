@@ -335,6 +335,14 @@ it("cover/delete save immediately, preserve unsaved technical values, and narrow
   await screen.findByLabelText("Title");
   await user.type(screen.getByLabelText("Title"), " unsaved");
   fireEvent.change(
+    screen.getByLabelText("Front lower arm mount configuration notes"),
+    { target: { value: "Unsaved front mount config" } },
+  );
+  fireEvent.change(
+    screen.getByLabelText("Rear lower arm mount model / part number"),
+    { target: { value: "Unsaved rear mount" } },
+  );
+  fireEvent.change(
     screen.getByLabelText("Front knuckle part number / description"),
     { target: { value: "Unsaved knuckle part" } },
   );
@@ -364,6 +372,12 @@ it("cover/delete save immediately, preserve unsaved technical values, and narrow
     "Unsaved differential tuning",
   );
   expect(screen.getByLabelText("Title")).toHaveValue("Track setup unsaved");
+  expect(
+    screen.getByLabelText("Front lower arm mount configuration notes"),
+  ).toHaveValue("Unsaved front mount config");
+  expect(
+    screen.getByLabelText("Rear lower arm mount model / part number"),
+  ).toHaveValue("Unsaved rear mount");
   expect(
     screen.getByLabelText("Front knuckle part number / description"),
   ).toHaveValue("Unsaved knuckle part");
@@ -403,6 +417,12 @@ it("cover/delete save immediately, preserve unsaved technical values, and narrow
     "Unsaved differential tuning",
   );
   expect(screen.getByLabelText("Title")).toHaveValue("Track setup unsaved");
+  expect(
+    screen.getByLabelText("Front lower arm mount configuration notes"),
+  ).toHaveValue("Unsaved front mount config");
+  expect(
+    screen.getByLabelText("Rear lower arm mount model / part number"),
+  ).toHaveValue("Unsaved rear mount");
   expect(
     screen.getByLabelText("Front knuckle part number / description"),
   ).toHaveValue("Unsaved knuckle part");
@@ -591,6 +611,14 @@ it("a stale cover failure refreshes gallery state while keeping unsaved fields",
   await screen.findByLabelText("Title");
   await user.type(screen.getByLabelText("Title"), " unsaved");
   fireEvent.change(
+    screen.getByLabelText("Front lower arm mount configuration notes"),
+    { target: { value: "Unsaved front mount config" } },
+  );
+  fireEvent.change(
+    screen.getByLabelText("Rear lower arm mount model / part number"),
+    { target: { value: "Unsaved rear mount" } },
+  );
+  fireEvent.change(
     screen.getByLabelText("Front knuckle part number / description"),
     { target: { value: "Unsaved knuckle part" } },
   );
@@ -612,6 +640,12 @@ it("a stale cover failure refreshes gallery state while keeping unsaved fields",
   );
   expect(screen.getByLabelText("Title")).toHaveValue("Track setup unsaved");
   expect(
+    screen.getByLabelText("Front lower arm mount configuration notes"),
+  ).toHaveValue("Unsaved front mount config");
+  expect(
+    screen.getByLabelText("Rear lower arm mount model / part number"),
+  ).toHaveValue("Unsaved rear mount");
+  expect(
     screen.getByLabelText("Front knuckle part number / description"),
   ).toHaveValue("Unsaved knuckle part");
   expect(screen.getByLabelText("Front piston notes")).toHaveValue(
@@ -628,6 +662,10 @@ it("changing session identity discards local queued previews and fields", async 
   fireEvent.change(
     screen.getByLabelText("Front knuckle part number / description"),
     { target: { value: "Private knuckle draft" } },
+  );
+  fireEvent.change(
+    screen.getByLabelText("Front lower arm mount configuration notes"),
+    { target: { value: "Private mount draft" } },
   );
   fireEvent.change(screen.getByLabelText("Rear differential tuning notes"), {
     target: { value: "Private differential tuning" },
@@ -647,6 +685,9 @@ it("changing session identity discards local queued previews and fields", async 
   expect(screen.getByLabelText("Rear differential tuning notes")).toHaveValue(
     "",
   );
+  expect(
+    screen.getByLabelText("Front lower arm mount configuration notes"),
+  ).toHaveValue("");
   expect(
     screen.getByLabelText("Front knuckle part number / description"),
   ).toHaveValue("");

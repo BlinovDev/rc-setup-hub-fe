@@ -23,6 +23,11 @@ export function setupToForm(setup?: Schemas["Setup"]): SetupFormValues {
           rear_mm: numberInput(value.rear_mm),
         };
   const axle = (value?: Schemas["AxleSuspension"] | null) => ({
+    lowerArmMount: {
+      manufacturerId: value?.lower_arm_mount?.manufacturer_id ?? null,
+      model: value?.lower_arm_mount?.model ?? "",
+      configurationNotes: value?.lower_arm_mount?.configuration_notes ?? "",
+    },
     top_arm_spacing: spacing(value?.top_arm_spacing),
     lower_arm_spacing: spacing(value?.lower_arm_spacing),
     camber_deg: numberInput(value?.camber_deg),
@@ -82,6 +87,14 @@ export function serializeData(values: SetupFormValues): Schemas["SetupDataV1"] {
     value: SetupFormValues["front"],
   ): Schemas["AxleSuspension"] | undefined {
     const result: Schemas["AxleSuspension"] = {};
+    const mount: Schemas["LowerArmMount"] = {};
+    if (value.lowerArmMount.manufacturerId !== null)
+      mount.manufacturer_id = value.lowerArmMount.manufacturerId;
+    const model = optionalText(value.lowerArmMount.model),
+      notes = optionalText(value.lowerArmMount.configurationNotes);
+    if (model !== undefined) mount.model = model;
+    if (notes !== undefined) mount.configuration_notes = notes;
+    if (Object.keys(mount).length) result.lower_arm_mount = mount;
     for (const arm of ["top_arm_spacing", "lower_arm_spacing"] as const) {
       const block = value[arm];
       if (!block) continue;

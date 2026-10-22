@@ -11,7 +11,7 @@ import { brandsOptions } from "../../chassis/queries";
 import { manufacturerLabel } from "../differential";
 import type { SetupFormValues } from "./formSchema";
 
-// Shared by the two real catalog-backed components; chassis keeps its model selector.
+// Shared by catalog-backed component selectors; chassis keeps its model selector.
 export function ManufacturerField({
   name,
   label,
@@ -22,9 +22,11 @@ export function ManufacturerField({
   displayLabel = "Manufacturer",
 }: {
   name:
-    "rearDifferential.manufacturerId" | "frontSteeringKnuckle.manufacturerId";
+    | "frontSteeringKnuckle.manufacturerId"
+    | "rearDifferential.manufacturerId"
+    | `${"front" | "rear"}.lowerArmMount.manufacturerId`;
   label: string;
-  action: "differential" | "knuckle";
+  action: "differential" | "knuckle" | `${"front" | "rear"} lower arm mount`;
   existing: boolean;
   savedId?: string | null | undefined;
   display?:

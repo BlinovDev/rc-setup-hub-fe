@@ -1,9 +1,17 @@
+import type { components } from "../../../api/generated/schema";
+import { LowerArmMountFields } from "./LowerArmMountFields";
 import { Button } from "../../../shared/components/Button";
 import { useFieldArray, useFormContext, useWatch } from "react-hook-form";
 import type { SetupFormValues } from "./formSchema";
 import { SetupField } from "./SetupField";
 
-export function SuspensionSection({ side }: { side: "front" | "rear" }) {
+export function SuspensionSection({
+  side,
+  setup,
+}: {
+  side: "front" | "rear";
+  setup?: components["schemas"]["Setup"] | undefined;
+}) {
   const { control, setValue, clearErrors } = useFormContext<SetupFormValues>();
   const { fields, append, remove } = useFieldArray({
     control,
@@ -29,6 +37,7 @@ export function SuspensionSection({ side }: { side: "front" | "rear" }) {
         label={`${label} toe (degrees)`}
         numeric
       />
+      <LowerArmMountFields side={side} setup={setup} />
       <p>
         Arm spacers are totals ahead of and behind an arm, relative to vehicle
         direction. The same totals apply on both left and right sides.

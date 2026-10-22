@@ -121,6 +121,7 @@ export function SetupDetailPage({
         <TechnicalData
           data={setup.data}
           differentialManufacturer={setup.rear_differential_manufacturer}
+          mountManufacturers={setup.lower_arm_mount_manufacturers}
           knuckleManufacturer={setup.front_steering_knuckle_manufacturer}
         />
       ) : (
