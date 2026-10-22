@@ -22,11 +22,16 @@ export function ManufacturerField({
   displayLabel = "Manufacturer",
 }: {
   name:
+    | `runningGear.${"front" | "rear"}.${"wheel" | "tire"}.manufacturerId`
     | "frontSteeringKnuckle.manufacturerId"
     | "rearDifferential.manufacturerId"
     | `${"front" | "rear"}.lowerArmMount.manufacturerId`;
   label: string;
-  action: "differential" | "knuckle" | `${"front" | "rear"} lower arm mount`;
+  action:
+    | "differential"
+    | "knuckle"
+    | `${"front" | "rear"} lower arm mount`
+    | `${"front" | "rear"} ${"wheel" | "tire"}`;
   existing: boolean;
   savedId?: string | null | undefined;
   display?:

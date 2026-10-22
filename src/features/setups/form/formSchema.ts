@@ -127,6 +127,32 @@ const optionalMeasurement = (
       return false;
     }
   }, message);
+export function parseWheelOffset(input: string): number | undefined {
+  const value = input.trim();
+  if (!value) return undefined;
+  if (
+    !/^[+-]?\d+$/.test(value) ||
+    Number(value) < -2147483648 ||
+    Number(value) > 2147483647
+  )
+    throw new Error("Enter whole millimetres from -2147483648 to 2147483647.");
+  return Number(value);
+}
+const runningGearAxle = z.object({
+  hexOffset: angle,
+  wheel: z.object({
+    manufacturerId: z.string().uuid().nullable(),
+    model: text(200),
+    offset: optionalMeasurement(
+      parseWheelOffset,
+      "Enter whole millimetres from -2147483648 to 2147483647.",
+    ),
+  }),
+  tire: z.object({
+    manufacturerId: z.string().uuid().nullable(),
+    model: text(200),
+  }),
+});
 const shock = z.object({
   pistonHoles: optionalMeasurement(
     parsePistonHoles,
@@ -165,6 +191,7 @@ export const setupFormSchema = z
       model: text(200),
       tuningNotes: text(10000),
     }),
+    runningGear: z.object({ front: runningGearAxle, rear: runningGearAxle }),
     front: axle,
     rear: axle,
     frontShock: shock,

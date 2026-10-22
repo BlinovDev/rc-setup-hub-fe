@@ -94,6 +94,19 @@ try {
           }
         : null;
     };
+    const gearDisplays = (data) => {
+      const result = { front: null, rear: null };
+      for (const side of ["front", "rear"]) {
+        const axle = { wheel: null, tire: null };
+        for (const part of ["wheel", "tire"]) {
+          const id = data?.running_gear?.[side]?.[part]?.manufacturer_id;
+          if (id) axle[part] = { id, name: manufacturerName };
+        }
+        if (axle.wheel || axle.tire) result[side] = axle;
+      }
+      return result.front || result.rear ? result : null;
+    };
+    const gearModel = "Wheel-" + "😀".repeat(160);
     const knuckleDescription = "Part-".repeat(35) + "\nFront alloy";
     const differentialModel = "Diff-".repeat(35);
     const differentialNotes = "Oil 10000\nTwo gears " + "tuning-".repeat(45);
@@ -112,6 +125,7 @@ try {
       front_steering_knuckle_manufacturer: null,
       rear_differential_manufacturer: null,
       lower_arm_mount_manufacturers: null,
+      running_gear_manufacturers: null,
       data: {
         suspension: {
           front: { top_arm_spacing: { front_mm: 0, rear_mm: 5.2 } },
@@ -234,6 +248,7 @@ try {
           ...setup,
           ...req.postDataJSON(),
           lower_arm_mount_manufacturers: mountDisplays(req.postDataJSON().data),
+          running_gear_manufacturers: gearDisplays(req.postDataJSON().data),
           front_steering_knuckle_manufacturer: {
             id: manufacturerId,
             name: manufacturerName,
@@ -243,6 +258,26 @@ try {
             name: manufacturerName,
           },
         };
+        assert.deepEqual(setup.data.running_gear, {
+          front: {
+            hex: { offset_mm: 0 },
+            wheel: {
+              manufacturer_id: manufacturerId,
+              model: gearModel,
+              offset_mm: -4,
+            },
+            tire: { manufacturer_id: manufacturerId, model: "Tire model" },
+          },
+          rear: {
+            hex: { offset_mm: -2.123456789 },
+            wheel: {
+              manufacturer_id: manufacturerId,
+              model: gearModel,
+              offset_mm: 0,
+            },
+            tire: { manufacturer_id: manufacturerId, model: "Tire model" },
+          },
+        });
         for (const axle of ["front", "rear"]) {
           assert.deepEqual(setup.data.suspension[axle].lower_arm_mount, {
             manufacturer_id: manufacturerId,
@@ -270,6 +305,7 @@ try {
             ...setup,
             ...update,
             lower_arm_mount_manufacturers: mountDisplays(update.data),
+            running_gear_manufacturers: gearDisplays(update.data),
             front_steering_knuckle_manufacturer: update.data
               ?.front_steering_knuckle?.manufacturer_id
               ? { id: manufacturerId, name: manufacturerName }
@@ -481,6 +517,23 @@ try {
     };
     await toolbarCheck();
     await page.getByLabel("Title", { exact: true }).fill("New with photos");
+    for (const axle of ["Front", "Rear"]) {
+      await page
+        .getByLabel(`${axle} hex offset (mm)`, { exact: true })
+        .fill(axle === "Front" ? "0" : "-2,123456789");
+      await page
+        .getByLabel(`${axle} wheel offset (mm)`, { exact: true })
+        .fill(axle === "Front" ? "-4" : "0");
+      for (const part of ["wheel", "tire"]) {
+        await page
+          .getByLabel(`${axle} ${part} manufacturer`, { exact: true })
+          .selectOption(manufacturerId);
+        await page
+          .getByLabel(`${axle} ${part} model`, { exact: true })
+          .fill(part === "wheel" ? gearModel : "Tire model");
+      }
+    }
+
     await page
       .getByLabel("Front knuckle manufacturer", { exact: true })
       .selectOption(manufacturerId);
@@ -611,6 +664,17 @@ try {
         "pre-wrap",
       );
     }
+    for (const axle of ["Front", "Rear"]) {
+      for (const part of ["wheel", "tire"]) {
+        const section = page
+          .getByRole("heading", { name: `${axle} ${part}`, exact: true })
+          .locator("..");
+        await section.getByText(manufacturerName, { exact: true }).waitFor();
+      }
+      await page
+        .getByRole("heading", { name: `${axle} hex`, exact: true })
+        .waitFor();
+    }
     const knuckleDetail = page
       .getByRole("heading", { name: "Front steering knuckle", exact: true })
       .locator("..");
@@ -688,6 +752,12 @@ try {
     await page
       .getByLabel("Rear lower arm mount model / part number", { exact: true })
       .fill("Unsaved rear mount");
+    await page
+      .getByLabel("Front tire model", { exact: true })
+      .fill("Unsaved tire");
+    await page
+      .getByLabel("Rear hex offset (mm)", { exact: true })
+      .fill("-7,25");
 
     await page
       .getByLabel("Rear differential tuning notes", { exact: true })
@@ -729,6 +799,16 @@ try {
         .getByLabel("Rear differential tuning notes", { exact: true })
         .inputValue(),
       "Unsaved differential tuning",
+    );
+    assert.equal(
+      await page.getByLabel("Front tire model", { exact: true }).inputValue(),
+      "Unsaved tire",
+    );
+    assert.equal(
+      await page
+        .getByLabel("Rear hex offset (mm)", { exact: true })
+        .inputValue(),
+      "-7,25",
     );
     await geometry();
     await page.screenshot({
@@ -1323,6 +1403,87 @@ try {
     });
     console.log(
       `PASS ${width}x${height} lower arm mounts on both axles, create/detail/edit, shared catalog/historical names, Unicode/wrapping, validation/focus, clear/cancel/partial re-add and full-data/photo preservation`,
+    );
+    for (const axle of ["Front", "Rear"]) {
+      const side = axle.toLowerCase();
+      const before = JSON.parse(JSON.stringify(setup.data));
+      const writes = setupPatches;
+      const offset = page.getByLabel(`${axle} wheel offset (mm)`, {
+        exact: true,
+      });
+      await offset.fill("1.5");
+      await page
+        .getByRole("button", { name: "Save setup", exact: true })
+        .click();
+      assert.equal(setupPatches, writes);
+      assert.equal(await offset.getAttribute("aria-invalid"), "true");
+      assert(await offset.evaluate((el) => el === document.activeElement));
+      await offset.fill("-2147483648");
+      await page
+        .getByLabel(`${axle} hex offset (mm)`, { exact: true })
+        .fill("-3,123456789");
+      await page
+        .getByRole("button", { name: "Save setup", exact: true })
+        .click();
+      await page.getByText("Setup saved.", { exact: true }).waitFor();
+      assert.equal(setup.data.running_gear[side].wheel.offset_mm, -2147483648);
+      assert.equal(setup.data.running_gear[side].hex.offset_mm, -3.123456789);
+      for (const part of ["hex", "wheel", "tire"]) {
+        await page
+          .getByRole("button", { name: `Clear ${side} ${part}`, exact: true })
+          .click();
+      }
+      const wheelGroup = page.getByRole("group", {
+        name: `${axle} wheel`,
+        exact: true,
+      });
+      await wheelGroup
+        .getByRole("button", {
+          name: `Change ${side} wheel manufacturer`,
+          exact: true,
+        })
+        .click();
+      await wheelGroup
+        .getByLabel(`${axle} wheel manufacturer`, { exact: true })
+        .selectOption(manufacturerId);
+      await wheelGroup
+        .getByRole("button", {
+          name: "Cancel manufacturer change",
+          exact: true,
+        })
+        .click();
+      await wheelGroup
+        .getByText(`${axle} wheel manufacturer: Not specified`, { exact: true })
+        .waitFor();
+      await page
+        .getByRole("button", { name: "Save setup", exact: true })
+        .click();
+      await page.getByText("Setup saved.", { exact: true }).waitFor();
+      delete before.running_gear[side];
+      if (!Object.keys(before.running_gear).length) delete before.running_gear;
+      assert.deepEqual(setup.data, before);
+      await page
+        .getByLabel(`${axle} tire model`, { exact: true })
+        .fill("Model only");
+      await page
+        .getByLabel(`${axle} wheel offset (mm)`, { exact: true })
+        .fill("0");
+      await page
+        .getByRole("button", { name: "Save setup", exact: true })
+        .click();
+      await page.getByText("Setup saved.", { exact: true }).waitFor();
+      assert.deepEqual(setup.data.running_gear[side], {
+        wheel: { offset_mm: 0 },
+        tire: { model: "Model only" },
+      });
+    }
+    await geometry();
+    await page.screenshot({
+      path: `artifacts/photo-qa/running-gear-${width}x${height}.png`,
+      fullPage: true,
+    });
+    console.log(
+      `PASS ${width}x${height} running gear create/edit/detail, independent signed/zero offsets, historical catalogue, Unicode, validation/focus, clear/cancel/re-add and full-data preservation`,
     );
     const knuckleGroup = page.getByRole("group", {
       name: "Front steering knuckle",

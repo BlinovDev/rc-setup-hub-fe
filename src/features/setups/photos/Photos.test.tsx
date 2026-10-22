@@ -334,6 +334,16 @@ it("cover/delete save immediately, preserve unsaved technical values, and narrow
   const user = userEvent.setup();
   await screen.findByLabelText("Title");
   await user.type(screen.getByLabelText("Title"), " unsaved");
+  fireEvent.change(screen.getByLabelText("Front hex offset (mm)"), {
+    target: { value: "-2,123456789" },
+  });
+  fireEvent.change(screen.getByLabelText("Rear wheel offset (mm)"), {
+    target: { value: "0" },
+  });
+  fireEvent.change(screen.getByLabelText("Front tire model"), {
+    target: { value: "Unsaved tire" },
+  });
+
   fireEvent.change(
     screen.getByLabelText("Front lower arm mount configuration notes"),
     { target: { value: "Unsaved front mount config" } },
@@ -372,6 +382,12 @@ it("cover/delete save immediately, preserve unsaved technical values, and narrow
     "Unsaved differential tuning",
   );
   expect(screen.getByLabelText("Title")).toHaveValue("Track setup unsaved");
+  expect(screen.getByLabelText("Front hex offset (mm)")).toHaveValue(
+    "-2,123456789",
+  );
+  expect(screen.getByLabelText("Rear wheel offset (mm)")).toHaveValue("0");
+  expect(screen.getByLabelText("Front tire model")).toHaveValue("Unsaved tire");
+
   expect(
     screen.getByLabelText("Front lower arm mount configuration notes"),
   ).toHaveValue("Unsaved front mount config");
@@ -417,6 +433,12 @@ it("cover/delete save immediately, preserve unsaved technical values, and narrow
     "Unsaved differential tuning",
   );
   expect(screen.getByLabelText("Title")).toHaveValue("Track setup unsaved");
+  expect(screen.getByLabelText("Front hex offset (mm)")).toHaveValue(
+    "-2,123456789",
+  );
+  expect(screen.getByLabelText("Rear wheel offset (mm)")).toHaveValue("0");
+  expect(screen.getByLabelText("Front tire model")).toHaveValue("Unsaved tire");
+
   expect(
     screen.getByLabelText("Front lower arm mount configuration notes"),
   ).toHaveValue("Unsaved front mount config");
@@ -435,6 +457,14 @@ it("cover/delete save immediately, preserve unsaved technical values, and narrow
   expect(patch).toMatchObject({
     title: "Track setup unsaved",
     data: {
+      running_gear: {
+        front: {
+          hex: { offset_mm: -2.123456789 },
+          tire: { model: "Unsaved tire" },
+        },
+        rear: { wheel: { offset_mm: 0 } },
+      },
+
       suspension: {
         front: {
           camber_deg: -6.8,
@@ -610,6 +640,16 @@ it("a stale cover failure refreshes gallery state while keeping unsaved fields",
   const user = userEvent.setup();
   await screen.findByLabelText("Title");
   await user.type(screen.getByLabelText("Title"), " unsaved");
+  fireEvent.change(screen.getByLabelText("Front hex offset (mm)"), {
+    target: { value: "-2,123456789" },
+  });
+  fireEvent.change(screen.getByLabelText("Rear wheel offset (mm)"), {
+    target: { value: "0" },
+  });
+  fireEvent.change(screen.getByLabelText("Front tire model"), {
+    target: { value: "Unsaved tire" },
+  });
+
   fireEvent.change(
     screen.getByLabelText("Front lower arm mount configuration notes"),
     { target: { value: "Unsaved front mount config" } },
@@ -639,6 +679,12 @@ it("a stale cover failure refreshes gallery state while keeping unsaved fields",
     "Unsaved differential tuning",
   );
   expect(screen.getByLabelText("Title")).toHaveValue("Track setup unsaved");
+  expect(screen.getByLabelText("Front hex offset (mm)")).toHaveValue(
+    "-2,123456789",
+  );
+  expect(screen.getByLabelText("Rear wheel offset (mm)")).toHaveValue("0");
+  expect(screen.getByLabelText("Front tire model")).toHaveValue("Unsaved tire");
+
   expect(
     screen.getByLabelText("Front lower arm mount configuration notes"),
   ).toHaveValue("Unsaved front mount config");

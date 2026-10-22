@@ -119,6 +119,7 @@ export function SetupDetailPage({
       <Gallery key={setup.id} setupId={setup.id} />
       {setup.schema_version === 1 ? (
         <TechnicalData
+          runningGearManufacturers={setup.running_gear_manufacturers}
           data={setup.data}
           differentialManufacturer={setup.rear_differential_manufacturer}
           mountManufacturers={setup.lower_arm_mount_manufacturers}

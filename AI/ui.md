@@ -58,6 +58,13 @@ The shared component manufacturer selector retains historical references, loads
 active choices on explicit Change in edit, and supports retry/cancel. Read-only
 detail uses the joined name projection without additional catalog requests.
 
+Each axle has optional hex, wheel and tire fieldsets. Hex offset accepts signed
+dot/comma decimals without rewriting while typing; wheel offset accepts signed
+int32 whole millimetres. Their offsets are independent and zero is preserved.
+Wheel/tire manufacturer and model are independently optional; reuse the shared
+manufacturer selector and joined historical displays. Clear affects only that
+component. Empty blocks/parents are omitted; no hex width or calculated offsets.
+
 Each axle's shock section includes independent optional piston hole count, diameter
 (mm), multiline notes, seal type and product description. Clear piston/seal affects
 only that block. Counts are positive int32 integers; diameters accept dot/comma
