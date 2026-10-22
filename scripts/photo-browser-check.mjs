@@ -441,6 +441,10 @@ try {
       );
     await page.goto("http://127.0.0.1:5173/my/setups");
     await page.getByAltText("No setup photo — placeholder").waitFor();
+    // Visibility does not guarantee decoding has completed on a fresh context.
+    await page
+      .getByAltText("No setup photo — placeholder")
+      .evaluate((img) => img.decode());
     assert.equal(
       await page
         .getByAltText("No setup photo — placeholder")
@@ -854,6 +858,10 @@ try {
       .waitFor();
     await page.goto("http://127.0.0.1:5173/my/setups");
     await page.getByAltText("No setup photo — placeholder").waitFor();
+    // Visibility does not guarantee decoding has completed on a fresh context.
+    await page
+      .getByAltText("No setup photo — placeholder")
+      .evaluate((img) => img.decode());
     await geometry();
     // Every supported image shape uses server-normalized full JPEGs, never local HEIC decoding.
     photos = shapes.map((_, i) => photo(i + 1));
