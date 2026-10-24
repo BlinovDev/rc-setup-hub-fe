@@ -186,3 +186,39 @@ it("a hidden historical manufacturer validation error focuses its actionable Cha
   expect(change).toHaveAttribute("aria-invalid", "true");
   expect(change).toHaveAccessibleDescription(/UUID/i);
 });
+
+it("link removal confirmation stays with its stable row when an earlier empty row is removed", async () => {
+  renderForm({
+    ...testSetup,
+    data: { suspension: { front: { link_lengths: [] } } },
+  });
+  select("Front");
+  const user = userEvent.setup();
+  await user.click(
+    screen.getByRole("button", { name: "Add component: Front link lengths" }),
+  );
+  for (let i = 0; i < 3; i++)
+    await user.click(screen.getByRole("button", { name: "Add front link" }));
+  fireEvent.change(screen.getByLabelText("Front link 2 name"), {
+    target: { value: "Second" },
+  });
+  fireEvent.change(screen.getByLabelText("Front link 2 length (mm)"), {
+    target: { value: "25" },
+  });
+  fireEvent.change(screen.getByLabelText("Front link 3 name"), {
+    target: { value: "Third" },
+  });
+  fireEvent.change(screen.getByLabelText("Front link 3 length (mm)"), {
+    target: { value: "30" },
+  });
+  await user.click(screen.getByRole("button", { name: "Remove front link 2" }));
+  await user.click(screen.getByRole("button", { name: "Remove front link 1" }));
+  expect(screen.getByLabelText("Front link 1 name")).toHaveValue("Second");
+  await user.click(
+    screen.getByRole("button", {
+      name: "Confirm remove front link 1",
+    }),
+  );
+  expect(screen.getByLabelText("Front link 1 name")).toHaveValue("Third");
+  expect(screen.queryByLabelText("Front link 2 name")).not.toBeInTheDocument();
+});

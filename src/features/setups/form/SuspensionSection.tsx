@@ -21,7 +21,7 @@ export function SuspensionSection({
     control,
     name: `${side}.link_lengths`,
   });
-  const [confirm, setConfirm] = useState<number | null>(null);
+  const [confirm, setConfirm] = useState<string | null>(null);
   const opener = useRef<HTMLButtonElement | null>(null);
   const errorId = useId();
   const aggregate = getFieldState(`${side}.link_lengths`, formState).error;
@@ -86,7 +86,7 @@ export function SuspensionSection({
                 numeric
               />
             </div>
-            {confirm === index ? (
+            {confirm === field.id ? (
               <div
                 className="inline-confirmation"
                 role="group"
@@ -118,7 +118,7 @@ export function SuspensionSection({
               onClick={(event) => {
                 if (hasValue(getValues(`${side}.link_lengths.${index}`))) {
                   opener.current = event.currentTarget;
-                  setConfirm(index);
+                  setConfirm(field.id);
                 } else remove(index);
               }}
             >

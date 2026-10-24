@@ -19,18 +19,26 @@ export function PhotoToolbar({
   const input = useRef<HTMLInputElement>(null);
   const info = useRef<HTMLDivElement>(null);
   const trigger = useRef<HTMLButtonElement>(null);
+  const panel = useRef<HTMLDivElement>(null);
   const id = useId();
   const [open, setOpen] = useState(false);
   useEffect(() => {
     if (!open) return;
     function outside(event: PointerEvent) {
-      if (!info.current?.contains(event.target as Node)) setOpen(false);
+      if (
+        !trigger.current?.contains(event.target as Node) &&
+        !panel.current?.contains(event.target as Node)
+      )
+        setOpen(false);
     }
     function escape(event: KeyboardEvent) {
       if (event.key !== "Escape") return;
       event.preventDefault();
       // Restore focus only if it was in this popover, not elsewhere on the page.
-      if (info.current?.contains(document.activeElement))
+      if (
+        trigger.current?.contains(document.activeElement) ||
+        panel.current?.contains(document.activeElement)
+      )
         trigger.current?.focus();
       setOpen(false);
     }
@@ -48,7 +56,11 @@ export function PhotoToolbar({
         if (!info.current?.contains(document.activeElement)) setOpen(false);
       }}
       onBlur={(event) => {
-        if (!event.currentTarget.contains(event.relatedTarget)) setOpen(false);
+        if (
+          !trigger.current?.contains(event.relatedTarget) &&
+          !panel.current?.contains(event.relatedTarget)
+        )
+          setOpen(false);
       }}
     >
       <div className="photo-toolbar">
@@ -127,6 +139,7 @@ export function PhotoToolbar({
       </p>
       {open && (
         <div
+          ref={panel}
           id={`${id}-info`}
           className="photo-info-panel"
           role="region"
