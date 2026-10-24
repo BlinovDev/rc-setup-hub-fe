@@ -16,6 +16,7 @@ import { SetupField } from "./SetupField";
 import { SuspensionSection } from "./SuspensionSection";
 import { ShockHardwareFields } from "./ShockHardwareFields";
 import { FrontSteeringKnuckleSection } from "./FrontSteeringKnuckleSection";
+import { RunningGearSection } from "./RunningGearSection";
 import { RearDifferentialSection } from "./RearDifferentialSection";
 
 export function SetupForm({
@@ -65,6 +66,8 @@ export function SetupForm({
             ["rear-differential", "Rear differential"],
             ["front-shocks", "Front shocks"],
             ["rear-shocks", "Rear shocks"],
+            ["front-running-gear", "Front wheels"],
+            ["rear-running-gear", "Rear wheels"],
             ["electronics", "Electronics"],
           ].map(([id, label]) => (
             <a key={id} href={`#setup-${id}`}>
@@ -164,6 +167,8 @@ export function SetupForm({
               />
             </fieldset>
           ))}
+          <RunningGearSection side="front" setup={setup} />
+          <RunningGearSection side="rear" setup={setup} />
           <fieldset
             id="setup-electronics"
             className="space-y-3 rounded border p-4"

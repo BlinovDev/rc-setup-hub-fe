@@ -1,6 +1,7 @@
 import type { components } from "../../../api/generated/schema";
 import {
   parseOptionalNumber,
+  parseWheelOffset,
   parsePistonHoles,
   parsePistonDiameter,
   parseArmSpacingNumber,
@@ -52,7 +53,23 @@ export function setupToForm(setup?: Schemas["Setup"]): SetupFormValues {
     springColor: value?.spring?.color ?? "",
     oil_cst: numberInput(value?.oil_cst),
   });
+  const runningGearAxle = (value?: Schemas["AxleRunningGear"] | null) => ({
+    hexOffset: numberInput(value?.hex?.offset_mm),
+    wheel: {
+      manufacturerId: value?.wheel?.manufacturer_id ?? null,
+      model: value?.wheel?.model ?? "",
+      offset: numberInput(value?.wheel?.offset_mm),
+    },
+    tire: {
+      manufacturerId: value?.tire?.manufacturer_id ?? null,
+      model: value?.tire?.model ?? "",
+    },
+  });
   return {
+    runningGear: {
+      front: runningGearAxle(setup?.data.running_gear?.front),
+      rear: runningGearAxle(setup?.data.running_gear?.rear),
+    },
     title: setup?.title ?? "",
     visibility: setup?.visibility ?? "private",
     notes: setup?.notes ?? "",
@@ -151,6 +168,29 @@ export function serializeData(values: SetupFormValues): Schemas["SetupDataV1"] {
     return Object.keys(result).length ? result : undefined;
   }
   const data: Schemas["SetupDataV1"] = {};
+  const runningGear: Schemas["RunningGear"] = {};
+  for (const side of ["front", "rear"] as const) {
+    const value = values.runningGear[side];
+    const result: Schemas["AxleRunningGear"] = {};
+    const hexOffset = parseSuspensionNumber(value.hexOffset);
+    if (hexOffset !== undefined) result.hex = { offset_mm: hexOffset };
+    const wheel: Schemas["Wheel"] = {};
+    const wheelOffset = parseWheelOffset(value.wheel.offset);
+    if (wheelOffset !== undefined) wheel.offset_mm = wheelOffset;
+    if (value.wheel.manufacturerId !== null)
+      wheel.manufacturer_id = value.wheel.manufacturerId;
+    const wheelModel = optionalText(value.wheel.model);
+    if (wheelModel !== undefined) wheel.model = wheelModel;
+    if (Object.keys(wheel).length) result.wheel = wheel;
+    const tire: Schemas["Tire"] = {};
+    if (value.tire.manufacturerId !== null)
+      tire.manufacturer_id = value.tire.manufacturerId;
+    const tireModel = optionalText(value.tire.model);
+    if (tireModel !== undefined) tire.model = tireModel;
+    if (Object.keys(tire).length) result.tire = tire;
+    if (Object.keys(result).length) runningGear[side] = result;
+  }
+  if (Object.keys(runningGear).length) data.running_gear = runningGear;
   const knuckle: Schemas["SteeringKnuckle"] = {};
   const frontKnuckle = values.frontSteeringKnuckle;
   if (frontKnuckle.manufacturerId !== null)

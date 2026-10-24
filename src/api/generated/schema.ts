@@ -524,8 +524,58 @@ export interface components {
             id: string;
             name: string;
         };
+        /** @description Independent optional components per axle. Empty/null blocks and parents are omitted. Additive schema-v1 extension without defaults or migration. */
+        RunningGear: {
+            front?: components["schemas"]["AxleRunningGear"] | null;
+            rear?: components["schemas"]["AxleRunningGear"] | null;
+        };
+        AxleRunningGear: {
+            hex?: components["schemas"]["Hex"] | null;
+            wheel?: components["schemas"]["Wheel"] | null;
+            tire?: components["schemas"]["Tire"] | null;
+        };
+        Hex: {
+            /**
+             * Format: double
+             * @description Independent finite signed offset in millimetres; zero is preserved. No width field or application-specific magnitude bound.
+             */
+            offset_mm?: number | null;
+        };
+        Wheel: {
+            /**
+             * Format: uuid
+             * @description Existing chassis brand UUID. New selections must exist and be active. Unchanged inactive references on the same axle/component survive PATCH. Null/omitted is unknown; output UUID is canonical.
+             */
+            manufacturer_id?: string | null;
+            /** @description Trimmed free text. Empty/null/omitted is omitted. */
+            model?: string | null;
+            /**
+             * Format: int32
+             * @description Independent signed whole-millimetre wheel offset. Zero is preserved. Bounds reflect integer storage, not an assumed RC component range.
+             */
+            offset_mm?: number | null;
+        };
+        Tire: {
+            /**
+             * Format: uuid
+             * @description Existing chassis brand UUID. New selections must exist and be active. Unchanged inactive references on the same axle/component survive PATCH. Null/omitted is unknown; output UUID is canonical.
+             */
+            manufacturer_id?: string | null;
+            /** @description Trimmed free text. Empty/null/omitted is omitted. */
+            model?: string | null;
+        };
+        AxleRunningGearManufacturers: {
+            wheel: components["schemas"]["DifferentialManufacturer"] | null;
+            tire: components["schemas"]["DifferentialManufacturer"] | null;
+        };
+        /** @description Read-only joined historical brands including inactive entries. An absent/unresolvable component or entirely unresolved axle is null. */
+        RunningGearManufacturers: {
+            front: components["schemas"]["AxleRunningGearManufacturers"] | null;
+            rear: components["schemas"]["AxleRunningGearManufacturers"] | null;
+        };
         /** @description Schema version 1 technical document. All sections are optional; null sections are omitted on output. Unknown fields are rejected on input. Explicit numeric zero is preserved; omitted/null optional numeric values are unknown. PATCH replaces this entire document, without a deep merge. */
         SetupDataV1: {
+            running_gear?: components["schemas"]["RunningGear"] | null;
             front_steering_knuckle?: components["schemas"]["SteeringKnuckle"] | null;
             rear_differential?: components["schemas"]["RearDifferential"] | null;
             suspension?: components["schemas"]["Suspension"] | null;
@@ -713,6 +763,8 @@ export interface components {
         };
         /** @description Complete setup with application owner UUID and read-only historical chassis display. No owner email or provider identity is exposed. */
         Setup: {
+            /** @description Read-only historical catalogue display; null when no reference resolves. Never stored in data or accepted in writes. */
+            running_gear_manufacturers: components["schemas"]["RunningGearManufacturers"] | null;
             /** @description Read-only historical catalog display; null when neither axle has a resolvable manufacturer. Never stored in technical data or accepted in writes. */
             lower_arm_mount_manufacturers: components["schemas"]["LowerArmMountManufacturers"] | null;
             /** @description Read-only joined historical brand display for data.front_steering_knuckle.manufacturer_id, including inactive brands. Null when absent or unresolvable. Never accepted in writes. */

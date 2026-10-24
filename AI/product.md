@@ -16,7 +16,7 @@ route/interaction details in [UI](ui.md). Use [docs by exception](workflow.md).
 - Preserve explicit zero versus blank/unknown and precision. Suspension decimal text
   accepts dot/comma without rewriting while typing. Signed finite angles, positive
   link/oil values and nonnegative optional spacing retain their distinct validation.
-  Comma support is suspension-only; do not broaden oil syntax by assumption.
+  Comma support follows the field-specific [UI rules](ui.md); oil syntax is unchanged.
 - Optional arm blocks start blank, support partial/all-zero values, removal/re-add,
   and omit empty parents. No mandatory defaults/calculations. Full-data PATCH preserves
   untouched technical values; blank notes clear with null; title-only changes preserve data.

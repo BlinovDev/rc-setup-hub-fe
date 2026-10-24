@@ -7,6 +7,7 @@ export const testUser = {
   created_at: "2026-09-30T12:00:00Z",
 } satisfies components["schemas"]["User"];
 export const testSetup = {
+  running_gear_manufacturers: null,
   rear_differential_manufacturer: null,
   lower_arm_mount_manufacturers: null,
   front_steering_knuckle_manufacturer: null,

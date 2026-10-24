@@ -29,9 +29,12 @@ export function TechnicalData({
   data,
   differentialManufacturer,
   mountManufacturers,
+  runningGearManufacturers,
   knuckleManufacturer,
 }: {
   data: components["schemas"]["SetupDataV1"];
+  runningGearManufacturers?:
+    components["schemas"]["RunningGearManufacturers"] | null;
   knuckleManufacturer?:
     components["schemas"]["DifferentialManufacturer"] | null;
   mountManufacturers?:
@@ -58,6 +61,37 @@ export function TechnicalData({
         ) ?? []),
       ],
     });
+    const gear = data.running_gear?.[axle];
+    sections.push({
+      title: `${label} hex`,
+      values: [["Offset (mm)", gear?.hex?.offset_mm]],
+    });
+    for (const part of ["wheel", "tire"] as const) {
+      const component = gear?.[part];
+      sections.push({
+        title: `${label} ${part}`,
+        values: [
+          [
+            "Manufacturer",
+            component?.manufacturer_id
+              ? manufacturerLabel(
+                  component.manufacturer_id,
+                  runningGearManufacturers?.[axle]?.[part],
+                )
+              : undefined,
+          ],
+          ["Model", component?.model?.trim() || undefined],
+          ...(part === "wheel"
+            ? [
+                ["Offset (mm)", gear?.wheel?.offset_mm] as [
+                  string,
+                  number | null | undefined,
+                ],
+              ]
+            : []),
+        ],
+      });
+    }
     const mount = suspension?.lower_arm_mount;
     sections.push({
       title: `${label} lower arm mount`,

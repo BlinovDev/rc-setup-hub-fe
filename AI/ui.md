@@ -31,6 +31,7 @@ Photos toolbar precedes General. Keep setup sections open with anchor navigation
 General/title/chassis/visibility/notes; front/rear suspension/links; front/rear shocks/
 springs/oil; optional rear differential; electronics. One logical document, one mobile Save/Create bar above fixed
 navigation, inline desktop actions. Reserve padding so final controls stay reachable.
+On short screens, keep section navigation in normal flow so it cannot cover fields.
 
 Use text inputs with inputMode=decimal for suspension; do not rewrite while typing,
 force integer steps or round precision. Signed angles, positive links/oil and
@@ -57,6 +58,13 @@ part number/description (200 Unicode characters). Clear affects only the knuckle
 The shared component manufacturer selector retains historical references, loads
 active choices on explicit Change in edit, and supports retry/cancel. Read-only
 detail uses the joined name projection without additional catalog requests.
+
+Each axle has optional hex, wheel and tire fieldsets. Hex offset accepts signed
+dot/comma decimals without rewriting while typing; wheel offset accepts signed
+int32 whole millimetres. Their offsets are independent and zero is preserved.
+Wheel/tire manufacturer and model are independently optional; reuse the shared
+manufacturer selector and joined historical displays. Clear affects only that
+component. Empty blocks/parents are omitted; no hex width or calculated offsets.
 
 Each axle's shock section includes independent optional piston hole count, diameter
 (mm), multiline notes, seal type and product description. Clear piston/seal affects
