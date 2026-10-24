@@ -1,6 +1,6 @@
 import { setupControl, setupButton } from "./form/testDriver";
 import type { components } from "../../api/generated/schema";
-import { act, screen, within } from "@testing-library/react";
+import { act, screen, within, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { http, HttpResponse } from "msw";
 import { expect, it } from "vitest";
@@ -226,7 +226,7 @@ it("blocks malformed angles and nonpositive/blank lengths with associated errors
     expect(length).toHaveAccessibleDescription(
       "Enter a finite length greater than zero.",
     );
-    expect(angle).toHaveFocus();
+    await waitFor(() => expect(angle).toHaveFocus());
     expect(posts).toBe(0);
   }
 });

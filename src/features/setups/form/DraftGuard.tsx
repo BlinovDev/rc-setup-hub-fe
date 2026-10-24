@@ -1,3 +1,4 @@
+import { trapDialogTab } from "./dialogFocus";
 import { useEffect, useRef, type RefObject } from "react";
 import { useBlocker } from "react-router";
 import { Button } from "../../../shared/components/Button";
@@ -41,6 +42,7 @@ export function DraftGuard({
   };
   return (
     <dialog
+      onKeyDown={trapDialogTab}
       ref={dialog}
       className="draft-dialog"
       aria-labelledby="draft-exit-title"

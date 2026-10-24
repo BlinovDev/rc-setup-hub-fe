@@ -1,3 +1,4 @@
+import { trapDialogTab } from "./dialogFocus";
 import { useEffect, useId, useRef, useState } from "react";
 import { Button } from "../../../shared/components/Button";
 import { sections, type SectionId } from "./presentation";
@@ -60,6 +61,7 @@ export function SectionNavigation({
         {links()}
       </nav>
       <dialog
+        onKeyDown={trapDialogTab}
         ref={dialog}
         id={id}
         className="sections-sheet"

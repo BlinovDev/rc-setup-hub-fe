@@ -485,6 +485,24 @@ try {
     await page.goto("http://127.0.0.1:5173/my/setups/new");
     // Phase 4: exercise the approved disclosure contract without the legacy driver.
     const mobile = width < 768;
+    if (width === 1280) {
+      await page
+        .locator(".setup-editor")
+        .evaluate((el) => (el.style.zoom = "2"));
+      await geometry();
+      await page
+        .getByLabel("Title", { exact: true })
+        .fill("200 percent form zoom");
+      await page.screenshot({
+        path: "artifacts/photo-qa/ux-200-percent-form-zoom.png",
+        fullPage: true,
+      });
+      await page.getByLabel("Title", { exact: true }).fill("");
+      await page
+        .locator(".setup-editor")
+        .evaluate((el) => (el.style.zoom = ""));
+    }
+
     assert.equal(
       await page.locator("input:visible, textarea:visible").count(),
       1,
@@ -518,6 +536,13 @@ try {
         await sheet
           .getByRole("button", { name: "Close sections" })
           .evaluate((el) => el === document.activeElement),
+      );
+      await page
+        .getByLabel("Title", { exact: true })
+        .evaluate((el) => el.focus());
+      assert(
+        await sheet.evaluate((el) => el.contains(document.activeElement)),
+        "modal background must remain inert",
       );
       await page.screenshot({
         path: `artifacts/photo-qa/ux-sheet-${width}x${height}.png`,
