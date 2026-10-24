@@ -1879,6 +1879,14 @@ try {
       .getByRole("button", { name: "Cancel adjustment", exact: true })
       .click();
     await cropDialog.waitFor({ state: "hidden" });
+    assert(
+      await page.evaluate(
+        () =>
+          document.activeElement !== document.body &&
+          !document.activeElement?.closest("[hidden]"),
+      ),
+      "crop dismissal restores visible section focus",
+    );
     await selectSection("General");
     assert.equal(
       await page.getByLabel("Notes", { exact: true }).inputValue(),

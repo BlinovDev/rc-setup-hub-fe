@@ -33,6 +33,8 @@ content; General contains photos, required Title, chassis selection, notes and
 visibility, in that order, without duplicate essentials above navigation. Other
 sections hide General without unmounting fields or the photo manager. Keep photo
 writes/queues independent of technical Save and outside its disabled fieldset.
+Automatic photo crop dialogs render outside hidden General and retain their state
+owner; dismissal restores a visible opener or the current section heading.
 
 Desktop keeps a sidebar from 768px. Mobile Edit uses one modest 50px sticky current
 section/chevron button above all content, with a light border, side spacing and safe
