@@ -52,10 +52,8 @@ export function setupFormDriver(page) {
     if (
       section &&
       !(await page
-        .locator(".section-sidebar")
-        .getByRole("button", {
-          name: new RegExp("^" + section + "(?:\\s*·|$)"),
-        })
+        .locator(".section-sidebar button")
+        .filter({ hasText: new RegExp("^" + section + "(?:\\s*·|$)") })
         .getAttribute("aria-current"))
     )
       await select(section);
