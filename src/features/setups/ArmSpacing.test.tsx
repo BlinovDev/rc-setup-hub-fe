@@ -146,6 +146,8 @@ it.each([".", ","])(
     expect(setupButton({ name: add("Rear", "top") })).toBeInTheDocument();
     expect(setupControl(field("Front", "lower", "Rear"))).toHaveValue("0");
   },
+  // Full create/detail/edit/clear journey on both axles, including real section actions.
+  10000,
 );
 
 it("allows empty added blocks, removes them without stale values, and saves no empty parents", async () => {

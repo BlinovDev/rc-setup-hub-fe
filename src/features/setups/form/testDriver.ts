@@ -54,19 +54,16 @@ function destination(matcher: Matcher | ByRoleOptions["name"] | undefined) {
 function prepare(matcher: Matcher | ByRoleOptions["name"] | undefined) {
   const d = destination(matcher);
   if (d.label) {
-    const nav = screen.queryByRole("navigation", { name: "Setup sections" });
-    const target =
-      nav &&
-      within(nav).getByRole("button", {
-        name: new RegExp("^" + d.label.replace("&", "&") + "(?:\\s*·|$)"),
-      });
+    const target = Array.from(
+      document.querySelectorAll<HTMLButtonElement>(".section-sidebar button"),
+    ).find((button) => button.textContent?.startsWith(d.label!));
     if (target && target.getAttribute("aria-current") !== "location")
       fireEvent.click(target);
   }
   if (d.spec) {
-    const region = screen
-      .queryAllByRole("region", { name: d.spec.label })
-      .find((el) => el.dataset.component === d.id);
+    const region = document.querySelector<HTMLElement>(
+      `[data-component="${d.id}"]`,
+    );
     const edit =
       region &&
       within(region).queryByRole("button", {
@@ -92,9 +89,9 @@ export function setupButton(options: ByRoleOptions) {
     /^(Clear |Remove (front|rear) (top|lower) arm spacing)/i.test(text) &&
     d.spec
   ) {
-    const region = screen
-      .getAllByRole("region", { name: d.spec.label })
-      .find((el) => el.dataset.component === d.id)!;
+    const region = document.querySelector<HTMLElement>(
+      `[data-component="${d.id}"]`,
+    )!;
     fireEvent.click(
       within(region).getByRole("button", { name: "Remove " + d.spec.label }),
     );

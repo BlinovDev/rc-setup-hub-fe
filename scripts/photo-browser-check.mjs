@@ -485,6 +485,9 @@ try {
     await page.goto("http://127.0.0.1:5173/my/setups/new");
     // Phase 4: exercise the approved disclosure contract without the legacy driver.
     const mobile = width < 768;
+    await page
+      .getByLabel("Title", { exact: true })
+      .waitFor({ state: "visible" });
     if (width === 1280) {
       await page
         .locator(".setup-editor")
