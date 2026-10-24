@@ -48,7 +48,27 @@ export function setupFormDriver(page) {
   };
   const prepare = async (name) => {
     const [section, component] = destination(name);
-    if (!(await page.locator("form").count())) return component;
+    if (!(await page.locator("form").count())) {
+      // Initial route data can still be loading. Wait for its real form or its
+      // explicit unavailable state before looking for a lazily mounted editor.
+      const editorRoute = /^\/my\/setups\/(new|[^/]+\/edit)$/.test(
+        new URL(page.url()).pathname,
+      );
+      if (
+        editorRoute &&
+        (component || section || String(name) === "Title") &&
+        !(await page.getByText("Setup created.", { exact: true }).count())
+      ) {
+        await page
+          .locator("form")
+          .or(
+            page.getByText("Setup not found or unavailable.", { exact: true }),
+          )
+          .first()
+          .waitFor();
+      }
+      if (!(await page.locator("form").count())) return component;
+    }
     if (
       section &&
       !(await page

@@ -88,6 +88,9 @@ it("summaries preserve manufacturer/notes/zero-only data and save the whole unse
   await user.click(screen.getByRole("button", { name: "Remove Front hex" }));
   expect(screen.getByRole("button", { name: "Cancel" })).toHaveFocus();
   await user.click(screen.getByRole("button", { name: "Cancel" }));
+  expect(
+    screen.getByRole("button", { name: "Remove Front hex" }),
+  ).toHaveFocus();
   expect(screen.getByRole("region", { name: "Front hex" })).toHaveTextContent(
     "Offset (mm): 0",
   );

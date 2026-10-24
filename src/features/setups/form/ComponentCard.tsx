@@ -52,6 +52,7 @@ export function ComponentCard({
     [confirm, setConfirm] = useState(false),
     [generation, setGeneration] = useState(0);
   const opener = useRef<HTMLButtonElement | null>(null);
+  const removalTrigger = useRef<HTMLButtonElement | null>(null);
   const brands = useQuery({ ...brandsOptions, enabled: false });
   const values = getValues();
   const configured = spec.paths.some((path) => hasValue(valueAt(values, path)));
@@ -150,6 +151,7 @@ export function ComponentCard({
           <Button
             type="button"
             variant="danger"
+            ref={removalTrigger}
             onClick={() => {
               if (configured) setConfirm(true);
               else clear();
@@ -171,7 +173,7 @@ export function ComponentCard({
             autoFocus
             onClick={() => {
               setConfirm(false);
-              opener.current?.focus();
+              removalTrigger.current?.focus();
             }}
           >
             Cancel

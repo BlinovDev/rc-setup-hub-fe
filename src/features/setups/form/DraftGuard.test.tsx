@@ -95,3 +95,34 @@ it("successful saving clears the exit guard without recreating the document", as
     screen.queryByRole("dialog", { name: "Leave unsaved changes?" }),
   ).not.toBeInTheDocument();
 });
+it("focuses and associates an incomplete chassis selection with the real model control", async () => {
+  const brand = "11111111-1111-4111-8111-111111111111";
+  server.use(
+    http.get(`${apiUrl}/api/v1/chassis/brands`, () =>
+      HttpResponse.json([{ id: brand, name: "Brand" }]),
+    ),
+    http.get(`${apiUrl}/api/v1/chassis/brands/${brand}/models`, () =>
+      HttpResponse.json([
+        { id: "22222222-2222-4222-8222-222222222222", name: "Model choice" },
+      ]),
+    ),
+  );
+  renderSetupRoute("/my/setups/new");
+  await screen.findByLabelText("Title");
+  fireEvent.change(screen.getByLabelText("Title"), {
+    target: { value: "Chassis validation" },
+  });
+  const user = userEvent.setup();
+  await screen.findByRole("option", { name: "Brand" });
+  await user.selectOptions(screen.getByLabelText("Brand"), brand);
+  await screen.findByRole("option", { name: "Model choice" });
+  await user.click(screen.getByRole("button", { name: "Create setup" }));
+  expect(screen.getByLabelText("Model")).toHaveFocus();
+  expect(screen.getByLabelText("Model")).toHaveAccessibleDescription(
+    "Select a model for the chosen brand.",
+  );
+  expect(screen.getByLabelText("Model")).toHaveAttribute(
+    "aria-invalid",
+    "true",
+  );
+});

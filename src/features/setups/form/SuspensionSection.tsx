@@ -112,19 +112,18 @@ export function SuspensionSection({
                   Confirm remove {label.toLowerCase()} link {index + 1}
                 </Button>
               </div>
-            ) : (
-              <Button
-                type="button"
-                onClick={(event) => {
-                  if (hasValue(getValues(`${side}.link_lengths.${index}`))) {
-                    opener.current = event.currentTarget;
-                    setConfirm(index);
-                  } else remove(index);
-                }}
-              >
-                Remove {label.toLowerCase()} link {index + 1}
-              </Button>
-            )}
+            ) : null}
+            <Button
+              type="button"
+              onClick={(event) => {
+                if (hasValue(getValues(`${side}.link_lengths.${index}`))) {
+                  opener.current = event.currentTarget;
+                  setConfirm(index);
+                } else remove(index);
+              }}
+            >
+              Remove {label.toLowerCase()} link {index + 1}
+            </Button>
           </div>
         ))}
         <Button
