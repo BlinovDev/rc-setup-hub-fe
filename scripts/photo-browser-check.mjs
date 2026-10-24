@@ -448,6 +448,23 @@ try {
         ),
         `${width}px horizontal overflow`,
       );
+    const assertFocusAboveActions = async (label) => {
+      const rect = await page.getByLabel(label, { exact: true }).boundingBox();
+      assert(
+        rect &&
+          rect.height >= 44 &&
+          rect.y >= 0 &&
+          rect.y + rect.height <= height,
+        "focused field must fit the viewport and retain a 44px target",
+      );
+      if (width < 768) {
+        const actions = await page.locator(".form-actions").boundingBox();
+        assert(
+          actions && rect.y + rect.height <= actions.y,
+          "focused field must remain above fixed Save/navigation controls",
+        );
+      }
+    };
     await page.goto("http://127.0.0.1:5173/my/setups");
     await page.getByAltText("No setup photo — placeholder").waitFor();
     // Visibility does not guarantee decoding has completed on a fresh context.
@@ -589,6 +606,7 @@ try {
         .inputValue(),
       "-",
     );
+    await assertFocusAboveActions("Front camber (degrees)");
     await page.getByLabel("Front camber (degrees)", { exact: true }).fill("");
     await selectSection("Wheels & tires");
     await draftHex.fill("Infinity");
@@ -600,6 +618,7 @@ try {
         document.activeElement?.getAttribute("name") ===
         "runningGear.front.hexOffset",
     );
+    await assertFocusAboveActions("Front hex offset (mm)");
     await draftHex.fill("0");
     await page
       .getByRole("button", { name: "Done Front hex", exact: true })

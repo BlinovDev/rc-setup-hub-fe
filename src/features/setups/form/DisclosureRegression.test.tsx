@@ -171,3 +171,18 @@ it("saving retains presentation state while resetting dirty baseline and preserv
   );
   expect(screen.queryByText("Unsaved changes")).not.toBeInTheDocument();
 });
+it("a hidden historical manufacturer validation error focuses its actionable Change control", async () => {
+  renderForm({
+    ...testSetup,
+    data: { front_steering_knuckle: { manufacturer_id: "invalid" } },
+  });
+  await userEvent
+    .setup()
+    .click(screen.getByRole("button", { name: "Save setup" }));
+  const change = await screen.findByRole("button", {
+    name: "Change knuckle manufacturer",
+  });
+  await waitFor(() => expect(change).toHaveFocus());
+  expect(change).toHaveAttribute("aria-invalid", "true");
+  expect(change).toHaveAccessibleDescription(/UUID/i);
+});

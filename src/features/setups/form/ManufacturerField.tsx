@@ -60,6 +60,9 @@ export function ManufacturerField({
           </p>
           <Button
             type="button"
+            data-error-path={name}
+            aria-invalid={!!error}
+            aria-describedby={error ? `${id}-error` : undefined}
             onClick={() => {
               setPreviousSelection(selected);
               setSelectionVersion(savedVersion);
