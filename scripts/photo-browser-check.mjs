@@ -1930,6 +1930,7 @@ try {
       name: "Available components",
       exact: true,
     });
+    await choices.waitFor({ state: "visible" });
     assert.equal(
       await choices
         .getByRole("button", { name: "Add Front wheel", exact: true })
@@ -1957,6 +1958,9 @@ try {
     await page
       .getByRole("button", { name: "Close Front wheel editor", exact: true })
       .click();
+    await page
+      .getByLabel("Front wheel model", { exact: true })
+      .waitFor({ state: "hidden" });
     assert.equal(
       await page.getByLabel("Front wheel model", { exact: true }).isVisible(),
       false,
@@ -1983,6 +1987,7 @@ try {
     const preview = page.locator(
       '[data-component="front-wheel"] .component-summary-rows',
     );
+    await preview.waitFor({ state: "visible" });
     assert.equal(await preview.locator("dt").count(), 2);
     assert.equal(await preview.locator("dd").last().innerText(), "0");
     assert.equal(

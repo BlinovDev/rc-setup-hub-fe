@@ -54,6 +54,15 @@ export function setupFormDriver(page) {
       await page
         .getByRole("dialog", { name: "Setup sections", exact: true })
         .waitFor({ state: "hidden" });
+    const sectionId = {
+      General: "general",
+      Front: "front",
+      Rear: "rear",
+      Shocks: "shocks",
+      "Wheels & tires": "wheels",
+      Electronics: "electronics",
+    }[label];
+    await page.locator("#section-" + sectionId).waitFor({ state: "visible" });
   };
   const prepare = async (name) => {
     const [section, component] = destination(name);
