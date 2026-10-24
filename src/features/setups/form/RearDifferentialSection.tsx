@@ -1,7 +1,6 @@
 import { useId } from "react";
 import { useFormContext } from "react-hook-form";
 import type { components } from "../../../api/generated/schema";
-import { Button } from "../../../shared/components/Button";
 import { InlineNotice } from "../../../shared/components/Feedback";
 import { differentialLabels, differentialTypes } from "../differential";
 import type { SetupFormValues } from "./formSchema";
@@ -14,8 +13,7 @@ export function RearDifferentialSection({
   setup: components["schemas"]["Setup"] | undefined;
 }) {
   const id = useId();
-  const { register, setValue, clearErrors, formState } =
-    useFormContext<SetupFormValues>();
+  const { register, formState } = useFormContext<SetupFormValues>();
   const errors = formState.errors.rearDifferential;
   return (
     <fieldset
@@ -63,19 +61,6 @@ export function RearDifferentialSection({
         label="Rear differential tuning notes"
         multiline
       />
-      <Button
-        type="button"
-        onClick={() => {
-          setValue(
-            "rearDifferential",
-            { type: "", manufacturerId: null, model: "", tuningNotes: "" },
-            { shouldDirty: true },
-          );
-          clearErrors("rearDifferential");
-        }}
-      >
-        Clear rear differential
-      </Button>
     </fieldset>
   );
 }

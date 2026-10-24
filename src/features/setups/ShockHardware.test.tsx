@@ -1,3 +1,5 @@
+import { waitFor } from "@testing-library/react";
+import { setupControl, setupButton } from "./form/testDriver";
 import type { components } from "../../api/generated/schema";
 import { fireEvent, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
@@ -28,7 +30,7 @@ const setup: Schemas["Setup"] = {
   },
 };
 const fill = (label: string, value: string) =>
-  fireEvent.change(screen.getByLabelText(label), { target: { value } });
+  fireEvent.change(setupControl(label), { target: { value } });
 function serve(value = setup) {
   server.use(
     http.get(`${apiUrl}/api/v1/setups/${setup.id}`, () =>
@@ -56,12 +58,9 @@ it("creates both axles with optional decimal hardware through the credentialed A
     fill(`${axle} piston hole diameter (mm)`, "1,23456789");
     fill(`${axle} piston notes`, hardware.piston.notes);
     fill(`${axle} seal description`, " Product ");
-    await user.selectOptions(
-      screen.getByLabelText(`${axle} seal type`),
-      "x-ring",
-    );
+    await user.selectOptions(setupControl(`${axle} seal type`), "x-ring");
   }
-  await user.click(screen.getByRole("button", { name: "Create setup" }));
+  await user.click(setupButton({ name: "Create setup" }));
   await screen.findByText("Setup created.");
   expect(body?.data).toEqual({ shocks: { front: hardware, rear: hardware } });
 });
@@ -77,15 +76,13 @@ it("hydrates both axles and preserves complete data on a title-only PATCH", asyn
   renderSetupRoute(`/my/setups/${setup.id}/edit`);
   await screen.findByLabelText("Title");
   for (const axle of ["Front", "Rear"]) {
-    expect(
-      screen.getByLabelText(`${axle} piston hole diameter (mm)`),
-    ).toHaveValue("1.23456789");
-    expect(screen.getByLabelText(`${axle} seal type`)).toHaveValue("x-ring");
+    expect(setupControl(`${axle} piston hole diameter (mm)`)).toHaveValue(
+      "1.23456789",
+    );
+    expect(setupControl(`${axle} seal type`)).toHaveValue("x-ring");
   }
   fill("Title", "Title only");
-  await userEvent
-    .setup()
-    .click(screen.getByRole("button", { name: "Save setup" }));
+  await userEvent.setup().click(setupButton({ name: "Save setup" }));
   await screen.findByText("Setup saved.");
   expect(body?.data).toEqual(setup.data);
   expect(body).not.toHaveProperty("chassis_model_id");
@@ -105,29 +102,27 @@ it("blocks invalid writes with associated focus, clears hardware, and re-adds pa
   await screen.findByLabelText("Title");
   const user = userEvent.setup();
   fill("Front piston hole count", "1.5");
-  await user.click(screen.getByRole("button", { name: "Save setup" }));
-  expect(screen.getByLabelText("Front piston hole count")).toHaveFocus();
-  expect(
-    screen.getByLabelText("Front piston hole count"),
-  ).toHaveAccessibleDescription(
+  await user.click(setupButton({ name: "Save setup" }));
+  await waitFor(() =>
+    expect(setupControl("Front piston hole count")).toHaveFocus(),
+  );
+  expect(setupControl("Front piston hole count")).toHaveAccessibleDescription(
     "Enter a whole hole count from 1 to 2147483647.",
   );
   expect(writes).toBe(0);
   for (const axle of ["front", "rear"])
     for (const block of ["piston", "seal"])
-      await user.click(
-        screen.getByRole("button", { name: `Clear ${axle} ${block}` }),
-      );
-  expect(screen.getByLabelText("Front piston hole count")).toHaveAttribute(
+      await user.click(setupButton({ name: `Clear ${axle} ${block}` }));
+  expect(setupControl("Front piston hole count")).toHaveAttribute(
     "aria-invalid",
     "false",
   );
-  await user.click(screen.getByRole("button", { name: "Save setup" }));
+  await user.click(setupButton({ name: "Save setup" }));
   await screen.findByText("Setup saved.");
   expect(body?.data).toEqual(testSetup.data);
   fill("Rear seal description", "Description only");
   fill("Front piston notes", "Notes only");
-  await user.click(screen.getByRole("button", { name: "Save setup" }));
+  await user.click(setupButton({ name: "Save setup" }));
   await screen.findByDisplayValue("Description only");
   expect(body?.data?.shocks?.front?.piston).toEqual({ notes: "Notes only" });
   expect(body?.data?.shocks?.rear?.seal).toEqual({
@@ -165,6 +160,6 @@ it("edits legacy setups with blank hardware without inventing defaults", async (
   serve(testSetup);
   renderSetupRoute(`/my/setups/${setup.id}/edit`);
   await screen.findByLabelText("Title");
-  expect(screen.getByLabelText("Front piston hole count")).toHaveValue("");
-  expect(screen.getByLabelText("Rear seal type")).toHaveValue("");
+  expect(setupControl("Front piston hole count")).toHaveValue("");
+  expect(setupControl("Rear seal type")).toHaveValue("");
 });

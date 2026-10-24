@@ -127,3 +127,26 @@ it("uses unique hidden multi-select inputs, a non-submit paperclip and leaves co
     "Setup fields use Save setup separately",
   );
 });
+it("inline photo help still dismisses when focus moves to the separate chooser", async () => {
+  render(
+    <PhotoToolbar
+      count={0}
+      saved={false}
+      disabled={false}
+      accept=".jpg"
+      onSelect={vi.fn()}
+    />,
+  );
+  const user = userEvent.setup();
+  await user.click(screen.getByRole("button", { name: "Photo information" }));
+  expect(
+    screen.getByRole("region", { name: "Photo information details" }),
+  ).toBeVisible();
+  fireEvent.focusOut(
+    screen.getByRole("button", { name: "Photo information" }),
+    { relatedTarget: screen.getByRole("button", { name: "Choose photos" }) },
+  );
+  expect(
+    screen.queryByRole("region", { name: "Photo information details" }),
+  ).not.toBeInTheDocument();
+});

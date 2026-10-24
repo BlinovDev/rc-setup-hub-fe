@@ -1,3 +1,5 @@
+import { waitFor } from "@testing-library/react";
+import { setupControl, setupButton } from "./form/testDriver";
 import type { components } from "../../api/generated/schema";
 import { act, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
@@ -52,29 +54,29 @@ it.each([".", ","])(
     const { router } = renderSetupRoute("/my/setups/new");
     const user = userEvent.setup();
     await screen.findByLabelText("Title");
-    await user.type(screen.getByLabelText("Title"), "Arm spacing");
+    await user.type(setupControl("Title"), "Arm spacing");
     for (const side of ["Front", "Rear"]) {
       for (const arm of ["top", "lower"]) {
         expect(
           screen.queryByLabelText(field(side, arm, "Front")),
         ).not.toBeInTheDocument();
-        await user.click(screen.getByRole("button", { name: add(side, arm) }));
+        await user.click(setupButton({ name: add(side, arm) }));
         expect(
           screen.queryByRole("button", { name: add(side, arm) }),
         ).not.toBeInTheDocument();
-        const front = screen.getByLabelText(field(side, arm, "Front"));
+        const front = setupControl(field(side, arm, "Front"));
         expect(front).toHaveValue("");
         expect(front).toHaveAttribute("inputmode", "decimal");
         if (side === "Front") await user.type(front, "0");
-        await user.click(screen.getByLabelText(field(side, arm, "Rear")));
+        await user.click(setupControl(field(side, arm, "Rear")));
         await user.paste(
           side === "Front" && arm === "lower" ? "0" : `5${separator}2`,
         );
       }
     }
-    await user.type(screen.getByLabelText("Front camber (degrees)"), "-6.8");
-    await user.type(screen.getByLabelText("Motor"), "Existing motor");
-    await user.click(screen.getByRole("button", { name: "Create setup" }));
+    await user.type(setupControl("Front camber (degrees)"), "-6.8");
+    await user.type(setupControl("Motor"), "Existing motor");
+    await user.click(setupButton({ name: "Create setup" }));
     await screen.findByText("Setup created.");
     expect(created?.data).toEqual({
       suspension: {
@@ -107,35 +109,27 @@ it.each([".", ","])(
     ).toBeInTheDocument();
     await user.click(screen.getByRole("link", { name: "Edit setup" }));
     await screen.findByLabelText("Title");
-    expect(screen.getByLabelText(field("Front", "top", "Front"))).toHaveValue(
-      "0",
-    );
-    expect(screen.getByLabelText(field("Front", "top", "Rear"))).toHaveValue(
-      "5.2",
-    );
-    expect(screen.getByLabelText(field("Rear", "top", "Front"))).toHaveValue(
-      "",
-    );
-    await user.type(screen.getByLabelText("Title"), " renamed");
-    await user.click(screen.getByRole("button", { name: "Save setup" }));
+    expect(setupControl(field("Front", "top", "Front"))).toHaveValue("0");
+    expect(setupControl(field("Front", "top", "Rear"))).toHaveValue("5.2");
+    expect(setupControl(field("Rear", "top", "Front"))).toHaveValue("");
+    await user.type(setupControl("Title"), " renamed");
+    await user.click(setupButton({ name: "Save setup" }));
     await screen.findByText("Setup saved.");
     expect(updated?.data).toEqual(created?.data);
     await act(() => router.navigate(`/setups/${testSetup.id}`));
     await screen.findByRole("link", { name: "Edit setup" });
     await user.click(screen.getByRole("link", { name: "Edit setup" }));
     await screen.findByLabelText("Title");
-    await user.click(
-      screen.getByRole("button", { name: "Remove front top arm spacing" }),
-    );
+    await user.click(setupButton({ name: "Remove front top arm spacing" }));
     expect(
       screen.queryByLabelText(field("Front", "top", "Front")),
     ).not.toBeInTheDocument();
-    await user.clear(screen.getByLabelText(field("Front", "lower", "Front")));
-    await user.clear(screen.getByLabelText(field("Rear", "top", "Rear")));
-    const updatedTotal = screen.getByLabelText(field("Rear", "lower", "Rear"));
+    await user.clear(setupControl(field("Front", "lower", "Front")));
+    await user.clear(setupControl(field("Rear", "top", "Rear")));
+    const updatedTotal = setupControl(field("Rear", "lower", "Rear"));
     await user.clear(updatedTotal);
     await user.type(updatedTotal, `0${separator}123456789`);
-    await user.click(screen.getByRole("button", { name: "Save setup" }));
+    await user.click(setupButton({ name: "Save setup" }));
     await screen.findByText("Setup saved.");
     expect(updated?.data).toEqual({
       suspension: {
@@ -148,16 +142,12 @@ it.each([".", ","])(
     await screen.findByRole("link", { name: "Edit setup" });
     await user.click(screen.getByRole("link", { name: "Edit setup" }));
     await screen.findByLabelText("Title");
-    expect(
-      screen.getByRole("button", { name: add("Front", "top") }),
-    ).toBeInTheDocument();
-    expect(
-      screen.getByRole("button", { name: add("Rear", "top") }),
-    ).toBeInTheDocument();
-    expect(screen.getByLabelText(field("Front", "lower", "Rear"))).toHaveValue(
-      "0",
-    );
+    expect(setupButton({ name: add("Front", "top") })).toBeInTheDocument();
+    expect(setupButton({ name: add("Rear", "top") })).toBeInTheDocument();
+    expect(setupControl(field("Front", "lower", "Rear"))).toHaveValue("0");
   },
+  // Full create/detail/edit/clear journey on both axles, including real section actions.
+  10000,
 );
 
 it("allows empty added blocks, removes them without stale values, and saves no empty parents", async () => {
@@ -173,17 +163,15 @@ it("allows empty added blocks, removes them without stale values, and saves no e
   renderSetupRoute("/my/setups/new");
   const user = userEvent.setup();
   await screen.findByLabelText("Title");
-  await user.type(screen.getByLabelText("Title"), "Empty blocks");
+  await user.type(setupControl("Title"), "Empty blocks");
   for (const side of ["Front", "Rear"])
     for (const arm of ["top", "lower"])
-      await user.click(screen.getByRole("button", { name: add(side, arm) }));
-  await user.type(screen.getByLabelText(field("Front", "top", "Front")), "5.2");
-  await user.click(
-    screen.getByRole("button", { name: "Remove front top arm spacing" }),
-  );
-  await user.click(screen.getByRole("button", { name: add("Front", "top") }));
-  expect(screen.getByLabelText(field("Front", "top", "Front"))).toHaveValue("");
-  await user.click(screen.getByRole("button", { name: "Create setup" }));
+      await user.click(setupButton({ name: add(side, arm) }));
+  await user.type(setupControl(field("Front", "top", "Front")), "5.2");
+  await user.click(setupButton({ name: "Remove front top arm spacing" }));
+  await user.click(setupButton({ name: add("Front", "top") }));
+  expect(setupControl(field("Front", "top", "Front"))).toHaveValue("");
+  await user.click(setupButton({ name: "Create setup" }));
   await screen.findByText("Setup created.");
   expect(created?.data).toEqual({});
 });
@@ -211,17 +199,14 @@ it.each(["create", "edit"])(
     );
     const user = userEvent.setup();
     await screen.findByLabelText("Title");
-    if (mode === "create")
-      await user.type(screen.getByLabelText("Title"), "Invalid");
-    await user.click(
-      screen.getByRole("button", { name: add("Rear", "lower") }),
-    );
-    const input = screen.getByLabelText(field("Rear", "lower", "Front"));
+    if (mode === "create") await user.type(setupControl("Title"), "Invalid");
+    await user.click(setupButton({ name: add("Rear", "lower") }));
+    const input = setupControl(field("Rear", "lower", "Front"));
     for (const value of ["-0,1", "NaN", "Infinity", "1e999", "1,2.3", "1,,2"]) {
       await user.clear(input);
       await user.type(input, value);
       await user.click(
-        screen.getByRole("button", {
+        setupButton({
           name: mode === "create" ? "Create setup" : "Save setup",
         }),
       );
@@ -229,7 +214,7 @@ it.each(["create", "edit"])(
       expect(input).toHaveAccessibleDescription(
         "Enter a finite spacer total greater than or equal to zero.",
       );
-      expect(input).toHaveFocus();
+      await waitFor(() => expect(input).toHaveFocus());
       expect(writes).toBe(0);
     }
   },

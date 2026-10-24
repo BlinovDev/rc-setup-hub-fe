@@ -1,3 +1,4 @@
+import { setupFormDriver } from "./setup-form-driver.mjs";
 import { chromium } from "playwright";
 import { spawn } from "node:child_process";
 import { mkdir, readFile } from "node:fs/promises";
@@ -71,6 +72,14 @@ try {
       },
     ]);
     const page = await context.newPage();
+    page.on("dialog", (dialog) => dialog.accept()); // Full-page test navigation explicitly discards local drafts.
+    const {
+      field: formField,
+      button: formButton,
+      group: formGroup,
+      select: selectSection,
+    } = setupFormDriver(page);
+
     const user = {
       id: "c61393b6-daa0-4eb8-923c-57aedbb46a46",
       nickname: "Driver",
@@ -439,6 +448,23 @@ try {
         ),
         `${width}px horizontal overflow`,
       );
+    const assertFocusAboveActions = async (label) => {
+      const rect = await page.getByLabel(label, { exact: true }).boundingBox();
+      assert(
+        rect &&
+          rect.height >= 44 &&
+          rect.y >= 0 &&
+          rect.y + rect.height <= height,
+        "focused field must fit the viewport and retain a 44px target",
+      );
+      if (width < 768) {
+        const actions = await page.locator(".form-actions").boundingBox();
+        assert(
+          actions && rect.y + rect.height <= actions.y,
+          "focused field must remain above fixed Save/navigation controls",
+        );
+      }
+    };
     await page.goto("http://127.0.0.1:5173/my/setups");
     await page.getByAltText("No setup photo — placeholder").waitFor();
     // Visibility does not guarantee decoding has completed on a fresh context.
@@ -461,27 +487,220 @@ try {
     await page
       .getByRole("heading", { name: setup.title, exact: true })
       .waitFor();
-    assert.equal(await page.getByLabel("Title", { exact: true }).count(), 0);
+    assert.equal(await (await formField("Title", { exact: true })).count(), 0);
     assert.equal(
-      await page
-        .getByRole("button", { name: "Choose photos", exact: true })
-        .count(),
+      await (await formButton({ name: "Choose photos", exact: true })).count(),
       0,
     );
     await page.getByRole("link", { name: "Edit setup", exact: true }).click();
-    await page.getByLabel("Title", { exact: true }).waitFor();
+    await (await formField("Title", { exact: true })).waitFor();
     assert.equal(
-      await page.getByLabel("Title", { exact: true }).inputValue(),
+      await (await formField("Title", { exact: true })).inputValue(),
       setup.title,
     );
     assert.equal(mutationCalls, 0);
     await page.goto("http://127.0.0.1:5173/my/setups/new");
+    // Phase 4: exercise the approved disclosure contract without the legacy driver.
+    const mobile = width < 768;
+    await page
+      .getByLabel("Title", { exact: true })
+      .waitFor({ state: "visible" });
+    if (width === 1280) {
+      await page
+        .locator(".setup-editor")
+        .evaluate((el) => (el.style.zoom = "2"));
+      await geometry();
+      await page
+        .getByLabel("Title", { exact: true })
+        .fill("200 percent form zoom");
+      await page.screenshot({
+        path: "artifacts/photo-qa/ux-200-percent-form-zoom.png",
+        fullPage: true,
+      });
+      await page.getByLabel("Title", { exact: true }).fill("");
+      await page
+        .locator(".setup-editor")
+        .evaluate((el) => (el.style.zoom = ""));
+    }
+
+    assert.equal(
+      await page.locator("input:visible, textarea:visible").count(),
+      1,
+    );
+    await geometry();
+    await page.screenshot({
+      path: `artifacts/photo-qa/ux-essentials-${width}x${height}.png`,
+      fullPage: true,
+    });
+    if (mobile) {
+      const trigger = page.getByRole("button", {
+        name: "Sections · General",
+        exact: true,
+      });
+      await trigger.click();
+      const sheet = page.getByRole("dialog", {
+        name: "Setup sections",
+        exact: true,
+      });
+      await sheet.waitFor();
+      assert(
+        await sheet
+          .getByRole("button", { name: "Close sections" })
+          .evaluate((el) => el === document.activeElement),
+      );
+      await sheet
+        .getByRole("button", { name: "Electronics", exact: true })
+        .focus();
+      await page.keyboard.press("Tab");
+      assert(
+        await sheet
+          .getByRole("button", { name: "Close sections" })
+          .evaluate((el) => el === document.activeElement),
+      );
+      await page
+        .getByLabel("Title", { exact: true })
+        .evaluate((el) => el.focus());
+      assert(
+        await sheet.evaluate((el) => el.contains(document.activeElement)),
+        "modal background must remain inert",
+      );
+      await page.screenshot({
+        path: `artifacts/photo-qa/ux-sheet-${width}x${height}.png`,
+      });
+      await page.keyboard.press("Escape");
+      await sheet.waitFor({ state: "hidden" });
+      assert(await trigger.evaluate((el) => el === document.activeElement));
+    }
+    await page.getByLabel("Title", { exact: true }).fill("UX draft");
+    await selectSection("Front");
+    await page.waitForFunction(
+      () => document.activeElement?.id === "section-front",
+    );
+    await page.getByLabel("Front camber (degrees)", { exact: true }).fill("-");
+    await selectSection("Wheels & tires");
+    await page
+      .getByRole("button", { name: "Add component: Front hex", exact: true })
+      .click();
+    const draftHex = page.getByLabel("Front hex offset (mm)", { exact: true });
+    assert(
+      !(await draftHex.evaluate((el) => el === document.activeElement)),
+      "Add must not automatically open the keyboard",
+    );
+    await draftHex.fill("1,");
+    await selectSection("Rear");
+    await selectSection("Wheels & tires");
+    assert.equal(await draftHex.inputValue(), "1,");
+    await page
+      .getByRole("button", { name: "Save setup", exact: true })
+      .count()
+      .then((n) => assert.equal(n, 0));
+    await page
+      .getByRole("button", { name: "Create setup", exact: true })
+      .click();
+    await page.waitForFunction(
+      () => document.activeElement?.getAttribute("name") === "front.camber_deg",
+    );
+    assert.equal(
+      await page
+        .getByLabel("Front camber (degrees)", { exact: true })
+        .inputValue(),
+      "-",
+    );
+    await assertFocusAboveActions("Front camber (degrees)");
+    await page.getByLabel("Front camber (degrees)", { exact: true }).fill("");
+    await selectSection("Wheels & tires");
+    await draftHex.fill("Infinity");
+    await page
+      .getByRole("button", { name: "Done Front hex", exact: true })
+      .click();
+    await page.waitForFunction(
+      () =>
+        document.activeElement?.getAttribute("name") ===
+        "runningGear.front.hexOffset",
+    );
+    await assertFocusAboveActions("Front hex offset (mm)");
+    await draftHex.fill("0");
+    await page
+      .getByRole("button", { name: "Done Front hex", exact: true })
+      .click();
+    assert.equal(await draftHex.isVisible(), false);
+    await page
+      .locator('[data-component="front-hex"]')
+      .getByText("Offset (mm): 0", { exact: true })
+      .waitFor();
+    await page.screenshot({
+      path: `artifacts/photo-qa/ux-summary-${width}x${height}.png`,
+      fullPage: true,
+    });
+    await page
+      .getByRole("button", { name: "Edit Front hex", exact: true })
+      .click();
+    assert.equal(await draftHex.inputValue(), "0");
+    // Resizing changes navigation presentation without recreating the form/editor.
+    await page.setViewportSize({
+      width: width < 768 ? 1280 : 390,
+      height: 900,
+    });
+    assert.equal(await draftHex.inputValue(), "0");
+    await page.setViewportSize({ width, height });
+    await page
+      .getByRole("button", { name: "Remove Front hex", exact: true })
+      .click();
+    assert(
+      await page
+        .getByRole("button", { name: "Cancel", exact: true })
+        .evaluate((el) => el === document.activeElement),
+    );
+    await page.getByRole("button", { name: "Cancel", exact: true }).click();
+    assert.equal(await draftHex.inputValue(), "0");
+    await page
+      .getByRole("button", { name: "Remove Front hex", exact: true })
+      .click();
+    await page
+      .getByRole("button", { name: "Confirm remove Front hex", exact: true })
+      .click();
+    await page
+      .getByRole("button", { name: "Add component: Front hex", exact: true })
+      .click();
+    assert.equal(await draftHex.inputValue(), "");
+    await page
+      .getByRole("link", { name: "Back to my setups", exact: true })
+      .click();
+    const discard = page.getByRole("dialog", {
+      name: "Leave unsaved changes?",
+      exact: true,
+    });
+    await discard.waitFor();
+    assert(
+      await discard
+        .getByRole("button", { name: "Keep editing", exact: true })
+        .evaluate((el) => el === document.activeElement),
+    );
+    await discard
+      .getByRole("button", { name: "Keep editing", exact: true })
+      .click();
+    assert.equal(
+      await page.getByLabel("Title", { exact: true }).inputValue(),
+      "UX draft",
+    );
+    await page
+      .getByRole("link", { name: "Back to my setups", exact: true })
+      .click();
+    await discard
+      .getByRole("button", { name: "Discard draft and leave", exact: true })
+      .click();
+    await page.waitForURL("**/my/setups");
+    await page.goto("http://127.0.0.1:5173/my/setups/new");
+    console.log(
+      `PASS ${width}x${height} UX essentials/disclosure, sheet focus+Escape, hidden error reveal, incomplete drafts, Done, zero summary, resize, confirmed removal/re-add and dirty-exit cancellation`,
+    );
+
     const toolbarCheck = async () => {
-      const picker = page.getByRole("button", {
+      const picker = await formButton({
         name: "Choose photos",
         exact: true,
       });
-      const title = page.getByLabel("Title", { exact: true });
+      const title = await formField("Title", { exact: true });
       await picker.waitFor();
       assert(
         await picker.evaluate((element) =>
@@ -493,7 +712,7 @@ try {
         ),
         "photo toolbar must precede setup fields",
       );
-      const info = page.getByRole("button", {
+      const info = await formButton({
         name: "Photo information",
         exact: true,
       });
@@ -520,89 +739,89 @@ try {
       await panel.waitFor({ state: "hidden" });
     };
     await toolbarCheck();
-    await page.getByLabel("Title", { exact: true }).fill("New with photos");
+    await (await formField("Title", { exact: true })).fill("New with photos");
     for (const axle of ["Front", "Rear"]) {
-      await page
-        .getByLabel(`${axle} hex offset (mm)`, { exact: true })
-        .fill(axle === "Front" ? "0" : "-2,123456789");
-      await page
-        .getByLabel(`${axle} wheel offset (mm)`, { exact: true })
-        .fill(axle === "Front" ? "-4" : "0");
+      await (
+        await formField(`${axle} hex offset (mm)`, { exact: true })
+      ).fill(axle === "Front" ? "0" : "-2,123456789");
+      await (
+        await formField(`${axle} wheel offset (mm)`, { exact: true })
+      ).fill(axle === "Front" ? "-4" : "0");
       for (const part of ["wheel", "tire"]) {
-        await page
-          .getByLabel(`${axle} ${part} manufacturer`, { exact: true })
-          .selectOption(manufacturerId);
-        await page
-          .getByLabel(`${axle} ${part} model`, { exact: true })
-          .fill(part === "wheel" ? gearModel : "Tire model");
+        await (
+          await formField(`${axle} ${part} manufacturer`, { exact: true })
+        ).selectOption(manufacturerId);
+        await (
+          await formField(`${axle} ${part} model`, { exact: true })
+        ).fill(part === "wheel" ? gearModel : "Tire model");
       }
     }
 
-    await page
-      .getByLabel("Front knuckle manufacturer", { exact: true })
-      .selectOption(manufacturerId);
-    await page
-      .getByLabel("Front knuckle part number / description", { exact: true })
-      .fill(knuckleDescription);
+    await (
+      await formField("Front knuckle manufacturer", { exact: true })
+    ).selectOption(manufacturerId);
+    await (
+      await formField("Front knuckle part number / description", {
+        exact: true,
+      })
+    ).fill(knuckleDescription);
 
     for (const axle of ["Front", "Rear"]) {
-      await page
-        .getByLabel(`${axle} lower arm mount manufacturer`, { exact: true })
-        .selectOption(manufacturerId);
-      await page
-        .getByLabel(`${axle} lower arm mount model / part number`, {
+      await (
+        await formField(`${axle} lower arm mount manufacturer`, { exact: true })
+      ).selectOption(manufacturerId);
+      await (
+        await formField(`${axle} lower arm mount model / part number`, {
           exact: true,
         })
-        .fill(mountModel);
-      await page
-        .getByLabel(`${axle} lower arm mount configuration notes`, {
+      ).fill(mountModel);
+      await (
+        await formField(`${axle} lower arm mount configuration notes`, {
           exact: true,
         })
-        .fill(mountNotes);
+      ).fill(mountNotes);
     }
 
-    await page
-      .getByLabel("Rear differential type", { exact: true })
-      .selectOption("gear");
-    await page
-      .getByLabel("Rear differential manufacturer", { exact: true })
-      .selectOption(manufacturerId);
-    await page
-      .getByLabel("Rear differential model", { exact: true })
-      .fill(differentialModel);
-    await page
-      .getByLabel("Rear differential tuning notes", { exact: true })
-      .fill(differentialNotes);
+    await (
+      await formField("Rear differential type", { exact: true })
+    ).selectOption("gear");
+    await (
+      await formField("Rear differential manufacturer", { exact: true })
+    ).selectOption(manufacturerId);
+    await (
+      await formField("Rear differential model", { exact: true })
+    ).fill(differentialModel);
+    await (
+      await formField("Rear differential tuning notes", { exact: true })
+    ).fill(differentialNotes);
     for (const axle of ["Front", "Rear"]) {
-      await page
-        .getByLabel(`${axle} piston hole count`, { exact: true })
-        .fill("6");
-      await page
-        .getByLabel(`${axle} piston hole diameter (mm)`, { exact: true })
-        .fill("1,23456789");
-      await page
-        .getByLabel(`${axle} piston notes`, { exact: true })
-        .fill("Two stages\n" + "PistonNotes".repeat(30));
-      await page
-        .getByLabel(`${axle} seal type`, { exact: true })
-        .selectOption("x-ring");
-      await page
-        .getByLabel(`${axle} seal description`, { exact: true })
-        .fill("Seal".repeat(45));
+      await (
+        await formField(`${axle} piston hole count`, { exact: true })
+      ).fill("6");
+      await (
+        await formField(`${axle} piston hole diameter (mm)`, { exact: true })
+      ).fill("1,23456789");
+      await (
+        await formField(`${axle} piston notes`, { exact: true })
+      ).fill("Two stages\n" + "PistonNotes".repeat(30));
+      await (
+        await formField(`${axle} seal type`, { exact: true })
+      ).selectOption("x-ring");
+      await (
+        await formField(`${axle} seal description`, { exact: true })
+      ).fill("Seal".repeat(45));
     }
-    await page.getByLabel("Front toe (degrees)", { exact: true }).fill("0");
-    await page
-      .getByLabel("Rear camber (degrees)", { exact: true })
-      .fill("-1,25");
+    await (await formField("Front toe (degrees)", { exact: true })).fill("0");
+    await (
+      await formField("Rear camber (degrees)", { exact: true })
+    ).fill("-1,25");
     await geometry();
     await page.screenshot({
       path: `artifacts/photo-qa/differential-create-${width}x${height}.png`,
       fullPage: true,
     });
     const chooserEvent = page.waitForEvent("filechooser");
-    await page
-      .getByRole("button", { name: "Choose photos", exact: true })
-      .click();
+    await (await formButton({ name: "Choose photos", exact: true })).click();
     const chooser = await chooserEvent;
     assert(chooser.isMultiple());
     assert.equal(creates, 0, "paperclip must not submit setup");
@@ -616,19 +835,15 @@ try {
         ),
       },
     ]);
-    await page
-      .getByRole("button", { name: "Create setup", exact: true })
-      .click();
-    await page
-      .getByRole("button", { name: "Retry phone.heic", exact: true })
-      .waitFor();
+    await (await formButton({ name: "Create setup", exact: true })).click();
+    await (
+      await formButton({ name: "Retry phone.heic", exact: true })
+    ).waitFor();
     assert.equal(creates, 1);
     await page.getByRole("dialog", { name: "Adjust thumbnail" }).waitFor();
-    await page.getByRole("button", { name: "Cancel adjustment" }).click();
+    await (await formButton({ name: "Cancel adjustment" })).click();
     fail = false;
-    await page
-      .getByRole("button", { name: "Retry phone.heic", exact: true })
-      .click();
+    await (await formButton({ name: "Retry phone.heic", exact: true })).click();
     await page
       .getByText("Uploaded and saved", { exact: true })
       .nth(1)
@@ -703,9 +918,9 @@ try {
       path: `artifacts/photo-qa/differential-detail-${width}x${height}.png`,
       fullPage: true,
     });
-    await page
-      .getByRole("button", { name: "Enlarge photo 1 (cover)", exact: true })
-      .click();
+    await (
+      await formButton({ name: "Enlarge photo 1 (cover)", exact: true })
+    ).click();
     const viewer = page.getByRole("dialog", { name: "Enlarged setup photo" });
     await viewer.waitFor();
     const fullImage = viewer.getByAltText("Enlarged setup photo 1");
@@ -738,80 +953,92 @@ try {
     await page.keyboard.press("Escape");
     await viewer.waitFor({ state: "hidden" });
     assert(
-      await page
-        .getByRole("button", { name: "Enlarge photo 1 (cover)" })
-        .evaluate((el) => document.activeElement === el),
+      await (
+        await formButton({ name: "Enlarge photo 1 (cover)" })
+      ).evaluate((el) => document.activeElement === el),
     );
     await geometry();
     await page.getByRole("link", { name: "Edit setup", exact: true }).click();
     await toolbarCheck();
-    await page.getByLabel("Title", { exact: true }).fill("Unsaved photo title");
-    await page
-      .getByLabel("Front knuckle part number / description", { exact: true })
-      .fill("Unsaved knuckle part");
+    await (
+      await formField("Title", { exact: true })
+    ).fill("Unsaved photo title");
+    await (
+      await formField("Front knuckle part number / description", {
+        exact: true,
+      })
+    ).fill("Unsaved knuckle part");
 
-    await page
-      .getByLabel("Front lower arm mount configuration notes", { exact: true })
-      .fill("Unsaved front mount config");
-    await page
-      .getByLabel("Rear lower arm mount model / part number", { exact: true })
-      .fill("Unsaved rear mount");
-    await page
-      .getByLabel("Front tire model", { exact: true })
-      .fill("Unsaved tire");
-    await page
-      .getByLabel("Rear hex offset (mm)", { exact: true })
-      .fill("-7,25");
+    await (
+      await formField("Front lower arm mount configuration notes", {
+        exact: true,
+      })
+    ).fill("Unsaved front mount config");
+    await (
+      await formField("Rear lower arm mount model / part number", {
+        exact: true,
+      })
+    ).fill("Unsaved rear mount");
+    await (
+      await formField("Front tire model", { exact: true })
+    ).fill("Unsaved tire");
+    await (
+      await formField("Rear hex offset (mm)", { exact: true })
+    ).fill("-7,25");
 
-    await page
-      .getByLabel("Rear differential tuning notes", { exact: true })
-      .fill("Unsaved differential tuning");
-    await page
-      .getByRole("button", { name: "Make photo 2 cover", exact: true })
-      .click();
-    await page
-      .getByRole("button", { name: "Make photo 1 cover", exact: true })
-      .waitFor();
+    await (
+      await formField("Rear differential tuning notes", { exact: true })
+    ).fill("Unsaved differential tuning");
+    await (
+      await formButton({ name: "Make photo 2 cover", exact: true })
+    ).click();
+    await (
+      await formButton({ name: "Make photo 1 cover", exact: true })
+    ).waitFor();
     assert.equal(
-      await page.getByLabel("Title", { exact: true }).inputValue(),
+      await (await formField("Title", { exact: true })).inputValue(),
       "Unsaved photo title",
     );
     assert.equal(
-      await page
-        .getByLabel("Front knuckle part number / description", { exact: true })
-        .inputValue(),
+      await (
+        await formField("Front knuckle part number / description", {
+          exact: true,
+        })
+      ).inputValue(),
       "Unsaved knuckle part",
     );
 
     assert.equal(
-      await page
-        .getByLabel("Front lower arm mount configuration notes", {
+      await (
+        await formField("Front lower arm mount configuration notes", {
           exact: true,
         })
-        .inputValue(),
+      ).inputValue(),
       "Unsaved front mount config",
     );
     assert.equal(
-      await page
-        .getByLabel("Rear lower arm mount model / part number", { exact: true })
-        .inputValue(),
+      await (
+        await formField("Rear lower arm mount model / part number", {
+          exact: true,
+        })
+      ).inputValue(),
       "Unsaved rear mount",
     );
 
     assert.equal(
-      await page
-        .getByLabel("Rear differential tuning notes", { exact: true })
-        .inputValue(),
+      await (
+        await formField("Rear differential tuning notes", { exact: true })
+      ).inputValue(),
       "Unsaved differential tuning",
     );
     assert.equal(
-      await page.getByLabel("Front tire model", { exact: true }).inputValue(),
+      await (await formField("Front tire model", { exact: true })).inputValue(),
       "Unsaved tire",
     );
     assert.equal(
-      await page
-        .getByLabel("Rear hex offset (mm)", { exact: true })
-        .inputValue(),
+      await (
+        await formField("Rear hex offset (mm)", { exact: true })
+      ).inputValue(),
       "-7,25",
     );
     await geometry();
@@ -841,18 +1068,14 @@ try {
         });
     }
     await page.goto(`http://127.0.0.1:5173/my/setups/${id}/edit`);
-    await page
-      .getByRole("button", { name: "Delete photo 2", exact: true })
-      .click();
-    await page
-      .getByRole("button", { name: "Confirm delete photo 2", exact: true })
-      .click();
-    await page
-      .getByRole("button", { name: "Delete photo 1", exact: true })
-      .click();
-    await page
-      .getByRole("button", { name: "Confirm delete photo 1", exact: true })
-      .click();
+    await (await formButton({ name: "Delete photo 2", exact: true })).click();
+    await (
+      await formButton({ name: "Confirm delete photo 2", exact: true })
+    ).click();
+    await (await formButton({ name: "Delete photo 1", exact: true })).click();
+    await (
+      await formButton({ name: "Confirm delete photo 1", exact: true })
+    ).click();
     await page
       .getByText("0/10 photo slots used (saved and queued).", { exact: true })
       .waitFor();
@@ -875,9 +1098,9 @@ try {
       const saved = page.getByAltText(`Saved setup photo ${n + 1}`, {
         exact: true,
       });
-      await page
-        .getByRole("button", { name: `Adjust thumbnail ${n + 1}`, exact: true })
-        .waitFor();
+      await (
+        await formButton({ name: `Adjust thumbnail ${n + 1}`, exact: true })
+      ).waitFor();
       await page
         .locator(".photo-grid article")
         .nth(n)
@@ -892,9 +1115,9 @@ try {
           });
       });
       const oldSource = await saved.getAttribute("src");
-      await page
-        .getByRole("button", { name: `Adjust thumbnail ${n + 1}`, exact: true })
-        .click();
+      await (
+        await formButton({ name: `Adjust thumbnail ${n + 1}`, exact: true })
+      ).click();
       await cropDialog.waitFor();
       const normalized = cropDialog.getByAltText(
         "Normalized photo crop preview",
@@ -1034,9 +1257,9 @@ try {
         );
       }
       await page.reload();
-      await page
-        .getByRole("button", { name: `Adjust thumbnail ${n + 1}`, exact: true })
-        .click();
+      await (
+        await formButton({ name: `Adjust thumbnail ${n + 1}`, exact: true })
+      ).click();
       await cropDialog.waitFor();
       assert.equal(
         Number(await cropDialog.getByLabel("Horizontal position").inputValue()),
@@ -1049,12 +1272,12 @@ try {
       await page.keyboard.press("Escape");
       await cropDialog.waitFor({ state: "hidden" });
       assert(
-        await page
-          .getByRole("button", {
+        await (
+          await formButton({
             name: `Adjust thumbnail ${n + 1}`,
             exact: true,
           })
-          .evaluate((el) => document.activeElement === el),
+        ).evaluate((el) => document.activeElement === el),
       );
     }
     // Cover projections need no gallery metadata calls; error and denied states reserve the same square slot.
@@ -1117,12 +1340,12 @@ try {
     );
     await page.keyboard.press("Tab");
     assert(
-      await page
-        .getByRole("button", { name: "Delete setup", exact: true })
-        .evaluate((el) => document.activeElement === el),
+      await (
+        await formButton({ name: "Delete setup", exact: true })
+      ).evaluate((el) => document.activeElement === el),
     );
     await page.keyboard.press("Enter");
-    await page.getByRole("button", { name: "Cancel", exact: true }).click();
+    await (await formButton({ name: "Cancel", exact: true })).click();
     assert.equal(new URL(page.url()).pathname, "/my/setups");
     await titleLink.focus();
     await page.keyboard.press("Enter");
@@ -1130,17 +1353,15 @@ try {
       .getByRole("heading", { name: setup.title, exact: true })
       .waitFor();
     assert.equal(new URL(page.url()).pathname, `/setups/${id}`);
-    assert.equal(await page.getByLabel("Title", { exact: true }).count(), 0);
+    assert.equal(await (await formField("Title", { exact: true })).count(), 0);
     assert.equal(
-      await page
-        .getByRole("button", { name: "Choose photos", exact: true })
-        .count(),
+      await (await formButton({ name: "Choose photos", exact: true })).count(),
       0,
     );
     await geometry();
     await page.reload();
     await page.getByRole("link", { name: "Edit setup", exact: true }).click();
-    await page.getByLabel("Title", { exact: true }).waitFor();
+    await (await formField("Title", { exact: true })).waitFor();
     await page
       .getByRole("link", { name: "Back to my setups", exact: true })
       .click();
@@ -1160,20 +1381,16 @@ try {
       0,
     );
     assert.equal(
-      await page
-        .getByRole("button", { name: "Choose photos", exact: true })
-        .count(),
+      await (await formButton({ name: "Choose photos", exact: true })).count(),
       0,
     );
     await page.goto(`http://127.0.0.1:5173/my/setups/${id}/edit`);
     await page
       .getByText("Setup not found or unavailable.", { exact: true })
       .waitFor();
-    assert.equal(await page.getByLabel("Title", { exact: true }).count(), 0);
+    assert.equal(await (await formField("Title", { exact: true })).count(), 0);
     assert.equal(
-      await page
-        .getByRole("button", { name: "Choose photos", exact: true })
-        .count(),
+      await (await formButton({ name: "Choose photos", exact: true })).count(),
       0,
     );
     assert.equal(
@@ -1192,108 +1409,110 @@ try {
     };
     manufacturerActive = false;
     await page.goto(`http://127.0.0.1:5173/my/setups/${id}/edit`);
-    await page.getByLabel("Rear differential model", { exact: true }).waitFor();
+    await (
+      await formField("Rear differential model", { exact: true })
+    ).waitFor();
     assert.equal(
-      await page
-        .getByLabel("Rear differential model", { exact: true })
-        .inputValue(),
+      await (
+        await formField("Rear differential model", { exact: true })
+      ).inputValue(),
       differentialModel,
     );
-    await page
-      .getByRole("button", {
+    await (
+      await formButton({
         name: "Change differential manufacturer",
         exact: true,
       })
-      .click();
+    ).click();
     await page
       .getByText("No active manufacturers available.", { exact: true })
       .waitFor();
     assert.equal(
-      await page
-        .getByLabel("Rear differential manufacturer", { exact: true })
-        .inputValue(),
+      await (
+        await formField("Rear differential manufacturer", { exact: true })
+      ).inputValue(),
       manufacturerId,
     );
-    await page
-      .getByRole("button", { name: "Cancel manufacturer change", exact: true })
-      .click();
+    await (
+      await formButton({ name: "Cancel manufacturer change", exact: true })
+    ).click();
     const beforeInvalid = mutationCalls;
-    await page
-      .getByLabel("Rear differential model", { exact: true })
-      .fill("x".repeat(201));
-    await page.getByRole("button", { name: "Save setup", exact: true }).click();
+    await (
+      await formField("Rear differential model", { exact: true })
+    ).fill("x".repeat(201));
+    await (await formButton({ name: "Save setup", exact: true })).click();
     await page
       .getByText("Use at most 200 characters.", { exact: true })
       .waitFor();
     assert.equal(mutationCalls, beforeInvalid);
     assert(
-      await page
-        .getByLabel("Rear differential model", { exact: true })
-        .evaluate((el) => el === document.activeElement),
+      await (
+        await formField("Rear differential model", { exact: true })
+      ).evaluate((el) => el === document.activeElement),
     );
     const expectedOtherData = structuredClone(setup.data);
     delete expectedOtherData.rear_differential;
-    await page
-      .getByRole("button", { name: "Clear rear differential", exact: true })
-      .click();
-    await page
-      .getByLabel("Rear differential tuning notes", { exact: true })
-      .fill("Spring only\nNo type required");
-    await page.getByRole("button", { name: "Save setup", exact: true }).click();
+    await (
+      await formButton({ name: "Clear rear differential", exact: true })
+    ).click();
+    await (
+      await formField("Rear differential tuning notes", { exact: true })
+    ).fill("Spring only\nNo type required");
+    await (await formButton({ name: "Save setup", exact: true })).click();
     await page.getByText("Setup saved.", { exact: true }).waitFor();
     assert.deepEqual(setup.data, {
       ...expectedOtherData,
       rear_differential: { tuning_notes: "Spring only\nNo type required" },
     });
-    await page
-      .getByRole("button", { name: "Clear rear differential", exact: true })
-      .click();
-    await page.getByRole("button", { name: "Save setup", exact: true }).click();
+    await (
+      await formButton({ name: "Clear rear differential", exact: true })
+    ).click();
+    await (await formButton({ name: "Save setup", exact: true })).click();
     await page.getByText("Setup saved.", { exact: true }).waitFor();
     assert.deepEqual(setup.data, expectedOtherData);
-    const typeSelect = page.getByLabel("Rear differential type", {
+    const typeSelect = await formField("Rear differential type", {
       exact: true,
     });
     await typeSelect.focus();
     await page.keyboard.press("End");
     await page.keyboard.press("Enter");
     assert.equal(await typeSelect.inputValue(), "spool");
-    await page.getByRole("button", { name: "Save setup", exact: true }).click();
+    await (await formButton({ name: "Save setup", exact: true })).click();
     await page.getByText("Setup saved.", { exact: true }).waitFor();
     assert.deepEqual(setup.data.rear_differential, { type: "spool" });
     for (const axle of ["Front", "Rear"]) {
       assert.equal(
-        await page
-          .getByLabel(`${axle} piston hole count`, { exact: true })
-          .inputValue(),
+        await (
+          await formField(`${axle} piston hole count`, { exact: true })
+        ).inputValue(),
         "6",
       );
     }
     const beforeHardware = JSON.parse(JSON.stringify(setup.data));
     const writesBeforeHardware = setupPatches;
-    await page
-      .getByLabel("Front piston hole count", { exact: true })
-      .fill("1.5");
-    await page.getByRole("button", { name: "Save setup", exact: true }).click();
+    await (
+      await formField("Front piston hole count", { exact: true })
+    ).fill("1.5");
+    await (await formButton({ name: "Save setup", exact: true })).click();
     assert.equal(
-      await page
-        .getByLabel("Front piston hole count", { exact: true })
-        .getAttribute("aria-invalid"),
+      await (
+        await formField("Front piston hole count", { exact: true })
+      ).getAttribute("aria-invalid"),
       "true",
     );
     assert(
-      await page
-        .getByLabel("Front piston hole count", { exact: true })
-        .evaluate((el) => document.activeElement === el),
+      await (
+        await formField("Front piston hole count", { exact: true })
+      ).evaluate((el) => document.activeElement === el),
     );
     assert.equal(setupPatches, writesBeforeHardware);
     for (const axle of ["front", "rear"]) {
-      await page
-        .getByRole("button", { name: `Clear ${axle} piston`, exact: true })
-        .click();
-      await page
-        .getByRole("button", { name: `Clear ${axle} seal`, exact: true })
-        .click();
+      await (
+        await formButton({ name: `Clear ${axle} piston`, exact: true })
+      ).click();
+      await (
+        await formButton({ name: `Clear ${axle} seal`, exact: true })
+      ).click();
       delete beforeHardware.shocks[axle].piston;
       delete beforeHardware.shocks[axle].seal;
       if (!Object.keys(beforeHardware.shocks[axle]).length)
@@ -1301,16 +1520,16 @@ try {
     }
     if (!Object.keys(beforeHardware.shocks).length)
       delete beforeHardware.shocks;
-    await page.getByRole("button", { name: "Save setup", exact: true }).click();
+    await (await formButton({ name: "Save setup", exact: true })).click();
     await page.getByText("Setup saved.", { exact: true }).waitFor();
     assert.deepEqual(setup.data, beforeHardware);
-    await page
-      .getByLabel("Front piston notes", { exact: true })
-      .fill("Notes only\nNo count");
-    await page
-      .getByLabel("Rear seal description", { exact: true })
-      .fill("Product only");
-    await page.getByRole("button", { name: "Save setup", exact: true }).click();
+    await (
+      await formField("Front piston notes", { exact: true })
+    ).fill("Notes only\nNo count");
+    await (
+      await formField("Rear seal description", { exact: true })
+    ).fill("Product only");
+    await (await formButton({ name: "Save setup", exact: true })).click();
     await page.getByText("Setup saved.", { exact: true }).waitFor();
     assert.deepEqual(setup.data.shocks.front.piston, {
       notes: "Notes only\nNo count",
@@ -1326,51 +1545,49 @@ try {
 
     for (const axle of ["Front", "Rear"]) {
       const side = axle.toLowerCase();
-      const group = page.getByRole("group", {
+      const group = await formGroup({
         name: `${axle} lower arm mount`,
         exact: true,
       });
       const expected = JSON.parse(JSON.stringify(setup.data));
       const writes = setupPatches;
-      await page
-        .getByLabel(`${axle} lower arm mount model / part number`, {
+      await (
+        await formField(`${axle} lower arm mount model / part number`, {
           exact: true,
         })
-        .fill("x".repeat(201));
-      await page
-        .getByRole("button", { name: "Save setup", exact: true })
-        .click();
+      ).fill("x".repeat(201));
+      await (await formButton({ name: "Save setup", exact: true })).click();
       assert.equal(setupPatches, writes);
       assert(
-        await page
-          .getByLabel(`${axle} lower arm mount model / part number`, {
+        await (
+          await formField(`${axle} lower arm mount model / part number`, {
             exact: true,
           })
-          .evaluate((el) => document.activeElement === el),
+        ).evaluate((el) => document.activeElement === el),
       );
       assert.equal(
-        await page
-          .getByLabel(`${axle} lower arm mount model / part number`, {
+        await (
+          await formField(`${axle} lower arm mount model / part number`, {
             exact: true,
           })
-          .getAttribute("aria-invalid"),
+        ).getAttribute("aria-invalid"),
         "true",
       );
-      await group
-        .getByRole("button", {
+      await (
+        await formButton({
           name: `Clear ${side} lower arm mount`,
           exact: true,
         })
-        .click();
-      await group
-        .getByRole("button", {
+      ).click();
+      await (
+        await formButton({
           name: `Change ${side} lower arm mount manufacturer`,
           exact: true,
         })
-        .click();
-      await page
-        .getByLabel(`${axle} lower arm mount manufacturer`, { exact: true })
-        .selectOption(manufacturerId);
+      ).click();
+      await (
+        await formField(`${axle} lower arm mount manufacturer`, { exact: true })
+      ).selectOption(manufacturerId);
       await group
         .getByRole("button", {
           name: "Cancel manufacturer change",
@@ -1382,23 +1599,19 @@ try {
           exact: true,
         })
         .waitFor();
-      await page
-        .getByRole("button", { name: "Save setup", exact: true })
-        .click();
+      await (await formButton({ name: "Save setup", exact: true })).click();
       await page.getByText("Setup saved.", { exact: true }).waitFor();
       delete expected.suspension[side].lower_arm_mount;
       if (!Object.keys(expected.suspension[side]).length)
         delete expected.suspension[side];
       if (!Object.keys(expected.suspension).length) delete expected.suspension;
       assert.deepEqual(setup.data, expected);
-      await page
-        .getByLabel(`${axle} lower arm mount configuration notes`, {
+      await (
+        await formField(`${axle} lower arm mount configuration notes`, {
           exact: true,
         })
-        .fill("Notes only\nNo model required");
-      await page
-        .getByRole("button", { name: "Save setup", exact: true })
-        .click();
+      ).fill("Notes only\nNo model required");
+      await (await formButton({ name: "Save setup", exact: true })).click();
       await page.getByText("Setup saved.", { exact: true }).waitFor();
       assert.deepEqual(setup.data.suspension[side].lower_arm_mount, {
         configuration_notes: "Notes only\nNo model required",
@@ -1416,41 +1629,37 @@ try {
       const side = axle.toLowerCase();
       const before = JSON.parse(JSON.stringify(setup.data));
       const writes = setupPatches;
-      const offset = page.getByLabel(`${axle} wheel offset (mm)`, {
+      const offset = await formField(`${axle} wheel offset (mm)`, {
         exact: true,
       });
       await offset.fill("1.5");
-      await page
-        .getByRole("button", { name: "Save setup", exact: true })
-        .click();
+      await (await formButton({ name: "Save setup", exact: true })).click();
       assert.equal(setupPatches, writes);
       assert.equal(await offset.getAttribute("aria-invalid"), "true");
       assert(await offset.evaluate((el) => el === document.activeElement));
       await offset.fill("-2147483648");
-      await page
-        .getByLabel(`${axle} hex offset (mm)`, { exact: true })
-        .fill("-3,123456789");
-      await page
-        .getByRole("button", { name: "Save setup", exact: true })
-        .click();
+      await (
+        await formField(`${axle} hex offset (mm)`, { exact: true })
+      ).fill("-3,123456789");
+      await (await formButton({ name: "Save setup", exact: true })).click();
       await page.getByText("Setup saved.", { exact: true }).waitFor();
       assert.equal(setup.data.running_gear[side].wheel.offset_mm, -2147483648);
       assert.equal(setup.data.running_gear[side].hex.offset_mm, -3.123456789);
       for (const part of ["hex", "wheel", "tire"]) {
-        await page
-          .getByRole("button", { name: `Clear ${side} ${part}`, exact: true })
-          .click();
+        await (
+          await formButton({ name: `Clear ${side} ${part}`, exact: true })
+        ).click();
       }
-      const wheelGroup = page.getByRole("group", {
+      const wheelGroup = await formGroup({
         name: `${axle} wheel`,
         exact: true,
       });
-      await wheelGroup
-        .getByRole("button", {
+      await (
+        await formButton({
           name: `Change ${side} wheel manufacturer`,
           exact: true,
         })
-        .click();
+      ).click();
       await wheelGroup
         .getByLabel(`${axle} wheel manufacturer`, { exact: true })
         .selectOption(manufacturerId);
@@ -1463,22 +1672,18 @@ try {
       await wheelGroup
         .getByText(`${axle} wheel manufacturer: Not specified`, { exact: true })
         .waitFor();
-      await page
-        .getByRole("button", { name: "Save setup", exact: true })
-        .click();
+      await (await formButton({ name: "Save setup", exact: true })).click();
       await page.getByText("Setup saved.", { exact: true }).waitFor();
       delete before.running_gear[side];
       if (!Object.keys(before.running_gear).length) delete before.running_gear;
       assert.deepEqual(setup.data, before);
-      await page
-        .getByLabel(`${axle} tire model`, { exact: true })
-        .fill("Model only");
-      await page
-        .getByLabel(`${axle} wheel offset (mm)`, { exact: true })
-        .fill("0");
-      await page
-        .getByRole("button", { name: "Save setup", exact: true })
-        .click();
+      await (
+        await formField(`${axle} tire model`, { exact: true })
+      ).fill("Model only");
+      await (
+        await formField(`${axle} wheel offset (mm)`, { exact: true })
+      ).fill("0");
+      await (await formButton({ name: "Save setup", exact: true })).click();
       await page.getByText("Setup saved.", { exact: true }).waitFor();
       assert.deepEqual(setup.data.running_gear[side], {
         wheel: { offset_mm: 0 },
@@ -1493,51 +1698,59 @@ try {
     console.log(
       `PASS ${width}x${height} running gear create/edit/detail, independent signed/zero offsets, historical catalogue, Unicode, validation/focus, clear/cancel/re-add and full-data preservation`,
     );
-    const knuckleGroup = page.getByRole("group", {
+    const knuckleGroup = await formGroup({
       name: "Front steering knuckle",
       exact: true,
     });
     const preservedBeforeKnuckle = JSON.parse(JSON.stringify(setup.data));
     const patchesBeforeKnuckle = setupPatches;
-    await page
-      .getByLabel("Front knuckle part number / description", { exact: true })
-      .fill("x".repeat(201));
-    await page.getByRole("button", { name: "Save setup", exact: true }).click();
+    await (
+      await formField("Front knuckle part number / description", {
+        exact: true,
+      })
+    ).fill("x".repeat(201));
+    await (await formButton({ name: "Save setup", exact: true })).click();
     assert.equal(setupPatches, patchesBeforeKnuckle);
     assert(
-      await page
-        .getByLabel("Front knuckle part number / description", { exact: true })
-        .evaluate((el) => document.activeElement === el),
+      await (
+        await formField("Front knuckle part number / description", {
+          exact: true,
+        })
+      ).evaluate((el) => document.activeElement === el),
     );
     assert.equal(
-      await page
-        .getByLabel("Front knuckle part number / description", { exact: true })
-        .getAttribute("aria-invalid"),
+      await (
+        await formField("Front knuckle part number / description", {
+          exact: true,
+        })
+      ).getAttribute("aria-invalid"),
       "true",
     );
-    await knuckleGroup
-      .getByRole("button", { name: "Clear front knuckle", exact: true })
-      .click();
-    await knuckleGroup
-      .getByRole("button", { name: "Change knuckle manufacturer", exact: true })
-      .click();
-    await page
-      .getByLabel("Front knuckle manufacturer", { exact: true })
-      .selectOption(manufacturerId);
+    await (
+      await formButton({ name: "Clear front knuckle", exact: true })
+    ).click();
+    await (
+      await formButton({ name: "Change knuckle manufacturer", exact: true })
+    ).click();
+    await (
+      await formField("Front knuckle manufacturer", { exact: true })
+    ).selectOption(manufacturerId);
     await knuckleGroup
       .getByRole("button", { name: "Cancel manufacturer change", exact: true })
       .click();
     await knuckleGroup
       .getByText("Front knuckle manufacturer: Not specified", { exact: true })
       .waitFor();
-    await page.getByRole("button", { name: "Save setup", exact: true }).click();
+    await (await formButton({ name: "Save setup", exact: true })).click();
     await page.getByText("Setup saved.", { exact: true }).waitFor();
     delete preservedBeforeKnuckle.front_steering_knuckle;
     assert.deepEqual(setup.data, preservedBeforeKnuckle);
-    await page
-      .getByLabel("Front knuckle part number / description", { exact: true })
-      .fill("Part only\nNo manufacturer required");
-    await page.getByRole("button", { name: "Save setup", exact: true }).click();
+    await (
+      await formField("Front knuckle part number / description", {
+        exact: true,
+      })
+    ).fill("Part only\nNo manufacturer required");
+    await (await formButton({ name: "Save setup", exact: true })).click();
     await page.getByText("Setup saved.", { exact: true }).waitFor();
     assert.deepEqual(setup.data.front_steering_knuckle, {
       description: "Part only\nNo manufacturer required",

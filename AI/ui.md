@@ -27,11 +27,33 @@ error states remain independent; no hidden counts or email/provider identity.
 
 ## Forms and numeric interaction
 
-Photos toolbar precedes General. Keep setup sections open with anchor navigation:
-General/title/chassis/visibility/notes; front/rear suspension/links; front/rear shocks/
-springs/oil; optional rear differential; electronics. One logical document, one mobile Save/Create bar above fixed
-navigation, inline desktop actions. Reserve padding so final controls stay reachable.
-On short screens, keep section navigation in normal flow so it cannot cover fields.
+The photo toolbar stays before always-visible essentials: Title (required), current
+chassis/selection and visibility with explanation. One persistent RHF document
+owns six sections: General (notes), Front, Rear, Shocks, Wheels & tires, Electronics.
+Desktop uses a sidebar from 768px; mobile uses a compact Sections/current trigger
+and native modal bottom sheet with current location and error counts. Selection
+closes the sheet and focuses the section heading; dismissal restores trigger focus.
+Keep safe-area padding, scroll, 44px targets and one document-level Save/Create.
+
+Unused optional components expose Add component. Configured components start as
+compact summaries, including partial, manufacturer-only, notes-only and zero-only
+values with units. Add opens inline without focusing an input. Expansion is explicit
+presentation state, never inferred from field content and never used by serialization.
+Done validates only that component, retaining/focusing invalid fields; valid Done
+collapses. Explain that Done closes the editor and Save persists the document.
+Edit restores drafts; collapsed/other-section editors retain registrations, stable
+field-array IDs and selector state. Remove confirms populated components with Cancel
+focused, clears only their values/errors, and re-add starts blank.
+
+Keep optional axle geometry visible within Front/Rear; shock basics precede piston/
+seal cards. Use two columns only for short related fields and full-width notes.
+Submission validates the whole document, shows a linked error overview and section
+counts, reveals hidden editors and focuses real controls after render, including
+chassis selection and aggregate link errors. Resizing preserves values, selection,
+errors and expansion. Guard route exit/unload for unsaved setup fields and queued
+files; already-persisted photo changes are retained and never described as unsaved.
+Successful Save resets the dirty baseline without recreating the form; explicit
+conflict reload may discard/remount only after the existing user action.
 
 Use text inputs with inputMode=decimal for suspension; do not rewrite while typing,
 force integer steps or round precision. Signed angles, positive links/oil and
@@ -41,7 +63,7 @@ and ahead/behind spacers in mm with left/right symmetry; removal clears values/e
 re-add is blank, partial/all-zero detail is retained. See [product](product.md).
 
 Rear differential fields are independent and optional: type, catalog manufacturer,
-model and multiline tuning notes. Clear removes the block without resetting other
+model and multiline tuning notes. Confirmed removal removes the block without resetting other
 fields. Reuse the cached chassis-brand catalog; existing manufacturer selection
 loads only on explicit Change, supports retry/cancel, and retains the historical
 name/reference when inactive. Detail is read-only and uses the returned name
@@ -49,12 +71,12 @@ projection, with an unavailable-name fallback and no extra catalog lookup.
 
 Each suspension axle has one optional lower arm mount description: catalog
 manufacturer, model/part number and multiline configuration notes. Fields are
-independent; Clear affects only that axle's mount. Reuse the component manufacturer
+independent; removal affects only that axle's mount. Reuse the component manufacturer
 selector, retaining historical references with lazy edit loading and retry/cancel.
 Detail uses the joined per-axle name projection without catalog requests. No separate
 mounts, inserts or geometry controls.
 Front steering knuckles use independent optional catalog manufacturer and free-text
-part number/description (200 Unicode characters). Clear affects only the knuckle.
+part number/description (200 Unicode characters). Removal affects only the knuckle.
 The shared component manufacturer selector retains historical references, loads
 active choices on explicit Change in edit, and supports retry/cancel. Read-only
 detail uses the joined name projection without additional catalog requests.
@@ -63,11 +85,11 @@ Each axle has optional hex, wheel and tire fieldsets. Hex offset accepts signed
 dot/comma decimals without rewriting while typing; wheel offset accepts signed
 int32 whole millimetres. Their offsets are independent and zero is preserved.
 Wheel/tire manufacturer and model are independently optional; reuse the shared
-manufacturer selector and joined historical displays. Clear affects only that
+manufacturer selector and joined historical displays. Removal affects only that
 component. Empty blocks/parents are omitted; no hex width or calculated offsets.
 
 Each axle's shock section includes independent optional piston hole count, diameter
-(mm), multiline notes, seal type and product description. Clear piston/seal affects
+(mm), multiline notes, seal type and product description. Removal of piston/seal affects
 only that block. Counts are positive int32 integers; diameters accept dot/comma
 without rounding or rewriting while typing. Blank fields stay unknown; detail shows
 only present values. Existing shock manufacturer/model controls remain unchanged.
@@ -106,8 +128,9 @@ semantics plus underline/border. Logout preserves pending/error/retry behavior.
 ## Photos and crop editor
 
 Paperclip activates a uniquely identified native multi-file picker. Formats, byte/
-count limits and conversion/persistence help live in an info popover usable by hover,
-focus or tap; keep it hoverable, wrapped and scrollable. Escape/Close/outside pointer/
+count limits and conversion/persistence help live in an inline panel usable by hover,
+focus or tap. It expands in document flow without covering essentials; keep it
+hoverable, wrapped and scrollable. Escape/Close/outside pointer/
 focus departure dismiss; Escape/Close returns trigger focus. Count/remaining capacity,
 queue progress/errors/retry/removal stay visible outside help. Controls do not submit
 setup. Photo refresh must not remount/reset the technical form.

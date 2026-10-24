@@ -9,11 +9,13 @@ export function SetupField({
   label,
   numeric = false,
   multiline = false,
+  required = false,
 }: {
   name: FieldPathByValue<SetupFormValues, string | undefined>;
   label: string;
   numeric?: boolean;
   multiline?: boolean;
+  required?: boolean;
 }) {
   const id = useId();
   const { register, getFieldState, formState } =
@@ -21,6 +23,7 @@ export function SetupField({
   const error = getFieldState(name, formState).error;
   const props = {
     id,
+    "aria-required": required || undefined,
     className: "mt-1 min-h-11 w-full rounded border p-2",
     "aria-invalid": !!error,
     "aria-describedby": error ? `${id}-error` : undefined,
@@ -29,6 +32,7 @@ export function SetupField({
   return (
     <div>
       <label htmlFor={id}>{label}</label>
+      {required && <span className="ml-2 text-sm">Required</span>}
       {multiline ? (
         <textarea rows={4} {...props} />
       ) : (

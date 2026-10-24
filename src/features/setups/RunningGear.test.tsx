@@ -1,3 +1,4 @@
+import { setupControl, setupButton, setupGroup } from "./form/testDriver";
 import type { components } from "../../api/generated/schema";
 import { fireEvent, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
@@ -41,7 +42,7 @@ const setup: Schemas["Setup"] = {
 };
 const path = `/my/setups/${setup.id}/edit`;
 const fill = (label: string, value: string) =>
-  fireEvent.change(screen.getByLabelText(label), { target: { value } });
+  fireEvent.change(setupControl(label), { target: { value } });
 function serve(value = setup) {
   server.use(
     http.get(`${apiUrl}/api/v1/setups/${setup.id}`, () =>
@@ -68,20 +69,21 @@ it("creates separate hex/wheel/tire fields on both axles with one shared credent
   );
   renderSetupRoute("/my/setups/new");
   await screen.findByLabelText("Title");
+  setupControl("Front wheel model");
   fill("Title", "Running gear");
   const user = userEvent.setup();
   for (const side of ["Front", "Rear"]) {
     fill(`${side} hex offset (mm)`, side === "Front" ? "0" : "-2,123456789");
     fill(`${side} wheel offset (mm)`, side === "Front" ? "-4" : "0");
     for (const part of ["wheel", "tire"]) {
-      const selector = screen.getByLabelText(`${side} ${part} manufacturer`);
+      const selector = setupControl(`${side} ${part} manufacturer`);
       await within(selector).findByRole("option", { name: "MST" });
       await user.selectOptions(selector, activeBrand);
       fill(`${side} ${part} model`, ` ${side} ${part} `);
     }
   }
   fill("Notes", "Free text\nKeep notes");
-  await user.click(screen.getByRole("button", { name: "Create setup" }));
+  await user.click(setupButton({ name: "Create setup" }));
   await screen.findByText("Setup created.");
   expect(received?.data?.running_gear).toEqual({
     front: {
@@ -123,21 +125,19 @@ it("hydrates historical fields and saves full data on a title-only edit without 
   );
   renderSetupRoute(path);
   await screen.findByLabelText("Title");
+  setupControl("Front wheel model");
   expect(
     screen.getByText("Front wheel manufacturer: Historical wheel"),
   ).toBeVisible();
+  setupControl("Rear tire model");
   expect(
     screen.getByText("Rear tire manufacturer: Rear tire brand"),
   ).toBeVisible();
-  expect(screen.getByLabelText("Front hex offset (mm)")).toHaveValue("0");
-  expect(screen.getByLabelText("Rear hex offset (mm)")).toHaveValue(
-    "-2.123456789",
-  );
-  expect(screen.getByLabelText("Rear wheel offset (mm)")).toHaveValue("0");
+  expect(setupControl("Front hex offset (mm)")).toHaveValue("0");
+  expect(setupControl("Rear hex offset (mm)")).toHaveValue("-2.123456789");
+  expect(setupControl("Rear wheel offset (mm)")).toHaveValue("0");
   fill("Title", "Changed");
-  await userEvent
-    .setup()
-    .click(screen.getByRole("button", { name: "Save setup" }));
+  await userEvent.setup().click(setupButton({ name: "Save setup" }));
   await screen.findByText("Setup saved.");
   expect(received?.data).toEqual(setup.data);
   expect(received).not.toHaveProperty("running_gear_manufacturers");
@@ -167,31 +167,28 @@ for (const side of ["front", "rear"] as const) {
     );
     renderSetupRoute(path);
     await screen.findByLabelText("Title");
+    setupControl("Front wheel model");
     const user = userEvent.setup();
     fill(`${label} wheel offset (mm)`, "1.5");
-    await user.click(screen.getByRole("button", { name: "Save setup" }));
-    const input = screen.getByLabelText(`${label} wheel offset (mm)`);
-    expect(input).toHaveFocus();
+    await user.click(setupButton({ name: "Save setup" }));
+    const input = setupControl(`${label} wheel offset (mm)`);
+    await waitFor(() => expect(input).toHaveFocus());
     expect(input).toHaveAttribute("aria-invalid", "true");
     expect(
       document.getElementById(input.getAttribute("aria-describedby")!),
     ).toHaveTextContent("whole millimetres");
     expect(writes).toBe(0);
-    await user.click(
-      screen.getByRole("button", { name: `Clear ${side} wheel` }),
-    );
-    await user.click(screen.getByRole("button", { name: `Clear ${side} hex` }));
-    await user.click(
-      screen.getByRole("button", { name: `Clear ${side} tire` }),
-    );
-    await user.click(screen.getByRole("button", { name: "Save setup" }));
+    await user.click(setupButton({ name: `Clear ${side} wheel` }));
+    await user.click(setupButton({ name: `Clear ${side} hex` }));
+    await user.click(setupButton({ name: `Clear ${side} tire` }));
+    await user.click(setupButton({ name: "Save setup" }));
     await screen.findByText("Setup saved.");
     const expected = structuredClone(setup.data);
     delete expected.running_gear?.[side];
     expect(received?.data).toEqual(expected);
     fill(`${label} tire model`, "Model only");
     fill(`${label} hex offset (mm)`, "-3,5");
-    await user.click(screen.getByRole("button", { name: "Save setup" }));
+    await user.click(setupButton({ name: "Save setup" }));
     await waitFor(() => expect(writes).toBe(2));
     expect(received?.data?.running_gear?.[side]).toEqual({
       hex: { offset_mm: -3.5 },
@@ -215,7 +212,8 @@ for (const side of ["front", "rear"] as const) {
       );
       renderSetupRoute(path);
       await screen.findByLabelText("Title");
-      const group = screen.getByRole("group", {
+      setupControl("Front wheel model");
+      const group = setupGroup({
         name: `${label} ${part}`,
       });
       const user = userEvent.setup();
@@ -308,7 +306,8 @@ it("legacy editor keeps new fields blank and unavailable joined names have a saf
   );
   renderSetupRoute(path);
   await screen.findByLabelText("Title");
-  expect(screen.getByLabelText("Rear hex offset (mm)")).toHaveValue("");
+  setupControl("Front wheel model");
+  expect(setupControl("Rear hex offset (mm)")).toHaveValue("");
   expect(
     screen.getByText(
       "Front wheel manufacturer: Saved manufacturer (name unavailable)",

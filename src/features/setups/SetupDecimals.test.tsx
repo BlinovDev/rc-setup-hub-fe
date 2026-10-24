@@ -1,5 +1,6 @@
+import { setupControl, setupButton } from "./form/testDriver";
 import type { components } from "../../api/generated/schema";
-import { act, screen, within } from "@testing-library/react";
+import { act, screen, within, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { http, HttpResponse } from "msw";
 import { expect, it } from "vitest";
@@ -67,26 +68,24 @@ it.each([".", ","])(
     const { router } = renderSetupRoute("/my/setups/new");
     const user = userEvent.setup();
     await screen.findByLabelText("Title");
-    await user.type(screen.getByLabelText("Title"), "Decimal setup");
+    await user.type(setupControl("Title"), "Decimal setup");
     for (const side of ["Front", "Rear"]) {
-      const camber = screen.getByLabelText(`${side} camber (degrees)`);
+      const camber = setupControl(`${side} camber (degrees)`);
       await user.type(camber, "-");
       expect(camber).toHaveValue("-");
       await user.type(camber, `1${separator}`);
       expect(camber).toHaveValue(`-1${separator}`);
       await user.type(camber, "5");
-      const caster = screen.getByLabelText(`${side} caster (degrees)`);
+      const caster = setupControl(`${side} caster (degrees)`);
       await user.click(caster);
       await user.paste(`6${separator}8`);
-      await user.type(screen.getByLabelText(`${side} toe (degrees)`), "0");
-      await user.click(
-        screen.getByRole("button", { name: `Add ${side.toLowerCase()} link` }),
-      );
-      await user.type(screen.getByLabelText(`${side} link 1 name`), "Upper");
-      await user.click(screen.getByLabelText(`${side} link 1 length (mm)`));
+      await user.type(setupControl(`${side} toe (degrees)`), "0");
+      await user.click(setupButton({ name: `Add ${side.toLowerCase()} link` }));
+      await user.type(setupControl(`${side} link 1 name`), "Upper");
+      await user.click(setupControl(`${side} link 1 length (mm)`));
       await user.paste(`16${separator}2`);
     }
-    await user.click(screen.getByRole("button", { name: "Create setup" }));
+    await user.click(setupButton({ name: "Create setup" }));
     await screen.findByText("Setup created.");
     const expected = {
       camber_deg: -1.5,
@@ -108,28 +107,20 @@ it.each([".", ","])(
     await user.click(screen.getByRole("link", { name: "Edit setup" }));
     await screen.findByLabelText("Title");
     for (const side of ["Front", "Rear"]) {
-      expect(screen.getByLabelText(`${side} camber (degrees)`)).toHaveValue(
-        "-1.5",
-      );
-      expect(screen.getByLabelText(`${side} caster (degrees)`)).toHaveValue(
-        "6.8",
-      );
-      expect(screen.getByLabelText(`${side} toe (degrees)`)).toHaveValue("0");
-      expect(screen.getByLabelText(`${side} link 1 length (mm)`)).toHaveValue(
-        "16.2",
-      );
+      expect(setupControl(`${side} camber (degrees)`)).toHaveValue("-1.5");
+      expect(setupControl(`${side} caster (degrees)`)).toHaveValue("6.8");
+      expect(setupControl(`${side} toe (degrees)`)).toHaveValue("0");
+      expect(setupControl(`${side} link 1 length (mm)`)).toHaveValue("16.2");
     }
-    await user.type(screen.getByLabelText("Title"), " renamed");
-    await user.click(screen.getByRole("button", { name: "Save setup" }));
+    await user.type(setupControl("Title"), " renamed");
+    await user.click(setupButton({ name: "Save setup" }));
     await screen.findByText("Setup saved.");
     expect(updated?.data).toEqual(created?.data);
     await act(() => router.navigate(`/setups/${testSetup.id}`));
     await screen.findByRole("link", { name: "Edit setup" });
     await user.click(screen.getByRole("link", { name: "Edit setup" }));
     await screen.findByLabelText("Title");
-    expect(screen.getByLabelText("Rear link 1 length (mm)")).toHaveValue(
-      "16.2",
-    );
+    expect(setupControl("Rear link 1 length (mm)")).toHaveValue("16.2");
   },
 );
 
@@ -160,33 +151,29 @@ it.each([".", ","])(
         ["caster", `6${separator}8`],
         ["toe", `0${separator}25`],
       ] as const) {
-        const input = screen.getByLabelText(`${side} ${field} (degrees)`);
+        const input = setupControl(`${side} ${field} (degrees)`);
         await user.clear(input);
         await user.type(input, value);
       }
-      const length = screen.getByLabelText(`${side} link 1 length (mm)`);
+      const length = setupControl(`${side} link 1 length (mm)`);
       await user.clear(length);
       await user.click(length);
       await user.paste(`16${separator}2`);
-      await user.click(
-        screen.getByRole("button", { name: `Add ${side.toLowerCase()} link` }),
-      );
-      await user.type(screen.getByLabelText(`${side} link 2 name`), "Fine");
+      await user.click(setupButton({ name: `Add ${side.toLowerCase()} link` }));
+      await user.type(setupControl(`${side} link 2 name`), "Fine");
       await user.type(
-        screen.getByLabelText(`${side} link 2 length (mm)`),
+        setupControl(`${side} link 2 length (mm)`),
         `0${separator}25`,
       );
+      await user.click(setupButton({ name: `Add ${side.toLowerCase()} link` }));
       await user.click(
-        screen.getByRole("button", { name: `Add ${side.toLowerCase()} link` }),
-      );
-      await user.click(
-        screen.getByRole("button", {
+        setupButton({
           name: `Remove ${side.toLowerCase()} link 3`,
         }),
       );
     }
-    await user.clear(screen.getByLabelText("Rear toe (degrees)"));
-    await user.click(screen.getByRole("button", { name: "Save setup" }));
+    await user.clear(setupControl("Rear toe (degrees)"));
+    await user.click(setupButton({ name: "Save setup" }));
     await screen.findByText("Setup saved.");
     for (const side of ["front", "rear"] as const) {
       expect(updated?.data?.suspension?.[side]).toEqual({
@@ -205,13 +192,9 @@ it.each([".", ","])(
     await act(() => router.navigate("/my/setups/new"));
     await act(() => router.navigate(`/my/setups/${testSetup.id}/edit`));
     await screen.findByLabelText("Title");
-    expect(screen.getByLabelText("Front camber (degrees)")).toHaveValue(
-      "-0.25",
-    );
-    expect(screen.getByLabelText("Rear link 2 length (mm)")).toHaveValue(
-      "0.25",
-    );
-    expect(screen.getByLabelText("Rear toe (degrees)")).toHaveValue("");
+    expect(setupControl("Front camber (degrees)")).toHaveValue("-0.25");
+    expect(setupControl("Rear link 2 length (mm)")).toHaveValue("0.25");
+    expect(setupControl("Rear toe (degrees)")).toHaveValue("");
   },
 );
 
@@ -227,23 +210,23 @@ it("blocks malformed angles and nonpositive/blank lengths with associated errors
   renderSetupRoute("/my/setups/new");
   const user = userEvent.setup();
   await screen.findByLabelText("Title");
-  await user.type(screen.getByLabelText("Title"), "Invalid decimals");
-  const angle = screen.getByLabelText("Front caster (degrees)");
+  await user.type(setupControl("Title"), "Invalid decimals");
+  const angle = setupControl("Front caster (degrees)");
   await user.type(angle, "16,2.3");
-  await user.click(screen.getByRole("button", { name: "Add rear link" }));
-  await user.type(screen.getByLabelText("Rear link 1 name"), "Rear");
-  const length = screen.getByLabelText("Rear link 1 length (mm)");
+  await user.click(setupButton({ name: "Add rear link" }));
+  await user.type(setupControl("Rear link 1 name"), "Rear");
+  const length = setupControl("Rear link 1 length (mm)");
   for (const value of ["", "0,0", "-0,25", "Infinity"]) {
     await user.clear(length);
     if (value) await user.type(length, value);
-    await user.click(screen.getByRole("button", { name: "Create setup" }));
+    await user.click(setupButton({ name: "Create setup" }));
     await screen.findByText("Enter a finite length greater than zero.");
     expect(angle).toHaveAttribute("aria-invalid", "true");
     expect(angle).toHaveAccessibleDescription("Enter a finite number.");
     expect(length).toHaveAccessibleDescription(
       "Enter a finite length greater than zero.",
     );
-    expect(angle).toHaveFocus();
+    await waitFor(() => expect(angle).toHaveFocus());
     expect(posts).toBe(0);
   }
 });

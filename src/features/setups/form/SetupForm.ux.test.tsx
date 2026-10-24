@@ -1,5 +1,11 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { render, screen, within } from "@testing-library/react";
+import {
+  fireEvent,
+  render,
+  screen,
+  within,
+  waitFor,
+} from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { expect, it, vi } from "vitest";
 import { SetupForm } from "./SetupForm";
@@ -17,17 +23,17 @@ function form(pending = false, blocked = false) {
     </QueryClientProvider>
   );
 }
-it("offers section anchors to all visible sections", () => {
+it("offers six section buttons and one current location", () => {
   render(form());
-  const links = within(
+  const buttons = within(
     screen.getByRole("navigation", { name: "Setup sections" }),
-  ).getAllByRole("link");
-  expect(links).toHaveLength(10);
-  for (const link of links) {
-    const target = document.querySelector(link.getAttribute("href")!);
-    expect(target).toBeVisible();
-    expect(target?.tagName).toBe("FIELDSET");
-  }
+  ).getAllByRole("button");
+  expect(buttons).toHaveLength(6);
+  expect(
+    buttons.filter(
+      (button) => button.getAttribute("aria-current") === "location",
+    ),
+  ).toHaveLength(1);
 });
 it.each([
   [false, false],
@@ -49,7 +55,7 @@ it("focuses and describes the first invalid field without hiding sections", asyn
   await userEvent
     .setup()
     .click(screen.getByRole("button", { name: "Save setup" }));
-  expect(title).toHaveFocus();
+  await waitFor(() => expect(title).toHaveFocus());
   expect(title).toHaveAttribute("aria-invalid", "true");
   const error = document.getElementById(
     title.getAttribute("aria-describedby")!,
@@ -59,6 +65,11 @@ it("focuses and describes the first invalid field without hiding sections", asyn
 });
 it("preserves decimal text input, negative angles, explicit zero and blank values", () => {
   render(form());
+  fireEvent.click(
+    within(
+      screen.getByRole("navigation", { name: "Setup sections" }),
+    ).getByRole("button", { name: "Front" }),
+  );
   const front = within(screen.getByRole("group", { name: "Front suspension" }));
   const toe = front.getByRole("textbox", { name: "Front toe (degrees)" });
   const visibleLabel = front.getByText("Front toe (degrees)", {
