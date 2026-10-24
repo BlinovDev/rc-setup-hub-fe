@@ -6,7 +6,9 @@ export function SectionNavigation({
   active,
   select,
   counts,
+  sticky = false,
 }: {
+  sticky?: boolean;
   active: SectionId;
   select: (id: SectionId) => void;
   counts: Partial<Record<SectionId, number>>;
@@ -49,13 +51,18 @@ export function SectionNavigation({
     <>
       <Button
         ref={trigger}
-        className="sections-trigger"
+        className={`sections-trigger${sticky ? " sections-trigger-sticky" : ""}`}
         type="button"
         aria-expanded={open}
         aria-controls={id}
         onClick={() => setOpen(true)}
       >
-        Sections · {sections.find(([key]) => key === active)?.[1]}
+        <span>Sections · {sections.find(([key]) => key === active)?.[1]}</span>
+        {sticky && (
+          <span aria-hidden="true" className="section-chevron">
+            ⌄
+          </span>
+        )}
       </Button>
       <nav className="section-sidebar" aria-label="Setup sections">
         {links()}

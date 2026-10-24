@@ -3,6 +3,10 @@ import { ComponentCard } from "./ComponentCard";
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import {
   sections,
+  componentSpecs,
+  sectionClearPaths,
+  sectionClearDescription,
+  valueAt,
   sectionForPath,
   focusPath,
   componentForPath,
@@ -37,17 +41,32 @@ export function SetupForm({
   pending,
   blocked = false,
   onDirtyChange,
+  onSectionViewChange,
+  onSaved,
 }: {
   setup?: components["schemas"]["Setup"];
   onSave: (values: SetupFormValues) => Promise<boolean | void>;
   pending: boolean;
   blocked?: boolean;
   onDirtyChange?: (dirty: boolean) => void;
+  onSectionViewChange?: (editing: boolean) => void;
+  onSaved?: () => void;
 }) {
+  const isEdit = !!setup;
   const form = useForm<SetupFormValues>({ defaultValues: setupToForm(setup) });
   const root = useRef<HTMLFormElement>(null);
   const saving = useRef(false);
   const [savedVersion, setSavedVersion] = useState(0);
+  const [sectionView, setSectionView] = useState(false);
+  const [clearSection, setClearSection] = useState<SectionId | null>(null);
+  const [sectionVersions, setSectionVersions] = useState<
+    Partial<Record<SectionId, number>>
+  >({});
+  const clearTrigger = useRef<HTMLButtonElement>(null);
+  function showSection(editing: boolean) {
+    setSectionView(editing);
+    onSectionViewChange?.(editing);
+  }
   const [active, setActive] = useState<SectionId>("general");
   const [focusRequest, setFocusRequest] = useState<{
     section?: SectionId;
@@ -64,10 +83,13 @@ export function SetupForm({
     onDirtyChange?.(form.formState.isDirty);
   }, [form.formState.isDirty, onDirtyChange]);
   function select(section: SectionId) {
+    if (setup) showSection(true);
+    setClearSection(null);
     setActive(section);
     setFocusRequest({ section });
   }
   function reveal(path: string) {
+    if (setup) showSection(true);
     setActive(sectionForPath(path));
     const component = componentForPath(path);
     if (component)
@@ -112,6 +134,8 @@ export function SetupForm({
     const followAnchor = () => {
       const section = legacySection(window.location.hash);
       if (!section) return;
+      if (isEdit) onSectionViewChange?.(true);
+      if (isEdit) setSectionView(true);
       setActive(section);
       const id =
         window.location.hash === "#setup-front-knuckle"
@@ -125,7 +149,7 @@ export function SetupForm({
     followAnchor();
     window.addEventListener("hashchange", followAnchor);
     return () => window.removeEventListener("hashchange", followAnchor);
-  }, []);
+  }, [isEdit, onSectionViewChange]);
   const changeChassis = useWatch({
     control: form.control,
     name: "changeChassis",
@@ -136,8 +160,10 @@ export function SetupForm({
       <EditorPresentation.Provider
         value={{
           open: opened,
-          setOpen: (id, open) =>
-            setOpened((current) => ({ ...current, [id]: open })),
+          setOpen: (id, open) => {
+            if (setup && open) showSection(true);
+            setOpened((current) => ({ ...current, [id]: open }));
+          },
           issues,
           validate: validateComponent,
           setup,
@@ -176,6 +202,7 @@ export function SetupForm({
                 if (saved === true) {
                   form.reset(form.getValues());
                   setSavedVersion((n) => n + 1);
+                  onSaved?.();
                 }
               } finally {
                 saving.current = false;
@@ -257,14 +284,119 @@ export function SetupForm({
                 </ul>
               </section>
             )}
-            <div className="setup-workspace">
+            {setup && (
+              <Button
+                type="button"
+                onClick={() => {
+                  if (sectionView) {
+                    showSection(false);
+                    setClearSection(null);
+                    document
+                      .getElementById("setup-essentials")
+                      ?.scrollIntoView?.({ block: "start" });
+                  } else select(active);
+                }}
+              >
+                {sectionView ? "Back to edit overview" : "Edit sections"}
+              </Button>
+            )}
+            <div
+              className={`setup-workspace${setup ? " edit-sections-workspace" : ""}`}
+            >
               <SectionNavigation
                 active={active}
                 select={select}
                 counts={counts}
+                sticky={!!setup}
               />
-              <div className="setup-section-pane">
+              <div
+                className="setup-section-pane"
+                hidden={!!setup && !sectionView}
+              >
+                {setup && sectionView && (
+                  <div className="section-clear">
+                    <Button
+                      ref={clearTrigger}
+                      type="button"
+                      className="subdued-destructive"
+                      onClick={() => setClearSection(active)}
+                    >
+                      Clear current section:{" "}
+                      {sections.find(([id]) => id === active)?.[1]}
+                    </Button>
+                    {clearSection === active && (
+                      <div
+                        role="group"
+                        aria-label="Clear current section?"
+                        className="inline-confirmation"
+                      >
+                        <p>
+                          Clear only{" "}
+                          {sections.find(([id]) => id === active)?.[1]}?{" "}
+                          {sectionClearDescription[active]} Other sections,
+                          setup essentials and photos stay unchanged. Save setup
+                          to persist this removal.
+                        </p>
+                        <Button
+                          type="button"
+                          autoFocus
+                          onClick={() => {
+                            setClearSection(null);
+                            clearTrigger.current?.focus();
+                          }}
+                        >
+                          Cancel
+                        </Button>
+                        <Button
+                          type="button"
+                          className="subdued-destructive"
+                          onClick={() => {
+                            const paths = sectionClearPaths[active];
+                            const defaults = setupToForm();
+                            for (const path of paths) {
+                              form.setValue(
+                                path,
+                                structuredClone(
+                                  valueAt(defaults, path),
+                                ) as never,
+                                { shouldDirty: true },
+                              );
+                              form.clearErrors(path);
+                            }
+                            setIssues((old) =>
+                              old.filter(
+                                (issue) =>
+                                  !paths.some((path) =>
+                                    matchesPath(issue.path, path),
+                                  ),
+                              ),
+                            );
+                            setOpened((old) =>
+                              Object.fromEntries(
+                                Object.entries(old).filter(
+                                  ([id]) =>
+                                    componentSpecs.find((c) => c.id === id)
+                                      ?.section !== active,
+                                ),
+                              ),
+                            );
+                            setSectionVersions((old) => ({
+                              ...old,
+                              [active]: (old[active] ?? 0) + 1,
+                            }));
+                            setClearSection(null);
+                            clearTrigger.current?.focus();
+                          }}
+                        >
+                          Confirm clear current section
+                        </Button>
+                      </div>
+                    )}
+                  </div>
+                )}
+
                 <section
+                  key={"general-" + (sectionVersions.general ?? 0)}
                   hidden={active !== "general"}
                   aria-labelledby="section-general"
                 >
@@ -276,6 +408,7 @@ export function SetupForm({
                   </ComponentCard>
                 </section>
                 <section
+                  key={"front-" + (sectionVersions.front ?? 0)}
                   hidden={active !== "front"}
                   aria-labelledby="section-front"
                 >
@@ -288,6 +421,7 @@ export function SetupForm({
                   </ComponentCard>
                 </section>
                 <section
+                  key={"rear-" + (sectionVersions.rear ?? 0)}
                   hidden={active !== "rear"}
                   aria-labelledby="section-rear"
                 >
@@ -300,6 +434,7 @@ export function SetupForm({
                   </ComponentCard>
                 </section>
                 <section
+                  key={"shocks-" + (sectionVersions.shocks ?? 0)}
                   hidden={active !== "shocks"}
                   aria-labelledby="section-shocks"
                 >
@@ -346,6 +481,7 @@ export function SetupForm({
                   ))}
                 </section>
                 <section
+                  key={"wheels-" + (sectionVersions.wheels ?? 0)}
                   hidden={active !== "wheels"}
                   aria-labelledby="section-wheels"
                 >
@@ -356,6 +492,7 @@ export function SetupForm({
                   <RunningGearSection side="rear" setup={setup} />
                 </section>
                 <section
+                  key={"electronics-" + (sectionVersions.electronics ?? 0)}
                   hidden={active !== "electronics"}
                   aria-labelledby="section-electronics"
                 >

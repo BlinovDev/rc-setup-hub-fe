@@ -114,7 +114,7 @@ it.each([".", ","])(
     expect(setupControl(field("Rear", "top", "Front"))).toHaveValue("");
     await user.type(setupControl("Title"), " renamed");
     await user.click(setupButton({ name: "Save setup" }));
-    await screen.findByText("Setup saved.");
+    await screen.findByRole("link", { name: "Edit setup" });
     expect(updated?.data).toEqual(created?.data);
     await act(() => router.navigate(`/setups/${testSetup.id}`));
     await screen.findByRole("link", { name: "Edit setup" });
@@ -130,7 +130,7 @@ it.each([".", ","])(
     await user.clear(updatedTotal);
     await user.type(updatedTotal, `0${separator}123456789`);
     await user.click(setupButton({ name: "Save setup" }));
-    await screen.findByText("Setup saved.");
+    await screen.findByRole("link", { name: "Edit setup" });
     expect(updated?.data).toEqual({
       suspension: {
         front: { camber_deg: -6.8, lower_arm_spacing: { rear_mm: 0 } },

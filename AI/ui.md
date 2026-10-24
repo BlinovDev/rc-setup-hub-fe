@@ -52,7 +52,25 @@ counts, reveals hidden editors and focuses real controls after render, including
 chassis selection and aggregate link errors. Resizing preserves values, selection,
 errors and expansion. Guard route exit/unload for unsaved setup fields and queued
 files; already-persisted photo changes are retained and never described as unsaved.
-Successful Save resets the dirty baseline without recreating the form; explicit
+In the existing-setup editor, the top-level edit overview owns Delete setup.
+Opening Edit sections (or choosing a section) shows a distinct section view; Back
+to edit overview retains the mounted document and hides section controls. Whole-setup
+deletion is absent inside section views. Each section has a confirmed, subdued
+Clear current section action: General clears notes only; Front/Rear clear their
+axle geometry/components plus knuckle/differential respectively; Shocks clears both
+shock assemblies; Wheels & tires clears both running-gear axles; Electronics clears
+only electronics. Essentials and photos are never cleared by a section action.
+Component Remove remains available with secondary destructive emphasis.
+
+Existing-setup card previews use compact vertical label–value rows, preserving units,
+partial fields and explicit zero; long values wrap/clamp without changing stored data.
+The mobile edit picker is a single sticky strip at the safe top edge, with a chevron
+and button border; the non-sticky app header scrolls away. Focused controls must remain
+reachable below it and above fixed Save/navigation. Create keeps its existing flow.
+Successful edit Save resets the dirty baseline and replaces the editor history entry
+with read-only detail. Validation/API/conflict errors stay in the editor. Queued files
+still require the existing exit confirmation; cancelling retains their original bytes
+and the saved form baseline. Persisted photo writes remain independent. Explicit
 conflict reload may discard/remount only after the existing user action.
 
 Use text inputs with inputMode=decimal for suspension; do not rewrite while typing,

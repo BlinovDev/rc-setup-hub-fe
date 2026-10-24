@@ -57,7 +57,11 @@ function prepare(matcher: Matcher | ByRoleOptions["name"] | undefined) {
     const target = Array.from(
       document.querySelectorAll<HTMLButtonElement>(".section-sidebar button"),
     ).find((button) => button.textContent?.startsWith(d.label!));
-    if (target && target.getAttribute("aria-current") !== "location")
+    if (
+      target &&
+      (target.getAttribute("aria-current") !== "location" ||
+        document.querySelector(".setup-section-pane[hidden]"))
+    )
       fireEvent.click(target);
   }
   if (d.spec) {

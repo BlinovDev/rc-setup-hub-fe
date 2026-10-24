@@ -3,7 +3,7 @@ import type { components } from "../../api/generated/schema";
 import { fireEvent, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { http, HttpResponse } from "msw";
-import { expect, it } from "vitest";
+import { beforeEach, expect, it } from "vitest";
 import { apiUrl } from "../../api/config";
 import { server } from "../../test/server";
 import { testSetup, testUser } from "./testFixtures";
@@ -124,6 +124,11 @@ it("hydrates historical names for both axles and preserves complete data on unre
     }),
     http.patch(`${apiUrl}/api/v1/setups/${setup.id}`, async ({ request }) => {
       received = (await request.json()) as Schemas["PatchSetup"];
+      server.use(
+        http.get(`${apiUrl}/api/v1/setups/${setup.id}`, () =>
+          HttpResponse.json({ ...setup, ...received }),
+        ),
+      );
       return HttpResponse.json(setup);
     }),
   );
@@ -143,7 +148,7 @@ it("hydrates historical names for both axles and preserves complete data on unre
   }
   fill("Title", "Title only");
   await userEvent.setup().click(setupButton({ name: "Save setup" }));
-  await screen.findByText("Setup saved.");
+  await screen.findByRole("link", { name: "Edit setup" });
   expect(received?.data).toEqual(setup.data);
   expect(received).not.toHaveProperty("lower_arm_mount_manufacturers");
   expect(received).not.toHaveProperty("chassis_model_id");
@@ -213,6 +218,11 @@ for (const side of ["front", "rear"] as const) {
     server.use(
       http.patch(`${apiUrl}/api/v1/setups/${setup.id}`, async ({ request }) => {
         received = (await request.json()) as Schemas["PatchSetup"];
+        server.use(
+          http.get(`${apiUrl}/api/v1/setups/${setup.id}`, () =>
+            HttpResponse.json({ ...setup, ...received }),
+          ),
+        );
         return HttpResponse.json({ ...setup, data: received.data });
       }),
     );
@@ -240,7 +250,7 @@ for (const side of ["front", "rear"] as const) {
       ),
     ).toBeVisible();
     await user.click(setupButton({ name: "Save setup" }));
-    await screen.findByText("Setup saved.");
+    await screen.findByRole("link", { name: "Edit setup" });
     const expected = structuredClone(setup.data);
     delete expected.suspension?.[side]?.lower_arm_mount;
     expect(received?.data).toEqual(expected);
@@ -253,6 +263,11 @@ for (const side of ["front", "rear"] as const) {
       http.patch(`${apiUrl}/api/v1/setups/${setup.id}`, async ({ request }) => {
         writes++;
         received = (await request.json()) as Schemas["PatchSetup"];
+        server.use(
+          http.get(`${apiUrl}/api/v1/setups/${setup.id}`, () =>
+            HttpResponse.json({ ...setup, ...received }),
+          ),
+        );
         return HttpResponse.json({ ...setup, data: received.data });
       }),
     );
@@ -272,10 +287,12 @@ for (const side of ["front", "rear"] as const) {
     await user.click(setupButton({ name: `Clear ${side} lower arm mount` }));
     expect(model).not.toBeInTheDocument();
     await user.click(setupButton({ name: "Save setup" }));
-    await screen.findByText("Setup saved.");
+    await screen.findByRole("link", { name: "Edit setup" });
     const expected = structuredClone(setup.data);
     delete expected.suspension?.[side]?.lower_arm_mount;
     expect(received?.data).toEqual(expected);
+    await user.click(screen.getByRole("link", { name: "Edit setup" }));
+    await screen.findByLabelText("Title");
     fill(`${label} lower arm mount configuration notes`, "Notes only\nMount B");
     await user.click(setupButton({ name: "Save setup" }));
     await waitFor(() =>
@@ -373,3 +390,15 @@ it.each([null, {}])(
     ).not.toBeInTheDocument();
   },
 );
+
+beforeEach(() => {
+  server.use(
+    http.get(`${apiUrl}/api/v1/users/${testSetup.owner_id}`, () =>
+      HttpResponse.json({
+        id: testSetup.owner_id,
+        nickname: "Driver",
+        avatar_url: null,
+      }),
+    ),
+  );
+});

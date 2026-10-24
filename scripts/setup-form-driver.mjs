@@ -71,10 +71,11 @@ export function setupFormDriver(page) {
     }
     if (
       section &&
-      !(await page
-        .locator(".section-sidebar button")
-        .filter({ hasText: new RegExp("^" + section + "(?:\\s*·|$)") })
-        .getAttribute("aria-current"))
+      ((await page.locator(".setup-section-pane[hidden]").count()) ||
+        !(await page
+          .locator(".section-sidebar button")
+          .filter({ hasText: new RegExp("^" + section + "(?:\\s*·|$)") })
+          .getAttribute("aria-current")))
     )
       await select(section);
     if (component) {

@@ -31,6 +31,7 @@ function SetupEditor({
   user: components["schemas"]["User"];
   setupId: string;
 }) {
+  const [sectionView, setSectionView] = useState(false);
   const [dirty, setDirty] = useState(false);
   const allowExit = useRef(false);
   const queue = usePhotoQueue();
@@ -127,6 +128,13 @@ function SetupEditor({
       <SetupForm
         key={`${setupId}-${revision}`}
         onDirtyChange={setDirty}
+        onSectionViewChange={setSectionView}
+        onSaved={() => {
+          allowExit.current = !queue.items.some(
+            (item) => item.state !== "uploaded",
+          );
+          navigate(`/setups/${setupId}`, { replace: true });
+        }}
         setup={detail.data}
         pending={update.isPending || reloading}
         blocked={conflict}
@@ -141,13 +149,15 @@ function SetupEditor({
           }
         }}
       />
-      <DeleteSetupButton
-        id={setupId}
-        onDeleted={() => {
-          allowExit.current = true;
-          navigate("/my/setups", { state: { message: "Setup deleted." } });
-        }}
-      />
+      {!sectionView && (
+        <DeleteSetupButton
+          id={setupId}
+          onDeleted={() => {
+            allowExit.current = true;
+            navigate("/my/setups", { state: { message: "Setup deleted." } });
+          }}
+        />
+      )}
     </section>
   );
 }

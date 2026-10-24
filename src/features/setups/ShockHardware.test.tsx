@@ -4,7 +4,7 @@ import type { components } from "../../api/generated/schema";
 import { fireEvent, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { http, HttpResponse } from "msw";
-import { expect, it } from "vitest";
+import { beforeEach, expect, it } from "vitest";
 import { apiUrl } from "../../api/config";
 import { server } from "../../test/server";
 import { testSetup, testUser } from "./testFixtures";
@@ -70,6 +70,11 @@ it("hydrates both axles and preserves complete data on a title-only PATCH", asyn
   server.use(
     http.patch(`${apiUrl}/api/v1/setups/${setup.id}`, async ({ request }) => {
       body = (await request.json()) as Schemas["PatchSetup"];
+      server.use(
+        http.get(`${apiUrl}/api/v1/setups/${setup.id}`, () =>
+          HttpResponse.json({ ...setup, ...body }),
+        ),
+      );
       return HttpResponse.json(setup);
     }),
   );
@@ -83,7 +88,7 @@ it("hydrates both axles and preserves complete data on a title-only PATCH", asyn
   }
   fill("Title", "Title only");
   await userEvent.setup().click(setupButton({ name: "Save setup" }));
-  await screen.findByText("Setup saved.");
+  await screen.findByRole("link", { name: "Edit setup" });
   expect(body?.data).toEqual(setup.data);
   expect(body).not.toHaveProperty("chassis_model_id");
 });
@@ -95,6 +100,11 @@ it("blocks invalid writes with associated focus, clears hardware, and re-adds pa
     http.patch(`${apiUrl}/api/v1/setups/${setup.id}`, async ({ request }) => {
       writes++;
       body = (await request.json()) as Schemas["PatchSetup"];
+      server.use(
+        http.get(`${apiUrl}/api/v1/setups/${setup.id}`, () =>
+          HttpResponse.json({ ...setup, ...body }),
+        ),
+      );
       return HttpResponse.json({ ...setup, data: body.data });
     }),
   );
@@ -118,12 +128,15 @@ it("blocks invalid writes with associated focus, clears hardware, and re-adds pa
     "false",
   );
   await user.click(setupButton({ name: "Save setup" }));
-  await screen.findByText("Setup saved.");
+  await screen.findByRole("link", { name: "Edit setup" });
   expect(body?.data).toEqual(testSetup.data);
+  await user.click(screen.getByRole("link", { name: "Edit setup" }));
+  await screen.findByLabelText("Title");
   fill("Rear seal description", "Description only");
   fill("Front piston notes", "Notes only");
   await user.click(setupButton({ name: "Save setup" }));
-  await screen.findByDisplayValue("Description only");
+  await screen.findByRole("link", { name: "Edit setup" });
+  expect(screen.getByText("Description only")).toBeVisible();
   expect(body?.data?.shocks?.front?.piston).toEqual({ notes: "Notes only" });
   expect(body?.data?.shocks?.rear?.seal).toEqual({
     description: "Description only",
@@ -162,4 +175,16 @@ it("edits legacy setups with blank hardware without inventing defaults", async (
   await screen.findByLabelText("Title");
   expect(setupControl("Front piston hole count")).toHaveValue("");
   expect(setupControl("Rear seal type")).toHaveValue("");
+});
+
+beforeEach(() => {
+  server.use(
+    http.get(`${apiUrl}/api/v1/users/${testSetup.owner_id}`, () =>
+      HttpResponse.json({
+        id: testSetup.owner_id,
+        nickname: "Driver",
+        avatar_url: null,
+      }),
+    ),
+  );
 });

@@ -3,7 +3,7 @@ import type { components } from "../../api/generated/schema";
 import { fireEvent, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { http, HttpResponse } from "msw";
-import { expect, it } from "vitest";
+import { beforeEach, expect, it } from "vitest";
 import { apiUrl } from "../../api/config";
 import { server } from "../../test/server";
 import { testSetup, testUser } from "./testFixtures";
@@ -138,7 +138,7 @@ it("hydrates historical fields and saves full data on a title-only edit without 
   expect(setupControl("Rear wheel offset (mm)")).toHaveValue("0");
   fill("Title", "Changed");
   await userEvent.setup().click(setupButton({ name: "Save setup" }));
-  await screen.findByText("Setup saved.");
+  await screen.findByRole("link", { name: "Edit setup" });
   expect(received?.data).toEqual(setup.data);
   expect(received).not.toHaveProperty("running_gear_manufacturers");
   expect(received).not.toHaveProperty("chassis_model_id");
@@ -182,10 +182,12 @@ for (const side of ["front", "rear"] as const) {
     await user.click(setupButton({ name: `Clear ${side} hex` }));
     await user.click(setupButton({ name: `Clear ${side} tire` }));
     await user.click(setupButton({ name: "Save setup" }));
-    await screen.findByText("Setup saved.");
+    await screen.findByRole("link", { name: "Edit setup" });
     const expected = structuredClone(setup.data);
     delete expected.running_gear?.[side];
     expect(received?.data).toEqual(expected);
+    await user.click(screen.getByRole("link", { name: "Edit setup" }));
+    await screen.findByLabelText("Title");
     fill(`${label} tire model`, "Model only");
     fill(`${label} hex offset (mm)`, "-3,5");
     await user.click(setupButton({ name: "Save setup" }));
@@ -313,4 +315,16 @@ it("legacy editor keeps new fields blank and unavailable joined names have a saf
       "Front wheel manufacturer: Saved manufacturer (name unavailable)",
     ),
   ).toBeVisible();
+});
+
+beforeEach(() => {
+  server.use(
+    http.get(`${apiUrl}/api/v1/users/${testSetup.owner_id}`, () =>
+      HttpResponse.json({
+        id: testSetup.owner_id,
+        nickname: "Driver",
+        avatar_url: null,
+      }),
+    ),
+  );
 });

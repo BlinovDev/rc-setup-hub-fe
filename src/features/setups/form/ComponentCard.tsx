@@ -77,13 +77,25 @@ export function ComponentCard({
   collect(setup?.rear_differential_manufacturer);
   collect(setup?.lower_arm_mount_manufacturers);
   collect(setup?.running_gear_manufacturers);
-  const summarize = (value: unknown, key: string): string[] => {
+  const summarize = (
+    value: unknown,
+    key: string,
+  ): { label: string; value: string }[] => {
     if (!hasValue(value)) return [];
     if (typeof value === "object" && value !== null)
       return Object.entries(value).flatMap(([key, v]) => summarize(v, key));
     const text = String(value).trim();
     return [
-      `${labels[key] ?? key}: ${key === "manufacturerId" ? (displayNames.get(text.toLowerCase()) ?? "Saved manufacturer (name unavailable)") : text.length > 120 ? text.slice(0, 120) + "…" : text}`,
+      {
+        label:
+          labels[key] ??
+          (setup ? key.charAt(0).toUpperCase() + key.slice(1) : key),
+        value:
+          key === "manufacturerId"
+            ? (displayNames.get(text.toLowerCase()) ??
+              "Saved manufacturer (name unavailable)")
+            : text,
+      },
     ];
   };
   const summary = spec.paths.flatMap((path) =>
@@ -135,7 +147,27 @@ export function ComponentCard({
       </div>
       {!expanded && (
         <div className="component-summary">
-          {configured ? summary.join(" · ") : "Not added"}
+          {configured ? (
+            setup ? (
+              <dl className="component-summary-rows">
+                {summary.map((row, index) => (
+                  <div key={index}>
+                    <dt>{row.label}: </dt>
+                    <dd title={row.value}>{row.value}</dd>
+                  </div>
+                ))}
+              </dl>
+            ) : (
+              summary
+                .map(
+                  (row) =>
+                    `${row.label}: ${row.value.length > 120 ? row.value.slice(0, 120) + "…" : row.value}`,
+                )
+                .join(" · ")
+            )
+          ) : (
+            "Not added"
+          )}
         </div>
       )}
       <div className="component-actions">
@@ -150,7 +182,8 @@ export function ComponentCard({
         {(configured || expanded || mounted) && (
           <Button
             type="button"
-            variant="danger"
+            variant={setup ? "secondary" : "danger"}
+            className={setup ? "subdued-destructive" : undefined}
             ref={removalTrigger}
             onClick={() => {
               if (configured) setConfirm(true);
@@ -178,7 +211,12 @@ export function ComponentCard({
           >
             Cancel
           </Button>
-          <Button type="button" variant="danger" onClick={clear}>
+          <Button
+            type="button"
+            variant={setup ? "secondary" : "danger"}
+            className={setup ? "subdued-destructive" : undefined}
+            onClick={clear}
+          >
             Confirm remove {spec.label}
           </Button>
         </div>

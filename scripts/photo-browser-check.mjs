@@ -79,6 +79,14 @@ try {
       group: formGroup,
       select: selectSection,
     } = setupFormDriver(page);
+    // Legacy data regressions intentionally reopen the owner editor after each
+    // successful save. First prove the real new exit behavior; never bypass it.
+    const savedAndReopen = async () => {
+      await page.waitForURL(`**/setups/${id}`);
+      assert.equal(await page.getByLabel("Title", { exact: true }).count(), 0);
+      await page.getByRole("link", { name: "Edit setup", exact: true }).click();
+      await page.getByLabel("Title", { exact: true }).waitFor();
+    };
 
     const user = {
       id: "c61393b6-daa0-4eb8-923c-57aedbb46a46",
@@ -1459,7 +1467,7 @@ try {
       await formField("Rear differential tuning notes", { exact: true })
     ).fill("Spring only\nNo type required");
     await (await formButton({ name: "Save setup", exact: true })).click();
-    await page.getByText("Setup saved.", { exact: true }).waitFor();
+    await savedAndReopen();
     assert.deepEqual(setup.data, {
       ...expectedOtherData,
       rear_differential: { tuning_notes: "Spring only\nNo type required" },
@@ -1468,7 +1476,7 @@ try {
       await formButton({ name: "Clear rear differential", exact: true })
     ).click();
     await (await formButton({ name: "Save setup", exact: true })).click();
-    await page.getByText("Setup saved.", { exact: true }).waitFor();
+    await savedAndReopen();
     assert.deepEqual(setup.data, expectedOtherData);
     const typeSelect = await formField("Rear differential type", {
       exact: true,
@@ -1478,7 +1486,7 @@ try {
     await page.keyboard.press("Enter");
     assert.equal(await typeSelect.inputValue(), "spool");
     await (await formButton({ name: "Save setup", exact: true })).click();
-    await page.getByText("Setup saved.", { exact: true }).waitFor();
+    await savedAndReopen();
     assert.deepEqual(setup.data.rear_differential, { type: "spool" });
     for (const axle of ["Front", "Rear"]) {
       assert.equal(
@@ -1521,7 +1529,7 @@ try {
     if (!Object.keys(beforeHardware.shocks).length)
       delete beforeHardware.shocks;
     await (await formButton({ name: "Save setup", exact: true })).click();
-    await page.getByText("Setup saved.", { exact: true }).waitFor();
+    await savedAndReopen();
     assert.deepEqual(setup.data, beforeHardware);
     await (
       await formField("Front piston notes", { exact: true })
@@ -1530,7 +1538,7 @@ try {
       await formField("Rear seal description", { exact: true })
     ).fill("Product only");
     await (await formButton({ name: "Save setup", exact: true })).click();
-    await page.getByText("Setup saved.", { exact: true }).waitFor();
+    await savedAndReopen();
     assert.deepEqual(setup.data.shocks.front.piston, {
       notes: "Notes only\nNo count",
     });
@@ -1600,7 +1608,7 @@ try {
         })
         .waitFor();
       await (await formButton({ name: "Save setup", exact: true })).click();
-      await page.getByText("Setup saved.", { exact: true }).waitFor();
+      await savedAndReopen();
       delete expected.suspension[side].lower_arm_mount;
       if (!Object.keys(expected.suspension[side]).length)
         delete expected.suspension[side];
@@ -1612,7 +1620,7 @@ try {
         })
       ).fill("Notes only\nNo model required");
       await (await formButton({ name: "Save setup", exact: true })).click();
-      await page.getByText("Setup saved.", { exact: true }).waitFor();
+      await savedAndReopen();
       assert.deepEqual(setup.data.suspension[side].lower_arm_mount, {
         configuration_notes: "Notes only\nNo model required",
       });
@@ -1642,7 +1650,7 @@ try {
         await formField(`${axle} hex offset (mm)`, { exact: true })
       ).fill("-3,123456789");
       await (await formButton({ name: "Save setup", exact: true })).click();
-      await page.getByText("Setup saved.", { exact: true }).waitFor();
+      await savedAndReopen();
       assert.equal(setup.data.running_gear[side].wheel.offset_mm, -2147483648);
       assert.equal(setup.data.running_gear[side].hex.offset_mm, -3.123456789);
       for (const part of ["hex", "wheel", "tire"]) {
@@ -1673,7 +1681,7 @@ try {
         .getByText(`${axle} wheel manufacturer: Not specified`, { exact: true })
         .waitFor();
       await (await formButton({ name: "Save setup", exact: true })).click();
-      await page.getByText("Setup saved.", { exact: true }).waitFor();
+      await savedAndReopen();
       delete before.running_gear[side];
       if (!Object.keys(before.running_gear).length) delete before.running_gear;
       assert.deepEqual(setup.data, before);
@@ -1684,7 +1692,7 @@ try {
         await formField(`${axle} wheel offset (mm)`, { exact: true })
       ).fill("0");
       await (await formButton({ name: "Save setup", exact: true })).click();
-      await page.getByText("Setup saved.", { exact: true }).waitFor();
+      await savedAndReopen();
       assert.deepEqual(setup.data.running_gear[side], {
         wheel: { offset_mm: 0 },
         tire: { model: "Model only" },
@@ -1742,7 +1750,7 @@ try {
       .getByText("Front knuckle manufacturer: Not specified", { exact: true })
       .waitFor();
     await (await formButton({ name: "Save setup", exact: true })).click();
-    await page.getByText("Setup saved.", { exact: true }).waitFor();
+    await savedAndReopen();
     delete preservedBeforeKnuckle.front_steering_knuckle;
     assert.deepEqual(setup.data, preservedBeforeKnuckle);
     await (
@@ -1751,7 +1759,7 @@ try {
       })
     ).fill("Part only\nNo manufacturer required");
     await (await formButton({ name: "Save setup", exact: true })).click();
-    await page.getByText("Setup saved.", { exact: true }).waitFor();
+    await savedAndReopen();
     assert.deepEqual(setup.data.front_steering_knuckle, {
       description: "Part only\nNo manufacturer required",
     });
@@ -1776,6 +1784,141 @@ try {
     );
     console.log(
       `PASS ${width}x${height} placeholder/create once/partial retry/crop shapes/pointer+touch+keyboard/preview match/revision refresh/reload/failure retry/gallery focus/unsaved fields/square lists/no N+1/cover-delete/no overflow; mocked HTTP, emulated Chromium`,
+    );
+    // Approved PR #33 follow-up: exercise Edit Sections directly on every viewport.
+    assert.equal(
+      await page
+        .getByRole("button", { name: "Delete setup", exact: true })
+        .count(),
+      1,
+    );
+    await page
+      .getByRole("button", { name: "Edit sections", exact: true })
+      .click();
+    assert.equal(
+      await page
+        .getByRole("button", { name: "Delete setup", exact: true })
+        .count(),
+      0,
+    );
+    await selectSection("Wheels & tires");
+    await (
+      await formField("Front wheel model", { exact: true })
+    ).fill("界".repeat(200));
+    await (
+      await formField("Front wheel offset (mm)", { exact: true })
+    ).fill("0");
+    await page
+      .getByRole("button", { name: "Done Front wheel", exact: true })
+      .click();
+    const preview = page.locator(
+      '[data-component="front-wheel"] .component-summary-rows',
+    );
+    assert.equal(await preview.locator("dt").count(), 2);
+    assert.equal(await preview.locator("dd").last().innerText(), "0");
+    assert.equal(
+      await preview.locator("dd").first().textContent(),
+      "界".repeat(200),
+    );
+    const rows = await preview.locator(":scope > div").evaluateAll((els) =>
+      els.map((el) => ({
+        top: el.getBoundingClientRect().top,
+        bottom: el.getBoundingClientRect().bottom,
+      })),
+    );
+    assert(
+      rows[1].top >= rows[0].bottom,
+      "preview fields must occupy separate vertical rows",
+    );
+    await geometry();
+    await page.screenshot({
+      path: `artifacts/photo-qa/edit-summary-rows-${width}x${height}.png`,
+      fullPage: true,
+    });
+    // Expand a long editor, then scroll within the same section. The compact
+    // picker must stay above content and the focused field must stay reachable.
+    await (
+      await formField("Rear tire model", { exact: true })
+    ).fill("Partial tire");
+    if (mobile) {
+      await page
+        .getByLabel("Rear tire model", { exact: true })
+        .scrollIntoViewIfNeeded();
+      await page.evaluate(() => window.scrollBy(0, 150));
+      const strip = page.locator(".sections-trigger-sticky");
+      const box = await strip.boundingBox();
+      assert(
+        box && box.y >= -1 && box.y < 4 && box.height >= 44 && box.height < 70,
+        "one compact sticky strip must remain at the safe top edge",
+      );
+      assert.equal(await strip.locator(".section-chevron").count(), 1);
+      await page.screenshot({
+        path: `artifacts/photo-qa/edit-sticky-${width}x${height}.png`,
+      });
+      await strip.click();
+      const sheet = page.getByRole("dialog", {
+        name: "Setup sections",
+        exact: true,
+      });
+      await sheet
+        .getByRole("button", { name: "Electronics", exact: true })
+        .focus();
+      await page.keyboard.press("Tab");
+      assert(
+        await sheet
+          .getByRole("button", { name: "Close sections" })
+          .evaluate((el) => el === document.activeElement),
+      );
+      await page.keyboard.press("Escape");
+      await sheet.waitFor({ state: "hidden" });
+      assert(await strip.evaluate((el) => el === document.activeElement));
+    }
+    const beforeClear = structuredClone(setup.data);
+    const clear = page.getByRole("button", {
+      name: "Clear current section: Wheels & tires",
+      exact: true,
+    });
+    await clear.click();
+    assert(
+      await page
+        .getByRole("button", { name: "Cancel", exact: true })
+        .evaluate((el) => el === document.activeElement),
+    );
+    await page.getByRole("button", { name: "Cancel", exact: true }).click();
+    assert(await clear.evaluate((el) => el === document.activeElement));
+    await (
+      await formField("Front wheel offset (mm)", { exact: true })
+    ).fill("Infinity");
+    const failedPatches = setupPatches;
+    await page.getByRole("button", { name: "Save setup", exact: true }).click();
+    assert(new URL(page.url()).pathname.endsWith("/edit"));
+    assert.equal(setupPatches, failedPatches);
+    await assertFocusAboveActions("Front wheel offset (mm)");
+    await clear.click();
+    await page
+      .getByRole("button", {
+        name: "Confirm clear current section",
+        exact: true,
+      })
+      .click();
+    // Save has real route replacement; do not reopen through the helper here.
+    await page.getByRole("button", { name: "Save setup", exact: true }).click();
+    await page.waitForURL(`**/setups/${id}`);
+    assert.equal(await page.getByLabel("Title", { exact: true }).count(), 0);
+    delete beforeClear.running_gear;
+    assert.deepEqual(
+      setup.data,
+      beforeClear,
+      "section clear must preserve all unrelated technical data",
+    );
+    await page.goBack();
+    assert(
+      !new URL(page.url()).pathname.endsWith("/edit"),
+      "Back must not return to the replaced section editor",
+    );
+    await geometry();
+    console.log(
+      `PASS ${width}x${height} Edit Sections vertical long/zero/partial previews, deletion hierarchy, sticky chevron/sheet focus, clear/cancel scope, validation/no-exit, successful replace/detail/Back`,
     );
     await page.unrouteAll({ behavior: "wait" });
     await context.close();

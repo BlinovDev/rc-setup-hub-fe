@@ -60,7 +60,7 @@ it("guards queued files even with untouched fields", async () => {
     .click(screen.getByRole("button", { name: "Keep editing" }));
   expect(screen.getByText("track.jpg")).toBeVisible();
 });
-it("successful saving clears the exit guard without recreating the document", async () => {
+it("successful saving replaces the editor with detail and clears the exit guard", async () => {
   let current = structuredClone(testSetup);
   server.use(
     http.get(`${apiUrl}/api/v1/setups/${testSetup.id}`, () =>
@@ -81,15 +81,17 @@ it("successful saving clears the exit guard without recreating the document", as
     ),
     http.get(`${apiUrl}/api/v1/me/setups`, () => HttpResponse.json([])),
   );
-  renderSetupRoute(`/my/setups/${testSetup.id}/edit`);
+  const { router } = renderSetupRoute(`/my/setups/${testSetup.id}/edit`);
   await screen.findByLabelText("Title");
   const title = screen.getByLabelText("Title");
   fireEvent.change(title, { target: { value: "Saved baseline" } });
   const user = userEvent.setup();
   await user.click(screen.getByRole("button", { name: "Save setup" }));
-  await screen.findByText("Setup saved.");
-  expect(screen.getByLabelText("Title")).toBe(title);
-  await user.click(screen.getByRole("link", { name: "Back to my setups" }));
+  await screen.findByRole("link", { name: "Edit setup" });
+  expect(router.state.location.pathname).toBe(`/setups/${testSetup.id}`);
+  expect(router.state.historyAction).toBe("REPLACE");
+  expect(screen.queryByLabelText("Title")).not.toBeInTheDocument();
+  await act(() => router.navigate("/my/setups"));
   await screen.findByText("No setups yet.");
   expect(
     screen.queryByRole("dialog", { name: "Leave unsaved changes?" }),

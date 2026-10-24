@@ -3,7 +3,7 @@ import type { components } from "../../api/generated/schema";
 import { act, screen, within, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { http, HttpResponse } from "msw";
-import { expect, it } from "vitest";
+import { beforeEach, expect, it } from "vitest";
 import { apiUrl } from "../../api/config";
 import { server } from "../../test/server";
 import { testSetup, testUser } from "./testFixtures";
@@ -114,7 +114,7 @@ it.each([".", ","])(
     }
     await user.type(setupControl("Title"), " renamed");
     await user.click(setupButton({ name: "Save setup" }));
-    await screen.findByText("Setup saved.");
+    await screen.findByRole("link", { name: "Edit setup" });
     expect(updated?.data).toEqual(created?.data);
     await act(() => router.navigate(`/setups/${testSetup.id}`));
     await screen.findByRole("link", { name: "Edit setup" });
@@ -174,7 +174,7 @@ it.each([".", ","])(
     }
     await user.clear(setupControl("Rear toe (degrees)"));
     await user.click(setupButton({ name: "Save setup" }));
-    await screen.findByText("Setup saved.");
+    await screen.findByRole("link", { name: "Edit setup" });
     for (const side of ["front", "rear"] as const) {
       expect(updated?.data?.suspension?.[side]).toEqual({
         camber_deg: -0.25,
@@ -229,4 +229,16 @@ it("blocks malformed angles and nonpositive/blank lengths with associated errors
     await waitFor(() => expect(angle).toHaveFocus());
     expect(posts).toBe(0);
   }
+});
+
+beforeEach(() => {
+  server.use(
+    http.get(`${apiUrl}/api/v1/users/${testSetup.owner_id}`, () =>
+      HttpResponse.json({
+        id: testSetup.owner_id,
+        nickname: "Driver",
+        avatar_url: null,
+      }),
+    ),
+  );
 });

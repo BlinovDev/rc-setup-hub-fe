@@ -819,3 +819,62 @@
   margin-block: 0.25rem;
   background: transparent;
 }
+
+/* Edit Sections only: the app header scrolls normally, so the picker pins to
+   the safe top edge without a second header offset. Its workspace contains
+   the whole active section, keeping the strip pinned through long editors. */
+@media (max-width: 767px) {
+  .sections-trigger-sticky {
+    position: sticky;
+    top: env(safe-area-inset-top, 0px);
+    z-index: 20;
+    background: white;
+    border: 2px solid #64748b;
+    box-shadow: 0 2px 5px rgb(15 23 42 / 12%);
+    align-self: start;
+  }
+  .edit-sections-workspace
+    .setup-section-pane
+    :is(input, textarea, select, button, h2) {
+    scroll-margin-top: calc(4rem + env(safe-area-inset-top, 0px));
+  }
+}
+.section-chevron {
+  font-size: 1.5rem;
+  line-height: 1;
+}
+.component-summary:has(.component-summary-rows) {
+  display: block;
+  overflow: visible;
+}
+.component-summary-rows {
+  display: grid;
+  gap: 0.25rem;
+  font-size: 0.875rem;
+}
+.component-summary-rows > div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 0.35rem;
+  min-width: 0;
+}
+.component-summary-rows dt {
+  font-weight: 600;
+}
+.component-summary-rows dd {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+  overflow: hidden;
+}
+.subdued-destructive {
+  color: #9f2727;
+  background: transparent;
+  border-color: #cbd5e1;
+}
+.section-clear {
+  margin-bottom: 1rem;
+}

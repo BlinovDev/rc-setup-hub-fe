@@ -424,7 +424,7 @@ it("cover/delete save immediately, preserve unsaved technical values, and narrow
   );
   expect(setupControl("Front piston notes")).toHaveValue("Unsaved piston");
   await user.click(setupButton({ name: "Save setup" }));
-  await screen.findByText("Setup saved.");
+  await screen.findByRole("link", { name: "Edit setup" });
   expect(patch).not.toHaveProperty("photos");
   expect(patch).toMatchObject({
     title: "Track setup unsaved",

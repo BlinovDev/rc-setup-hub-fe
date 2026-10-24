@@ -17,6 +17,13 @@ import { detailKey } from "./queries";
 const route = `/my/setups/${testSetup.id}/edit`;
 function detail() {
   server.use(
+    http.get(`${apiUrl}/api/v1/users/${testSetup.owner_id}`, () =>
+      HttpResponse.json({
+        id: testSetup.owner_id,
+        nickname: "Driver",
+        avatar_url: null,
+      }),
+    ),
     http.get(`${apiUrl}/api/v1/setups/${testSetup.id}`, () =>
       HttpResponse.json(testSetup),
     ),
@@ -70,6 +77,11 @@ it("PATCHes the complete technical document, preserves historical chassis by omi
       async ({ request }) => {
         expect(request.credentials).toBe("include");
         received = await request.json();
+        server.use(
+          http.get(`${apiUrl}/api/v1/setups/${testSetup.id}`, () =>
+            HttpResponse.json(saved),
+          ),
+        );
         return HttpResponse.json(saved);
       },
     ),
@@ -84,7 +96,7 @@ it("PATCHes the complete technical document, preserves historical chassis by omi
   input("Front toe (degrees)", "1");
   input("Notes", "");
   await userEvent.setup().click(setupButton({ name: "Save setup" }));
-  await screen.findByText("Setup saved.");
+  await screen.findByRole("link", { name: "Edit setup" });
   expect(received).toEqual({
     title: testSetup.title,
     visibility: testSetup.visibility,
@@ -132,7 +144,7 @@ it.each(["custom", "active", "cancel"])(
     if (change === "cancel")
       await events.click(setupButton({ name: "Cancel chassis change" }));
     await events.click(setupButton({ name: "Save setup" }));
-    await screen.findByText("Setup saved.");
+    await screen.findByRole("link", { name: "Edit setup" });
     if (change === "cancel")
       expect(received).not.toHaveProperty("chassis_model_id");
     else
@@ -328,4 +340,75 @@ it("deletes from edit and navigates back to owned setups", async () => {
   await screen.findByText("Setup deleted.");
   expect(router.state.location.pathname).toBe("/my/setups");
   expect(screen.queryByLabelText("Title")).not.toBeInTheDocument();
+});
+it("keeps whole-setup deletion at edit overview and section clearing scoped inside Edit Sections", async () => {
+  detail();
+  renderSetupRoute(route);
+  await screen.findByLabelText("Title");
+  expect(screen.getByRole("button", { name: "Delete setup" })).toBeVisible();
+  const user = userEvent.setup();
+  await user.click(screen.getByRole("button", { name: "Edit sections" }));
+  expect(
+    screen.queryByRole("button", { name: "Delete setup" }),
+  ).not.toBeInTheDocument();
+  expect(
+    screen.getByRole("button", { name: "Clear current section: General" }),
+  ).toBeVisible();
+  await user.click(
+    screen.getByRole("button", { name: "Back to edit overview" }),
+  );
+  expect(screen.getByRole("button", { name: "Delete setup" })).toBeVisible();
+});
+it("replaces a successful section editor in history; Back returns to the prior overview without stale draft", async () => {
+  detail();
+  server.use(
+    http.patch(`${apiUrl}/api/v1/setups/${testSetup.id}`, async ({ request }) =>
+      HttpResponse.json({
+        ...testSetup,
+        ...((await request.json()) as object),
+      }),
+    ),
+  );
+  const { router } = renderSetupRoute(`/setups/${testSetup.id}`);
+  const user = userEvent.setup();
+  await user.click(await screen.findByRole("link", { name: "Edit setup" }));
+  input("Front toe (degrees)", "0,123456789");
+  await user.click(screen.getByRole("button", { name: "Save setup" }));
+  await screen.findByRole("link", { name: "Edit setup" });
+  expect(router.state.location.pathname).toBe(`/setups/${testSetup.id}`);
+  expect(router.state.historyAction).toBe("REPLACE");
+  expect(screen.queryByLabelText("Title")).not.toBeInTheDocument();
+  const event = new Event("beforeunload", { cancelable: true });
+  window.dispatchEvent(event);
+  expect(event.defaultPrevented).toBe(false);
+  await import("@testing-library/react").then(({ act }) =>
+    act(() => router.navigate(-1)),
+  );
+  expect(router.state.location.pathname).toBe(`/setups/${testSetup.id}`);
+  expect(screen.queryByLabelText("Title")).not.toBeInTheDocument();
+});
+it("does not discard queued original photo bytes when setup Save succeeds", async () => {
+  detail();
+  server.use(
+    http.patch(`${apiUrl}/api/v1/setups/${testSetup.id}`, () =>
+      HttpResponse.json(testSetup),
+    ),
+  );
+  const { router } = renderSetupRoute(route);
+  await screen.findByLabelText("Title");
+  const file = new File(["original HEIF bytes"], "iphone.heic", {
+    type: "image/heic",
+  });
+  fireEvent.change(screen.getByLabelText("Photo files"), {
+    target: { files: [file] },
+  });
+  const user = userEvent.setup();
+  await user.click(screen.getByRole("button", { name: "Save setup" }));
+  await screen.findByRole("dialog", { name: "Leave unsaved changes?" });
+  expect(router.state.location.pathname).toBe(route);
+  await user.click(screen.getByRole("button", { name: "Keep editing" }));
+  expect(screen.getByText("iphone.heic")).toBeVisible();
+  expect(screen.getByLabelText("Title")).toHaveValue(testSetup.title);
+  await user.click(screen.getByRole("link", { name: "Back to my setups" }));
+  await screen.findByRole("dialog", { name: "Leave unsaved changes?" });
 });
