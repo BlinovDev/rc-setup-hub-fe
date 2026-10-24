@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { DraftGuard } from "./form/DraftGuard";
+import { useRef, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import type { components } from "../../api/generated/schema";
 import { PhotoPicker } from "./photos/queue";
@@ -15,6 +16,8 @@ import { SetupForm } from "./form/SetupForm";
 import { serializeCreate } from "./form/serialization";
 
 export function NewSetupPage() {
+  const [dirty, setDirty] = useState(false);
+  const allowExit = useRef(false);
   const create = useCreateSetup();
   const navigate = useNavigate();
   const queue = usePhotoQueue();
@@ -32,6 +35,10 @@ export function NewSetupPage() {
         <Link to={`/my/setups/${savedSetup.id}/edit`}>
           Continue editing setup
         </Link>
+        <DraftGuard
+          dirty={queue.items.some((item) => item.state !== "uploaded")}
+          allowExit={allowExit}
+        />
         <PhotoManager
           setupId={savedSetup.id}
           ownerId={savedSetup.owner_id}
@@ -48,13 +55,19 @@ export function NewSetupPage() {
           {setupErrorMessage(create.error, "save")}
         </InlineNotice>
       )}
+      <DraftGuard
+        dirty={dirty || queue.items.some((item) => item.state !== "uploaded")}
+        allowExit={allowExit}
+      />
       <PhotoPicker queue={queue} disabled={create.isPending} />
       <SetupForm
+        onDirtyChange={setDirty}
         pending={create.isPending}
         onSave={async (values) => {
           try {
             const setup = await create.mutateAsync(serializeCreate(values));
             if (queue.items.length) {
+              setDirty(false);
               setSavedSetup(setup);
               await queue.send(async (item) => {
                 const photo = await withSession(client, () =>
@@ -63,11 +76,13 @@ export function NewSetupPage() {
                 await refreshPhotos(client, setup.id, setup.owner_id);
                 return photo;
               });
-              return;
+              return true;
             }
+            allowExit.current = true;
             navigate("/my/setups", { state: { message: "Setup created." } });
+            return true;
           } catch {
-            /* Safe error feedback comes from mutation state. */
+            return false;
           }
         }}
       />

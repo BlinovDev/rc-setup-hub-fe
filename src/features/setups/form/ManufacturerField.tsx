@@ -1,3 +1,5 @@
+import { useEditorPresentation } from "./editorPresentation";
+import { valueAt } from "./presentation";
 import { useId, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Controller, useFormContext, useWatch } from "react-hook-form";
@@ -39,6 +41,8 @@ export function ManufacturerField({
   displayLabel?: string;
 }) {
   const id = useId();
+  const { savedVersion } = useEditorPresentation();
+  const [selectionVersion, setSelectionVersion] = useState(savedVersion);
   const { control, setValue, clearErrors, getFieldState, formState } =
     useFormContext<SetupFormValues>();
   const [choosing, setChoosing] = useState(!existing);
@@ -58,6 +62,7 @@ export function ManufacturerField({
             type="button"
             onClick={() => {
               setPreviousSelection(selected);
+              setSelectionVersion(savedVersion);
               setChoosing(true);
             }}
           >
@@ -126,7 +131,15 @@ export function ManufacturerField({
             <Button
               type="button"
               onClick={() => {
-                setValue(name, previousSelection);
+                const saved = valueAt(formState.defaultValues, name);
+                setValue(
+                  name,
+                  selectionVersion === savedVersion
+                    ? previousSelection
+                    : typeof saved === "string"
+                      ? saved
+                      : null,
+                );
                 clearErrors(name);
                 setChoosing(false);
               }}

@@ -1,7 +1,4 @@
-import { useFormContext } from "react-hook-form";
 import type { components } from "../../../api/generated/schema";
-import { Button } from "../../../shared/components/Button";
-import type { SetupFormValues } from "./formSchema";
 import { ManufacturerField } from "./ManufacturerField";
 import { SetupField } from "./SetupField";
 
@@ -10,7 +7,6 @@ export function FrontSteeringKnuckleSection({
 }: {
   setup: components["schemas"]["Setup"] | undefined;
 }) {
-  const { setValue, clearErrors } = useFormContext<SetupFormValues>();
   return (
     <fieldset id="setup-front-knuckle" className="space-y-3 rounded border p-4">
       <legend className="font-semibold">Front steering knuckle</legend>
@@ -32,19 +28,6 @@ export function FrontSteeringKnuckleSection({
         label="Front knuckle part number / description"
         multiline
       />
-      <Button
-        type="button"
-        onClick={() => {
-          setValue(
-            "frontSteeringKnuckle",
-            { manufacturerId: null, description: "" },
-            { shouldDirty: true },
-          );
-          clearErrors("frontSteeringKnuckle");
-        }}
-      >
-        Clear front knuckle
-      </Button>
     </fieldset>
   );
 }

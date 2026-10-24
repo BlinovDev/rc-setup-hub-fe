@@ -1,7 +1,4 @@
-import { useFormContext } from "react-hook-form";
 import type { components } from "../../../api/generated/schema";
-import { Button } from "../../../shared/components/Button";
-import type { SetupFormValues } from "./formSchema";
 import { ManufacturerField } from "./ManufacturerField";
 import { SetupField } from "./SetupField";
 
@@ -12,7 +9,6 @@ export function LowerArmMountFields({
   side: "front" | "rear";
   setup: components["schemas"]["Setup"] | undefined;
 }) {
-  const { setValue, clearErrors } = useFormContext<SetupFormValues>();
   const label = side === "front" ? "Front" : "Rear";
   const name = `${side}.lowerArmMount` as const;
   return (
@@ -39,19 +35,6 @@ export function LowerArmMountFields({
         label={`${label} lower arm mount configuration notes`}
         multiline
       />
-      <Button
-        type="button"
-        onClick={() => {
-          setValue(
-            name,
-            { manufacturerId: null, model: "", configurationNotes: "" },
-            { shouldDirty: true },
-          );
-          clearErrors(name);
-        }}
-      >
-        Clear {side} lower arm mount
-      </Button>
     </fieldset>
   );
 }

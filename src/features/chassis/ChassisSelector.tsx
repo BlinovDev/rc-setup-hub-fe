@@ -9,8 +9,10 @@ import type { ChassisSelection } from "./selection";
 export function ChassisSelector({
   value,
   onChange,
+  error,
 }: {
   value: ChassisSelection;
+  error?: string | undefined;
   onChange: (value: ChassisSelection) => void;
 }) {
   const id = useId();
@@ -24,6 +26,16 @@ export function ChassisSelector({
       </label>
       <select
         id={`${id}-brand`}
+        data-error-path={
+          !value.brandId ||
+          models.isPending ||
+          models.isError ||
+          !models.data?.length
+            ? "selection"
+            : undefined
+        }
+        aria-invalid={!!error}
+        aria-describedby={error ? id + "-error" : undefined}
         className="min-h-11 w-full rounded border p-2"
         value={value.brandId ?? ""}
         onChange={(event) =>
@@ -61,6 +73,13 @@ export function ChassisSelector({
           </label>
           <select
             id={`${id}-model`}
+            data-error-path={
+              value.brandId && models.isSuccess && !!models.data.length
+                ? "selection"
+                : undefined
+            }
+            aria-invalid={!!error}
+            aria-describedby={error ? id + "-error" : undefined}
             className="min-h-11 w-full rounded border p-2"
             value={value.modelId ?? ""}
             disabled={
@@ -103,6 +122,11 @@ export function ChassisSelector({
             <p>No active models for this brand.</p>
           )}
         </>
+      )}
+      {error && (
+        <InlineNotice tone="error" id={id + "-error"}>
+          {error}
+        </InlineNotice>
       )}
     </fieldset>
   );

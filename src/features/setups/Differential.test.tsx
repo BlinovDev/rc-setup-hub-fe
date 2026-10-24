@@ -1,3 +1,5 @@
+import { waitFor } from "@testing-library/react";
+import { setupControl, setupButton } from "./form/testDriver";
 import type { components } from "../../api/generated/schema";
 import { fireEvent, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
@@ -27,7 +29,7 @@ const setup: Schemas["Setup"] = {
 };
 const editPath = `/my/setups/${setup.id}/edit`;
 const fill = (label: string, value: string) =>
-  fireEvent.change(screen.getByLabelText(label), { target: { value } });
+  fireEvent.change(setupControl(label), { target: { value } });
 function detail(value = setup) {
   server.use(
     http.get(`${apiUrl}/api/v1/setups/${setup.id}`, () =>
@@ -55,20 +57,18 @@ it("creates optional differential through the shared credentialed client, indepe
   );
   renderSetupRoute("/my/setups/new");
   await screen.findByLabelText("Title");
+  setupControl("Rear differential model");
   fill("Title", "Differential");
   const user = userEvent.setup();
-  await user.selectOptions(
-    screen.getByLabelText("Rear differential type"),
-    "gear",
-  );
-  const manufacturer = screen.getByLabelText("Rear differential manufacturer");
+  await user.selectOptions(setupControl("Rear differential type"), "gear");
+  const manufacturer = setupControl("Rear differential manufacturer");
   await within(manufacturer).findByRole("option", { name: "MST" });
   await user.selectOptions(manufacturer, activeBrand);
   fill("Rear differential model", " Diff ");
   fill("Rear differential tuning notes", " Oil 10000\nTwo gears ");
   fill("Front toe (degrees)", "0");
   fill("Rear camber (degrees)", "-1,25");
-  await user.click(screen.getByRole("button", { name: "Create setup" }));
+  await user.click(setupButton({ name: "Create setup" }));
   await screen.findByText("Setup created.");
   expect(received).toMatchObject({
     chassis_model_id: null,
@@ -101,20 +101,17 @@ it("preserves an inactive historical manufacturer and full data on unrelated edi
   );
   renderSetupRoute(editPath);
   await screen.findByLabelText("Title");
+  setupControl("Rear differential model");
   expect(
     screen.getByText("Manufacturer: Historical manufacturer"),
   ).toBeVisible();
-  expect(screen.getByLabelText("Rear differential type")).toHaveValue("lsd");
-  expect(screen.getByLabelText("Rear differential model")).toHaveValue(
-    "Rear diff",
-  );
-  expect(screen.getByLabelText("Rear differential tuning notes")).toHaveValue(
+  expect(setupControl("Rear differential type")).toHaveValue("lsd");
+  expect(setupControl("Rear differential model")).toHaveValue("Rear diff");
+  expect(setupControl("Rear differential tuning notes")).toHaveValue(
     "Spring preload\nTwo gears",
   );
   fill("Title", "Unrelated title");
-  await userEvent
-    .setup()
-    .click(screen.getByRole("button", { name: "Save setup" }));
+  await userEvent.setup().click(setupButton({ name: "Save setup" }));
   await screen.findByText("Setup saved.");
   expect(received?.data).toEqual(setup.data);
   expect(received).not.toHaveProperty("chassis_model_id");
@@ -134,31 +131,24 @@ it("retries catalog failure, retains historical selection, and cancels manufactu
   );
   renderSetupRoute(editPath);
   await screen.findByLabelText("Title");
+  setupControl("Rear differential model");
   fill("Rear differential model", "Unsaved model");
   const user = userEvent.setup();
-  await user.click(
-    screen.getByRole("button", { name: "Change differential manufacturer" }),
-  );
+  await user.click(setupButton({ name: "Change differential manufacturer" }));
   expect(await screen.findByText(/Unable to load manufacturers/)).toBeVisible();
   expect(screen.queryByText("Private server detail")).not.toBeInTheDocument();
-  expect(screen.getByLabelText("Rear differential manufacturer")).toHaveValue(
+  expect(setupControl("Rear differential manufacturer")).toHaveValue(
     testSetup.chassis.brand_id,
   );
-  await user.click(
-    screen.getByRole("button", { name: "Retry differential manufacturers" }),
-  );
-  const selector = screen.getByLabelText("Rear differential manufacturer");
+  await user.click(setupButton({ name: "Retry differential manufacturers" }));
+  const selector = setupControl("Rear differential manufacturer");
   await within(selector).findByRole("option", { name: "MST" });
   await user.selectOptions(selector, activeBrand);
-  await user.click(
-    screen.getByRole("button", { name: "Cancel manufacturer change" }),
-  );
+  await user.click(setupButton({ name: "Cancel manufacturer change" }));
   expect(
     screen.getByText("Manufacturer: Historical manufacturer"),
   ).toBeVisible();
-  expect(screen.getByLabelText("Rear differential model")).toHaveValue(
-    "Unsaved model",
-  );
+  expect(setupControl("Rear differential model")).toHaveValue("Unsaved model");
   expect(requests).toBe(2);
 });
 
@@ -174,21 +164,16 @@ it("clears differential fields, then cancels a new manufacturer choice without r
   );
   renderSetupRoute(editPath);
   await screen.findByLabelText("Title");
+  setupControl("Rear differential model");
   const user = userEvent.setup();
-  await user.click(
-    screen.getByRole("button", { name: "Clear rear differential" }),
-  );
-  await user.click(
-    screen.getByRole("button", { name: "Change differential manufacturer" }),
-  );
-  const selector = screen.getByLabelText("Rear differential manufacturer");
+  await user.click(setupButton({ name: "Clear rear differential" }));
+  await user.click(setupButton({ name: "Change differential manufacturer" }));
+  const selector = setupControl("Rear differential manufacturer");
   await within(selector).findByRole("option", { name: "MST" });
   await user.selectOptions(selector, activeBrand);
-  await user.click(
-    screen.getByRole("button", { name: "Cancel manufacturer change" }),
-  );
+  await user.click(setupButton({ name: "Cancel manufacturer change" }));
   expect(screen.getByText("Manufacturer: Not specified")).toBeVisible();
-  await user.click(screen.getByRole("button", { name: "Save setup" }));
+  await user.click(setupButton({ name: "Save setup" }));
   await screen.findByText("Setup saved.");
   expect(received?.data).toEqual(testSetup.data);
 });
@@ -204,20 +189,18 @@ it("associates errors, focuses invalid model, blocks writes and clears errors on
   );
   renderSetupRoute(editPath);
   await screen.findByLabelText("Title");
+  setupControl("Rear differential model");
   fill("Rear differential model", "界".repeat(201));
   const user = userEvent.setup();
-  await user.click(screen.getByRole("button", { name: "Save setup" }));
-  const model = screen.getByLabelText("Rear differential model");
-  expect(model).toHaveFocus();
+  await user.click(setupButton({ name: "Save setup" }));
+  const model = setupControl("Rear differential model");
+  await waitFor(() => expect(model).toHaveFocus());
   expect(model).toHaveAttribute("aria-invalid", "true");
   expect(model).toHaveAccessibleDescription("Use at most 200 characters.");
   expect(writes).toBe(0);
-  await user.click(
-    screen.getByRole("button", { name: "Clear rear differential" }),
-  );
-  expect(model).toHaveValue("");
-  expect(model).toHaveAttribute("aria-invalid", "false");
-  await user.click(screen.getByRole("button", { name: "Save setup" }));
+  await user.click(setupButton({ name: "Clear rear differential" }));
+  expect(model).not.toBeInTheDocument();
+  await user.click(setupButton({ name: "Save setup" }));
   await screen.findByText("Setup saved.");
   expect(writes).toBe(1);
 });
