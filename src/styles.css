@@ -550,11 +550,9 @@
     position: relative;
   }
   .photo-info-panel {
-    position: absolute;
-    top: 100%;
-    right: 0;
-    z-index: 70;
-    width: min(22rem, calc(100vw - 4rem));
+    position: static;
+    width: 100%;
+    margin-top: 0.75rem;
     max-height: 60dvh;
     overflow-y: auto;
     overflow-wrap: anywhere;

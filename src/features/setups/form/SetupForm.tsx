@@ -1,6 +1,6 @@
 import { EditorPresentation, type FormIssue } from "./editorPresentation";
 import { ComponentCard } from "./ComponentCard";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import {
   sections,
   sectionForPath,
@@ -49,6 +49,15 @@ export function SetupForm({
   const saving = useRef(false);
   const [savedVersion, setSavedVersion] = useState(0);
   const [active, setActive] = useState<SectionId>("general");
+  const [focusRequest, setFocusRequest] = useState<{
+    section?: SectionId;
+    path?: string;
+  } | null>(null);
+  useLayoutEffect(() => {
+    if (focusRequest?.path) focusPath(root.current, focusRequest.path);
+    else if (focusRequest?.section)
+      document.getElementById("section-" + focusRequest.section)?.focus();
+  }, [focusRequest]);
   const [opened, setOpened] = useState<Record<string, boolean>>({});
   const [issues, setIssues] = useState<{ path: string; message: string }[]>([]);
   useEffect(() => {
@@ -56,16 +65,14 @@ export function SetupForm({
   }, [form.formState.isDirty, onDirtyChange]);
   function select(section: SectionId) {
     setActive(section);
-    requestAnimationFrame(() =>
-      document.getElementById("section-" + section)?.focus(),
-    );
+    setFocusRequest({ section });
   }
   function reveal(path: string) {
     setActive(sectionForPath(path));
     const component = componentForPath(path);
     if (component)
       setOpened((current) => ({ ...current, [component.id]: true }));
-    requestAnimationFrame(() => focusPath(root.current, path));
+    setFocusRequest({ path });
   }
   function validateComponent(paths: string[]) {
     const parsed = setupFormSchema.safeParse(form.getValues());
@@ -113,9 +120,7 @@ export function SetupForm({
             ? "differential"
             : undefined;
       if (id) setOpened((current) => ({ ...current, [id]: true }));
-      requestAnimationFrame(() =>
-        document.getElementById("section-" + section)?.focus(),
-      );
+      setFocusRequest({ section });
     };
     followAnchor();
     window.addEventListener("hashchange", followAnchor);

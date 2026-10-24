@@ -128,8 +128,9 @@ semantics plus underline/border. Logout preserves pending/error/retry behavior.
 ## Photos and crop editor
 
 Paperclip activates a uniquely identified native multi-file picker. Formats, byte/
-count limits and conversion/persistence help live in an info popover usable by hover,
-focus or tap; keep it hoverable, wrapped and scrollable. Escape/Close/outside pointer/
+count limits and conversion/persistence help live in an inline panel usable by hover,
+focus or tap. It expands in document flow without covering essentials; keep it
+hoverable, wrapped and scrollable. Escape/Close/outside pointer/
 focus departure dismiss; Escape/Close returns trigger focus. Count/remaining capacity,
 queue progress/errors/retry/removal stay visible outside help. Controls do not submit
 setup. Photo refresh must not remount/reset the technical form.

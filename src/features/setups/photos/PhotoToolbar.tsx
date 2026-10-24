@@ -42,7 +42,15 @@ export function PhotoToolbar({
     };
   }, [open]);
   return (
-    <>
+    <div
+      ref={info}
+      onMouseLeave={() => {
+        if (!info.current?.contains(document.activeElement)) setOpen(false);
+      }}
+      onBlur={(event) => {
+        if (!event.currentTarget.contains(event.relatedTarget)) setOpen(false);
+      }}
+    >
       <div className="photo-toolbar">
         <h3 className="font-semibold">Photos</h3>
         <p role="status">
@@ -84,19 +92,7 @@ export function PhotoToolbar({
               event.target.value = "";
             }}
           />
-          <div
-            ref={info}
-            className="photo-info"
-            onMouseEnter={() => setOpen(true)}
-            onMouseLeave={() => {
-              if (!info.current?.contains(document.activeElement))
-                setOpen(false);
-            }}
-            onBlur={(event) => {
-              if (!event.currentTarget.contains(event.relatedTarget))
-                setOpen(false);
-            }}
-          >
+          <div className="photo-info" onMouseEnter={() => setOpen(true)}>
             <Button
               ref={trigger}
               aria-label="Photo information"
@@ -118,34 +114,6 @@ export function PhotoToolbar({
                 <path d="M12 11v6M12 7v2" />
               </svg>
             </Button>
-            {open && (
-              <div
-                id={`${id}-info`}
-                className="photo-info-panel"
-                role="region"
-                aria-label="Photo information details"
-              >
-                <p>
-                  JPEG, PNG, WebP or HEIC/HEIF · 25 MiB per file · up to 10
-                  photos. The server limits decoded images to 50 MP, converts
-                  the first still image, corrects orientation and removes
-                  metadata.
-                </p>
-                <p>
-                  {saved
-                    ? "Photo uploads, cover changes and deletions save immediately. Setup fields use Save setup separately. Leaving editing does not undo saved photo changes. Unsaved queued files are lost if you leave."
-                    : "Photos are queued locally. Create setup saves your setup once, then uploads the queue. Completed uploads are retained if another file fails. Queued files are lost if you leave."}
-                </p>
-                <Button
-                  onClick={() => {
-                    trigger.current?.focus();
-                    setOpen(false);
-                  }}
-                >
-                  Close photo information
-                </Button>
-              </div>
-            )}
           </div>
         </div>
       </div>
@@ -157,6 +125,33 @@ export function PhotoToolbar({
           ? "Photo changes save immediately."
           : "Queued photos upload after Create setup."}
       </p>
-    </>
+      {open && (
+        <div
+          id={`${id}-info`}
+          className="photo-info-panel"
+          role="region"
+          aria-label="Photo information details"
+        >
+          <p>
+            JPEG, PNG, WebP or HEIC/HEIF · 25 MiB per file · up to 10 photos.
+            The server limits decoded images to 50 MP, converts the first still
+            image, corrects orientation and removes metadata.
+          </p>
+          <p>
+            {saved
+              ? "Photo uploads, cover changes and deletions save immediately. Setup fields use Save setup separately. Leaving editing does not undo saved photo changes. Unsaved queued files are lost if you leave."
+              : "Photos are queued locally. Create setup saves your setup once, then uploads the queue. Completed uploads are retained if another file fails. Queued files are lost if you leave."}
+          </p>
+          <Button
+            onClick={() => {
+              trigger.current?.focus();
+              setOpen(false);
+            }}
+          >
+            Close photo information
+          </Button>
+        </div>
+      )}
+    </div>
   );
 }
