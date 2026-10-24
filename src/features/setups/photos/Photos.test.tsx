@@ -357,9 +357,7 @@ it("cover/delete save immediately, preserve unsaved technical values, and narrow
   await user.type(setupControl("Front camber (degrees)"), "-6,8");
   await user.clear(setupControl("Front top arm — Rear spacers (mm)"));
   await user.type(setupControl("Front top arm — Rear spacers (mm)"), "5,3");
-  await user.click(
-    await screen.findByRole("button", { name: "Make photo 2 cover" }),
-  );
+  await user.click(setupButton({ name: "Make photo 2 cover" }));
   await waitFor(() => expect(stored[1]?.is_cover).toBe(true));
   await waitFor(() =>
     expect(setupButton({ name: "Make photo 1 cover" })).toBeEnabled(),
@@ -629,9 +627,7 @@ it("a stale cover failure refreshes gallery state while keeping unsaved fields",
   fireEvent.change(setupControl("Rear differential tuning notes"), {
     target: { value: "Unsaved differential tuning" },
   });
-  await user.click(
-    await screen.findByRole("button", { name: "Make photo 2 cover" }),
-  );
+  await user.click(setupButton({ name: "Make photo 2 cover" }));
   await screen.findByText(
     "Photo or setup not found or unavailable. Reload photos.",
   );

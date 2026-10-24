@@ -26,7 +26,16 @@ export function setupFormDriver(page) {
     if (/^(motor|esc|servo|gyro|radio|electronics)$/.test(text))
       return ["Electronics", "Electronics"];
     if (text === "notes") return ["General", "Setup notes"];
-    return [/camber|caster|toe/.test(text) ? label : null, null];
+    return [
+      /camber|caster|toe/.test(text)
+        ? label
+        : /^(title|notes|visibility|brand|model)$|chassis|photo|thumbnail|crop/.test(
+              text,
+            )
+          ? "General"
+          : null,
+      null,
+    ];
   };
   const select = async (label) => {
     if (!label) return;
@@ -78,7 +87,31 @@ export function setupFormDriver(page) {
           .getAttribute("aria-current")))
     )
       await select(section);
-    if (component) {
+    if (
+      component &&
+      (await page.locator(".setup-edit-layout").count()) &&
+      component !== "Setup notes"
+    ) {
+      const existing = page.locator(
+        `.component-card[aria-label="${component}"]`,
+      );
+      if (!(await existing.count())) {
+        const chooser = page.getByRole("button", {
+          name: "Add component",
+          exact: true,
+        });
+        if ((await chooser.getAttribute("aria-expanded")) !== "true")
+          await chooser.click();
+        await page
+          .getByRole("button", { name: "Add " + component, exact: true })
+          .click();
+      }
+    }
+    if (
+      component &&
+      (component !== "Setup notes" ||
+        !(await page.locator(".setup-edit-layout").count()))
+    ) {
       const card = page.locator(`.component-card[aria-label="${component}"]`);
       const edit = card.getByRole("button", {
         name: new RegExp("^(Edit|Add component:) " + component + "$"),
@@ -114,6 +147,18 @@ export function setupFormDriver(page) {
         });
         if (await confirm.count()) return confirm;
         // Empty editors clear immediately; return the now-visible Add action.
+        if (await page.locator(".setup-edit-layout").count()) {
+          const chooser = page.getByRole("button", {
+            name: "Add component",
+            exact: true,
+          });
+          if ((await chooser.getAttribute("aria-expanded")) !== "true")
+            await chooser.click();
+          return page.getByRole("button", {
+            name: "Add " + component,
+            exact: true,
+          });
+        }
         return page.getByRole("button", {
           name: "Add component: " + component,
           exact: true,

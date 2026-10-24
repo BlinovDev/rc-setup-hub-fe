@@ -36,7 +36,14 @@ function destination(matcher: Matcher | ByRoleOptions["name"] | undefined) {
   else if (text === "notes") id = "notes";
   const spec = componentSpecs.find((c) => c.id === id);
   const section =
-    spec?.section ?? (/camber|caster|toe/.test(text) ? side : undefined);
+    spec?.section ??
+    (/camber|caster|toe/.test(text)
+      ? side
+      : /^(title|notes|visibility|brand|model)$|chassis|photo|thumbnail|crop/.test(
+            text,
+          )
+        ? "general"
+        : undefined);
   const label = section
     ? (
         {
@@ -64,7 +71,28 @@ function prepare(matcher: Matcher | ByRoleOptions["name"] | undefined) {
     )
       fireEvent.click(target);
   }
-  if (d.spec) {
+  if (
+    d.spec &&
+    d.id !== "notes" &&
+    document.querySelector(".setup-edit-layout") &&
+    !document.querySelector(`[data-component="${d.id}"]`)
+  ) {
+    const pane = document.querySelector(".setup-section-pane")!;
+    const trigger = within(pane as HTMLElement).getByRole("button", {
+      name: "Add component",
+    });
+    if (trigger.getAttribute("aria-expanded") !== "true")
+      fireEvent.click(trigger);
+    fireEvent.click(
+      within(pane as HTMLElement).getByRole("button", {
+        name: "Add " + d.spec.label,
+      }),
+    );
+  }
+  if (
+    d.spec &&
+    (d.id !== "notes" || !document.querySelector(".setup-edit-layout"))
+  ) {
     const region = document.querySelector<HTMLElement>(
       `[data-component="${d.id}"]`,
     );
@@ -103,9 +131,15 @@ export function setupButton(options: ByRoleOptions) {
       within(region).queryByRole("button", {
         name: "Confirm remove " + d.spec.label,
       }) ??
-      within(region).getByRole("button", {
-        name: "Add component: " + d.spec.label,
-      })
+      (() => {
+        if (!document.querySelector(".setup-edit-layout"))
+          return within(region).getByRole("button", {
+            name: "Add component: " + d.spec!.label,
+          });
+        const chooser = screen.getByRole("button", { name: "Add component" });
+        fireEvent.click(chooser);
+        return screen.getByRole("button", { name: "Add " + d.spec!.label });
+      })()
     );
   }
   if (/^Add (top|lower) arm spacing/i.test(text) && d.spec) {

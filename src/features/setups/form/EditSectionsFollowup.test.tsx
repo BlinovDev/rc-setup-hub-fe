@@ -60,7 +60,7 @@ it("uses distinct vertical label/value rows for long, zero-only and partial edit
   ).not.toBeInTheDocument();
   expect(
     within(wheel).getByRole("button", { name: "Remove Front wheel" }),
-  ).toHaveClass("ui-button-secondary", "subdued-destructive");
+  ).toHaveClass("ui-button-secondary", "component-remove-icon");
 });
 it.each(sections)(
   "confirms/cancels clearing only %s; full-document save preserves every unrelated section",
@@ -71,7 +71,7 @@ it.each(sections)(
       target: { value: "Unrelated draft" },
     });
     select(label);
-    expect(change).toHaveBeenLastCalledWith(true);
+    expect(change).toHaveBeenLastCalledWith(id !== "general");
     const trigger = screen.getByRole("button", {
       name: `Clear current section: ${label}`,
     });
@@ -102,9 +102,7 @@ it.each(sections)(
     if (id === "electronics") delete expected.data!.electronics;
     expect(after).toEqual(expected);
     expect(after.title).toBe("Unrelated draft");
-    await user.click(
-      screen.getByRole("button", { name: "Back to edit overview" }),
-    );
+    select("General");
     expect(change).toHaveBeenLastCalledWith(false);
   },
 );
@@ -132,8 +130,9 @@ it("clears only current-section errors and resets cleared link arrays without lo
     screen.getByRole("button", { name: "Confirm clear current section" }),
   );
   expect(screen.getByLabelText("Front camber (degrees)")).toHaveValue("");
+  await user.click(screen.getByRole("button", { name: "Add component" }));
   await user.click(
-    screen.getByRole("button", { name: "Add component: Front link lengths" }),
+    screen.getByRole("button", { name: "Add Front link lengths" }),
   );
   expect(screen.queryByLabelText("Front link 1 name")).not.toBeInTheDocument();
   await user.click(screen.getByRole("button", { name: "Add front link" }));

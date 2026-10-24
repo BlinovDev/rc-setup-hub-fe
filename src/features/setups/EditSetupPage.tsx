@@ -95,12 +95,6 @@ function SetupEditor({
         dirty={dirty || queue.items.some((item) => item.state !== "uploaded")}
         allowExit={allowExit}
       />
-      <PhotoManager
-        key={setupId}
-        setupId={setupId}
-        ownerId={user.id}
-        queue={queue}
-      />
       {saved && <InlineNotice>Setup saved.</InlineNotice>}
       {update.isError && (
         <InlineNotice tone="error">
@@ -127,7 +121,15 @@ function SetupEditor({
         </Button>
       )}
       <SetupForm
-        key={`${setupId}-${revision}`}
+        resetVersion={revision}
+        generalPhotos={
+          <PhotoManager
+            key={setupId}
+            setupId={setupId}
+            ownerId={user.id}
+            queue={queue}
+          />
+        }
         onDirtyChange={setDirty}
         onSectionViewChange={setSectionView}
         onSaved={() => {

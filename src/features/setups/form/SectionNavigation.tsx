@@ -53,11 +53,19 @@ export function SectionNavigation({
         ref={trigger}
         className={`sections-trigger${sticky ? " sections-trigger-sticky" : ""}`}
         type="button"
+        aria-label={
+          sticky
+            ? `Sections · ${sections.find(([key]) => key === active)?.[1]}`
+            : undefined
+        }
         aria-expanded={open}
         aria-controls={id}
         onClick={() => setOpen(true)}
       >
-        <span>Sections · {sections.find(([key]) => key === active)?.[1]}</span>
+        <span>
+          {!sticky && "Sections · "}
+          {sections.find(([key]) => key === active)?.[1]}
+        </span>
         {sticky && (
           <span aria-hidden="true" className="section-chevron">
             ⌄

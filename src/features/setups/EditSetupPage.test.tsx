@@ -351,17 +351,14 @@ it("keeps whole-setup deletion at edit overview and section clearing scoped insi
   renderSetupRoute(route);
   await screen.findByLabelText("Title");
   expect(screen.getByRole("button", { name: "Delete setup" })).toBeVisible();
-  const user = userEvent.setup();
-  await user.click(screen.getByRole("button", { name: "Edit sections" }));
+  setupControl("Front toe (degrees)");
   expect(
     screen.queryByRole("button", { name: "Delete setup" }),
   ).not.toBeInTheDocument();
   expect(
-    screen.getByRole("button", { name: "Clear current section: General" }),
+    screen.getByRole("button", { name: "Clear current section: Front" }),
   ).toBeVisible();
-  await user.click(
-    screen.getByRole("button", { name: "Back to edit overview" }),
-  );
+  setupControl("Title");
   expect(screen.getByRole("button", { name: "Delete setup" })).toBeVisible();
 });
 it("replaces a successful section editor in history; Back returns to the prior overview without stale draft", async () => {

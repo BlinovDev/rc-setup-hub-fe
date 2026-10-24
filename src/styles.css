@@ -878,3 +878,230 @@
 .section-clear {
   margin-bottom: 1rem;
 }
+
+/* Existing-setup editor only. Navigation precedes General photos and fields;
+   hidden sections stay mounted, including the independent photo manager. */
+.setup-edit-layout {
+  margin-top: 1rem;
+}
+.setup-edit-content {
+  min-width: 0;
+}
+.setup-edit-layout .setup-workspace {
+  display: block;
+}
+.setup-edit-layout .setup-section-pane {
+  min-width: 0;
+}
+.setup-edit-layout .general-photos h2 {
+  font-size: 1.25rem;
+  font-weight: 700;
+  margin-bottom: 0.75rem;
+}
+.setup-edit-layout .general-photos {
+  margin-bottom: 1rem;
+}
+.setup-edit-layout .edit-setup-form {
+  margin-top: 0.75rem;
+}
+.setup-edit-layout :is(input, textarea, select, button, h2) {
+  scroll-margin-top: calc(4.25rem + env(safe-area-inset-top, 0px));
+}
+.setup-edit-layout fieldset {
+  min-width: 0;
+}
+.setup-edit-layout #setup-essentials {
+  border: 0;
+  padding: 0;
+}
+.setup-edit-layout #setup-essentials > legend {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+}
+.setup-edit-layout .section-clear {
+  margin-block: 0.25rem 0.75rem;
+}
+.setup-edit-layout .section-clear > button {
+  font-size: 0.875rem;
+  background: transparent;
+  border: 0;
+  padding-inline: 0.25rem;
+  font-weight: 500;
+}
+.setup-edit-layout .setup-section-pane section > fieldset {
+  border-color: #e2e8f0;
+  padding: 0.75rem;
+  margin-block: 0.75rem;
+}
+.setup-edit-layout .form-actions {
+  padding: 0.35rem 0.75rem calc(0.35rem + env(safe-area-inset-bottom));
+}
+.setup-edit-layout .compact-component {
+  position: relative;
+  padding: 0;
+  border: 1px solid #e2e8f0;
+  border-radius: 0.5rem;
+  margin-block: 0.5rem;
+}
+.compact-component .component-preview {
+  position: relative;
+  min-height: 52px;
+  padding: 0.75rem;
+  padding-right: 3.5rem;
+  border-radius: inherit;
+}
+.compact-component .component-heading {
+  display: block;
+}
+.compact-component .component-heading h3 {
+  font-size: 0.95rem;
+  padding-right: 2rem;
+}
+.component-edit-hint {
+  position: absolute;
+  top: 0.85rem;
+  right: 3.5rem;
+  color: #475569;
+  font-size: 0.75rem;
+}
+.component-edit-target {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border-radius: inherit;
+  cursor: pointer;
+  background: transparent;
+}
+.component-edit-target:hover {
+  background: rgb(15 23 42 / 3%);
+}
+.component-edit-target:focus-visible {
+  outline: 3px solid #0369a1;
+  outline-offset: 2px;
+}
+.compact-component .component-remove-icon {
+  position: absolute;
+  top: 0.15rem;
+  right: 0.15rem;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: #64748b;
+  z-index: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.compact-component .component-remove-icon:hover {
+  background: #f1f5f9;
+  color: #991b1b;
+}
+.component-status {
+  font-size: 0.75rem;
+  color: #475569;
+}
+.compact-component .component-summary {
+  margin-block: 0.35rem 0;
+}
+.compact-component .component-summary-rows {
+  gap: 0.15rem;
+}
+.compact-component .component-summary-rows > div {
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 0.3rem;
+}
+.compact-component .component-summary-rows dt {
+  max-width: 55%;
+  flex-shrink: 0;
+}
+.compact-component .component-summary-rows dd {
+  flex: 1;
+  min-width: 0;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+  overflow: hidden;
+}
+
+.compact-component .component-editor {
+  padding: 0 0.75rem 0.75rem;
+  margin-top: 0.25rem;
+}
+.compact-component .component-editor fieldset {
+  border: 0;
+  padding: 0;
+}
+.compact-component .component-help {
+  font-size: 0.8rem;
+  color: #475569;
+}
+.component-editor-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+.compact-component .inline-confirmation {
+  margin: 0.75rem;
+}
+.add-component-chooser {
+  margin-block: 0.25rem 0.75rem;
+}
+.add-component-chooser > button {
+  border: 0;
+  padding-inline: 0.25rem;
+  font-weight: 550;
+  color: #075985;
+  background: transparent;
+}
+.available-components {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.25rem;
+  margin-top: 0.25rem;
+  padding: 0.5rem;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 0.5rem;
+}
+.available-components button {
+  text-align: left;
+  justify-content: flex-start;
+  border: 0;
+  background: transparent;
+  font-weight: 500;
+}
+@media (max-width: 767px) {
+  .setup-edit-layout > .sections-trigger-sticky {
+    min-height: 50px;
+    height: 50px;
+    padding: 0.5rem 0.75rem;
+    border: 1px solid #cbd5e1;
+    background: #f8fafc;
+    box-shadow: 0 1px 3px rgb(15 23 42 / 8%);
+    margin-bottom: 1rem;
+  }
+}
+@media (min-width: 768px) {
+  .setup-edit-layout {
+    display: grid;
+    grid-template-columns: 11rem minmax(0, 1fr);
+    gap: 1.25rem;
+    align-items: start;
+  }
+  .setup-edit-layout > .section-sidebar {
+    top: 1rem;
+  }
+  .setup-edit-layout .form-actions {
+    padding: 0.5rem;
+  }
+  .available-components {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
