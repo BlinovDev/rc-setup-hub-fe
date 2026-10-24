@@ -18,10 +18,22 @@ export function EditSetupPage({
 }: {
   user: components["schemas"]["User"];
 }) {
+  const { setupId = "" } = useParams();
+  return <SetupEditor key={setupId} setupId={setupId} user={user} />;
+}
+
+// A different setup is a different document/queue lifetime. Section switches and
+// successful saves keep this owner mounted; confirmed cross-document exits do not.
+function SetupEditor({
+  user,
+  setupId,
+}: {
+  user: components["schemas"]["User"];
+  setupId: string;
+}) {
   const [dirty, setDirty] = useState(false);
   const allowExit = useRef(false);
   const queue = usePhotoQueue();
-  const { setupId = "" } = useParams();
   const valid = z.string().uuid().safeParse(setupId).success;
   const detail = useSetup(setupId, valid);
   const update = usePatchSetup(setupId);

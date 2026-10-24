@@ -1,4 +1,4 @@
-import { fireEvent, screen } from "@testing-library/react";
+import { act, fireEvent, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { http, HttpResponse } from "msw";
 import { expect, it } from "vitest";
@@ -125,4 +125,45 @@ it("focuses and associates an incomplete chassis selection with the real model c
     "aria-invalid",
     "true",
   );
+});
+
+it("confirmed cross-document navigation resets the field and photo-queue owner", async () => {
+  const otherId = "11111111-1111-4111-8111-111111111111";
+  server.use(
+    http.get(`${apiUrl}/api/v1/setups/:id`, ({ params }) =>
+      HttpResponse.json(
+        params.id === otherId
+          ? { ...testSetup, id: otherId, title: "Other document" }
+          : testSetup,
+      ),
+    ),
+    http.get(`${apiUrl}/api/v1/setups/:id/photos`, () => HttpResponse.json([])),
+  );
+  const { router } = renderSetupRoute(`/my/setups/${testSetup.id}/edit`);
+  await screen.findByLabelText("Title");
+  fireEvent.change(screen.getByLabelText("Title"), {
+    target: { value: "First document draft" },
+  });
+  fireEvent.change(screen.getByLabelText("Photo files"), {
+    target: {
+      files: [
+        new File(["original"], "first-document.jpg", { type: "image/jpeg" }),
+      ],
+    },
+  });
+  act(() => {
+    void router.navigate(`/my/setups/${otherId}/edit`);
+  });
+  await screen.findByRole("dialog", { name: "Leave unsaved changes?" });
+  await userEvent
+    .setup()
+    .click(screen.getByRole("button", { name: "Discard draft and leave" }));
+  await screen.findByDisplayValue("Other document");
+  expect(screen.queryByText("first-document.jpg")).not.toBeInTheDocument();
+  expect(
+    screen.queryByDisplayValue("First document draft"),
+  ).not.toBeInTheDocument();
+  const event = new Event("beforeunload", { cancelable: true });
+  window.dispatchEvent(event);
+  expect(event.defaultPrevented).toBe(false);
 });
