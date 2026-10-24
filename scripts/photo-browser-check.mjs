@@ -1893,6 +1893,7 @@ try {
       "General draft retained",
     );
     await geometry();
+    await page.evaluate(() => window.scrollTo(0, 0));
     await page.screenshot({
       path: `artifacts/photo-qa/compact-general-${width}x${height}.png`,
       fullPage: true,
@@ -1902,6 +1903,7 @@ try {
         .locator(".setup-editor")
         .evaluate((el) => (el.style.zoom = "2"));
       await geometry();
+      await page.evaluate(() => window.scrollTo(0, 0));
       await page.screenshot({
         path: "artifacts/photo-qa/compact-edit-200-percent-form-zoom.png",
         fullPage: true,
@@ -1939,6 +1941,9 @@ try {
       exact: true,
     });
     await choices.waitFor({ state: "visible" });
+    await page.screenshot({
+      path: `artifacts/photo-qa/compact-add-choices-${width}x${height}.png`,
+    });
     assert.equal(
       await choices
         .getByRole("button", { name: "Add Front wheel", exact: true })
@@ -1963,6 +1968,9 @@ try {
     await page
       .getByLabel("Front wheel model", { exact: true })
       .fill("Uncommitted draft");
+    await page.screenshot({
+      path: `artifacts/photo-qa/compact-inline-editor-${width}x${height}.png`,
+    });
     await page
       .getByRole("button", { name: "Close Front wheel editor", exact: true })
       .click();
@@ -2013,6 +2021,7 @@ try {
       "preview fields must occupy separate vertical rows",
     );
     await geometry();
+    await page.evaluate(() => window.scrollTo(0, 0));
     await page.screenshot({
       path: `artifacts/photo-qa/compact-summary-rows-${width}x${height}.png`,
       fullPage: true,
