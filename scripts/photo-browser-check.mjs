@@ -83,6 +83,12 @@ try {
     // successful save. First prove the real new exit behavior; never bypass it.
     const savedAndReopen = async () => {
       await page.waitForURL(`**/setups/${id}`);
+      await page
+        .getByRole("link", { name: "Edit setup", exact: true })
+        .waitFor();
+      await page
+        .getByLabel("Title", { exact: true })
+        .waitFor({ state: "detached" });
       assert.equal(await page.getByLabel("Title", { exact: true }).count(), 0);
       await page.getByRole("link", { name: "Edit setup", exact: true }).click();
       await page.getByLabel("Title", { exact: true }).waitFor();
@@ -1904,6 +1910,10 @@ try {
     // Save has real route replacement; do not reopen through the helper here.
     await page.getByRole("button", { name: "Save setup", exact: true }).click();
     await page.waitForURL(`**/setups/${id}`);
+    await page.getByRole("link", { name: "Edit setup", exact: true }).waitFor();
+    await page
+      .getByLabel("Title", { exact: true })
+      .waitFor({ state: "detached" });
     assert.equal(await page.getByLabel("Title", { exact: true }).count(), 0);
     delete beforeClear.running_gear;
     assert.deepEqual(

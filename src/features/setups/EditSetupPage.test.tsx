@@ -174,6 +174,10 @@ it("preserves user edits on 409, blocks stale retry and reloads only after expli
   renderSetupRoute(route);
   await screen.findByLabelText("Title");
   input("Title", "Unsaved title");
+  input("Front toe (degrees)", "0,5");
+  expect(
+    screen.queryByRole("button", { name: "Delete setup" }),
+  ).not.toBeInTheDocument();
   const events = userEvent.setup();
   await events.click(setupButton({ name: "Save setup" }));
   expect(await screen.findByRole("alert")).toHaveTextContent(
@@ -191,6 +195,7 @@ it("preserves user edits on 409, blocks stale retry and reloads only after expli
     await screen.findByDisplayValue("New server title"),
   ).toBeInTheDocument();
   expect(setupButton({ name: "Save setup" })).toBeEnabled();
+  expect(screen.getByRole("button", { name: "Delete setup" })).toBeVisible();
   expect(patches).toBe(1);
 });
 it.each([400, 404])(

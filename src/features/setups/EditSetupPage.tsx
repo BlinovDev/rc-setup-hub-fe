@@ -116,6 +116,7 @@ function SetupEditor({
             const result = await detail.refetch();
             if (result.isSuccess) {
               update.reset();
+              setSectionView(false);
               setRevision((value) => value + 1);
               setSaved(false);
             }
