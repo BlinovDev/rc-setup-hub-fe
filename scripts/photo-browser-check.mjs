@@ -2034,11 +2034,22 @@ try {
     await page.keyboard.press("Escape");
     await choices.waitFor({ state: "hidden" });
     assert(await disclosure.evaluate((el) => el === document.activeElement));
+    // Exercise actual touch events on phone/landscape contexts, plus mouse on desktop.
+    if (mobile) {
+      await disclosure.tap();
+      await choices.waitFor({ state: "visible" });
+      await disclosure.tap();
+      await choices.waitFor({ state: "hidden" });
+    }
     // Selecting an actual choice opens exactly that editor and closes disclosure.
-    await disclosure.click();
-    await choices
-      .getByRole("button", { name: "Front hex", exact: true })
-      .click();
+    if (mobile) await disclosure.tap();
+    else await disclosure.click();
+    const chosenComponent = choices.getByRole("button", {
+      name: "Front hex",
+      exact: true,
+    });
+    if (mobile) await chosenComponent.tap();
+    else await chosenComponent.click();
     await page
       .getByLabel("Front hex offset (mm)", { exact: true })
       .waitFor({ state: "visible" });
