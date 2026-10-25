@@ -63,50 +63,23 @@ it("uses distinct vertical label/value rows for long, zero-only and partial edit
   ).toHaveClass("ui-button-secondary", "component-remove-icon");
 });
 it.each(sections)(
-  "confirms/cancels clearing only %s; full-document save preserves every unrelated section",
+  "keeps populated %s and unrelated sections intact without a bulk clear action",
   async (id, label) => {
     const { save, change } = show();
-    const user = userEvent.setup();
-    fireEvent.change(screen.getByLabelText("Title"), {
-      target: { value: "Unrelated draft" },
-    });
     select(label);
     expect(change).toHaveBeenLastCalledWith(id !== "general");
-    const trigger = screen.getByRole("button", {
-      name: `Clear current section: ${label}`,
-    });
-    await user.click(trigger);
-    expect(screen.getByRole("button", { name: "Cancel" })).toHaveFocus();
-    await user.click(screen.getByRole("button", { name: "Cancel" }));
-    expect(trigger).toHaveFocus();
-    await user.click(screen.getByRole("button", { name: "Save setup" }));
-    const before = serializePatch(save.mock.calls[0]![0]);
-    await user.click(trigger);
-    await user.click(
-      screen.getByRole("button", { name: "Confirm clear current section" }),
-    );
-    await user.click(screen.getByRole("button", { name: "Save setup" }));
-    const after = serializePatch(save.mock.calls[1]![0]);
-    const expected = structuredClone(before);
-    if (id === "general") expected.notes = null;
-    if (id === "front") {
-      delete expected.data!.suspension!.front;
-      delete expected.data!.front_steering_knuckle;
-    }
-    if (id === "rear") {
-      delete expected.data!.suspension!.rear;
-      delete expected.data!.rear_differential;
-    }
-    if (id === "shocks") delete expected.data!.shocks;
-    if (id === "wheels") delete expected.data!.running_gear;
-    if (id === "electronics") delete expected.data!.electronics;
-    expect(after).toEqual(expected);
-    expect(after.title).toBe("Unrelated draft");
-    select("General");
-    expect(change).toHaveBeenLastCalledWith(false);
+    expect(
+      screen.queryByRole("button", { name: /clear current section/i }),
+    ).not.toBeInTheDocument();
+    await userEvent
+      .setup()
+      .click(screen.getByRole("button", { name: "Save setup" }));
+    const body = serializePatch(save.mock.calls[0]![0]);
+    expect(body.data).toEqual(populated.data);
+    expect(body.notes).toBe(populated.notes);
   },
 );
-it("clears only current-section errors and resets cleared link arrays without losing unrelated invalid drafts", async () => {
+it("manual field edits and confirmed component removal retain unrelated values and errors", async () => {
   const { save } = show();
   const user = userEvent.setup();
   select("Front");
@@ -120,20 +93,21 @@ it("clears only current-section errors and resets cleared link arrays without lo
   await user.click(screen.getByRole("button", { name: "Save setup" }));
   expect(save).not.toHaveBeenCalled();
   select("Front");
+  await user.clear(screen.getByLabelText("Front camber (degrees)"));
+  await user.click(screen.getByRole("button", { name: "Save setup" }));
+  select("Front");
   await user.click(
-    screen.getByRole("button", { name: "Clear current section: Front" }),
+    screen.getByRole("button", { name: "Remove Front link lengths" }),
   );
-  expect(
-    screen.getByRole("group", { name: "Clear current section?" }),
-  ).toHaveTextContent("steering knuckle");
   await user.click(
-    screen.getByRole("button", { name: "Confirm clear current section" }),
+    screen.getByRole("button", { name: "Confirm remove Front link lengths" }),
   );
   expect(screen.getByLabelText("Front camber (degrees)")).toHaveValue("");
+  expect(
+    screen.getByRole("region", { name: "Front steering knuckle" }),
+  ).toHaveTextContent("Knuckle");
   await user.click(screen.getByRole("button", { name: "Add component" }));
-  await user.click(
-    screen.getByRole("button", { name: "Add Front link lengths" }),
-  );
+  await user.click(screen.getByRole("button", { name: "Front link lengths" }));
   expect(screen.queryByLabelText("Front link 1 name")).not.toBeInTheDocument();
   await user.click(screen.getByRole("button", { name: "Add front link" }));
   expect(screen.getByLabelText("Front link 1 name")).toHaveValue("");

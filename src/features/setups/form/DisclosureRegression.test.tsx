@@ -195,9 +195,7 @@ it("link removal confirmation stays with its stable row when an earlier empty ro
   select("Front");
   const user = userEvent.setup();
   await user.click(screen.getByRole("button", { name: "Add component" }));
-  await user.click(
-    screen.getByRole("button", { name: "Add Front link lengths" }),
-  );
+  await user.click(screen.getByRole("button", { name: "Front link lengths" }));
   for (let i = 0; i < 3; i++)
     await user.click(screen.getByRole("button", { name: "Add front link" }));
   fireEvent.change(screen.getByLabelText("Front link 2 name"), {

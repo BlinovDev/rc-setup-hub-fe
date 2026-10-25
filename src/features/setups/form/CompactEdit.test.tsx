@@ -118,14 +118,12 @@ it("offers one chooser for only absent components with axle context; close retai
   await user.click(screen.getByRole("button", { name: "Add component" }));
   const choices = screen.getByRole("group", { name: "Available components" });
   expect(
-    within(choices).queryByRole("button", { name: "Add Front hex" }),
+    within(choices).queryByRole("button", { name: "Front hex" }),
   ).not.toBeInTheDocument();
   expect(
-    within(choices).queryByRole("button", { name: "Add Rear differential" }),
+    within(choices).queryByRole("button", { name: "Rear differential" }),
   ).not.toBeInTheDocument();
-  await user.click(
-    within(choices).getByRole("button", { name: "Add Front tire" }),
-  );
+  await user.click(within(choices).getByRole("button", { name: "Front tire" }));
   const model = screen.getByLabelText("Front tire model");
   expect(model).toHaveValue("");
   expect(model).not.toHaveFocus();
@@ -134,7 +132,7 @@ it("offers one chooser for only absent components with axle context; close retai
   );
   await user.click(screen.getByRole("button", { name: "Add component" }));
   expect(
-    screen.queryByRole("button", { name: "Add Front tire" }),
+    screen.queryByRole("button", { name: "Front tire" }),
   ).not.toBeInTheDocument();
   await user.keyboard("{Escape}");
   expect(screen.getByRole("button", { name: "Add component" })).toHaveFocus();

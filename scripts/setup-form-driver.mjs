@@ -112,7 +112,7 @@ export function setupFormDriver(page) {
         if ((await chooser.getAttribute("aria-expanded")) !== "true")
           await chooser.click();
         await page
-          .getByRole("button", { name: "Add " + component, exact: true })
+          .getByRole("button", { name: component, exact: true })
           .click();
       }
     }
@@ -164,7 +164,7 @@ export function setupFormDriver(page) {
           if ((await chooser.getAttribute("aria-expanded")) !== "true")
             await chooser.click();
           return page.getByRole("button", {
-            name: "Add " + component,
+            name: component,
             exact: true,
           });
         }

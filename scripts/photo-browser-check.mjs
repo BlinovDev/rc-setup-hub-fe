@@ -1820,6 +1820,53 @@ try {
       placement,
       "General photos/title/chassis/notes/visibility must follow navigation in order",
     );
+    for (const name of [
+      "General",
+      "Front",
+      "Rear",
+      "Shocks",
+      "Wheels & tires",
+      "Electronics",
+    ]) {
+      await selectSection(name);
+      assert.equal(
+        await page
+          .getByRole("button", { name: /clear current section/i })
+          .count(),
+        0,
+      );
+      assert.equal(await page.locator(".section-clear").count(), 0);
+      if (name === "Front") {
+        await page.evaluate(() => window.scrollTo(0, 0));
+        await geometry();
+        await page.screenshot({
+          path: `artifacts/photo-qa/correction-front-${width}x${height}.png`,
+          fullPage: true,
+        });
+        const add = page.getByRole("button", {
+          name: "Add component",
+          exact: true,
+        });
+        if (await add.isEnabled()) {
+          await add.click();
+          const panel = page.getByRole("group", {
+            name: "Available components",
+            exact: true,
+          });
+          await panel.waitFor({ state: "visible" });
+          assert.equal(
+            await panel.getByRole("button", { name: /close/i }).count(),
+            0,
+          );
+          await page.screenshot({
+            path: `artifacts/photo-qa/correction-front-choices-${width}x${height}.png`,
+          });
+          await add.click();
+          await panel.waitFor({ state: "hidden" });
+        }
+      }
+    }
+    await selectSection("General");
     await page
       .getByLabel("Notes", { exact: true })
       .fill("General draft retained");
@@ -1946,19 +1993,70 @@ try {
     });
     assert.equal(
       await choices
-        .getByRole("button", { name: "Add Front wheel", exact: true })
+        .getByRole("button", { name: "Front wheel", exact: true })
         .count(),
       0,
     );
     assert.equal(
       await choices
-        .getByRole("button", { name: "Add Rear differential", exact: true })
+        .getByRole("button", { name: "Rear differential", exact: true })
         .count(),
       0,
     );
+    assert.equal(
+      await choices.getByRole("button", { name: /close/i }).count(),
+      0,
+    );
+    assert.deepEqual(await choices.getByRole("button").allTextContents(), [
+      "Front hex",
+      "Rear hex",
+    ]);
+    const disclosure = page.getByRole("button", {
+      name: "Add component",
+      exact: true,
+    });
+    assert.equal(await disclosure.getAttribute("aria-expanded"), "true");
+    const panelId = await disclosure.getAttribute("aria-controls");
+    assert.equal(await choices.getAttribute("id"), panelId);
+    await disclosure.click();
+    await choices.waitFor({ state: "hidden" });
+    assert.equal(await disclosure.getAttribute("aria-expanded"), "false");
+    await disclosure.focus();
+    await page.keyboard.press("Enter");
+    await choices.waitFor({ state: "visible" });
+    await page.keyboard.press(" ");
+    await choices.waitFor({ state: "hidden" });
+    await disclosure.click();
+    await choices.waitFor({ state: "visible" });
     await choices
-      .getByRole("button", { name: "Close component choices", exact: true })
+      .getByRole("button", { name: "Front hex", exact: true })
+      .focus();
+    await page.keyboard.press("Escape");
+    await choices.waitFor({ state: "hidden" });
+    assert(await disclosure.evaluate((el) => el === document.activeElement));
+    // Selecting an actual choice opens exactly that editor and closes disclosure.
+    await disclosure.click();
+    await choices
+      .getByRole("button", { name: "Front hex", exact: true })
       .click();
+    await page
+      .getByLabel("Front hex offset (mm)", { exact: true })
+      .waitFor({ state: "visible" });
+    await choices.waitFor({ state: "hidden" });
+    await page
+      .getByRole("button", { name: "Close Front hex editor", exact: true })
+      .click();
+    await page
+      .getByLabel("Front hex offset (mm)", { exact: true })
+      .waitFor({ state: "hidden" });
+    await disclosure.click();
+    await choices.waitFor({ state: "visible" });
+    assert.deepEqual(await choices.getByRole("button").allTextContents(), [
+      "Rear hex",
+    ]);
+    await disclosure.click();
+    await choices.waitFor({ state: "hidden" });
+
     const wholeCard = page.getByRole("button", {
       name: "Edit Front wheel",
       exact: true,
@@ -2072,19 +2170,7 @@ try {
       await sheet.waitFor({ state: "hidden" });
       assert(await strip.evaluate((el) => el === document.activeElement));
     }
-    const beforeClear = structuredClone(setup.data);
-    const clear = page.getByRole("button", {
-      name: "Clear current section: Wheels & tires",
-      exact: true,
-    });
-    await clear.click();
-    assert(
-      await page
-        .getByRole("button", { name: "Cancel", exact: true })
-        .evaluate((el) => el === document.activeElement),
-    );
-    await page.getByRole("button", { name: "Cancel", exact: true }).click();
-    assert(await clear.evaluate((el) => el === document.activeElement));
+    const beforeCorrectionSave = structuredClone(setup.data);
     await (
       await formField("Front wheel offset (mm)", { exact: true })
     ).fill("Infinity");
@@ -2093,13 +2179,15 @@ try {
     assert(new URL(page.url()).pathname.endsWith("/edit"));
     assert.equal(setupPatches, failedPatches);
     await assertFocusAboveActions("Front wheel offset (mm)");
-    await clear.click();
-    await page
-      .getByRole("button", {
-        name: "Confirm clear current section",
-        exact: true,
-      })
-      .click();
+    await (
+      await formField("Front wheel offset (mm)", { exact: true })
+    ).fill("0");
+    assert.equal(
+      await page
+        .getByRole("button", { name: /clear current section/i })
+        .count(),
+      0,
+    );
     // Save has real route replacement; do not reopen through the helper here.
     await page.getByRole("button", { name: "Save setup", exact: true }).click();
     await page.waitForURL(`**/setups/${id}`);
@@ -2108,11 +2196,16 @@ try {
       .getByLabel("Title", { exact: true })
       .waitFor({ state: "detached" });
     assert.equal(await page.getByLabel("Title", { exact: true }).count(), 0);
-    delete beforeClear.running_gear;
+    const expectedData = structuredClone(beforeCorrectionSave);
+    expectedData.running_gear.front.wheel = {
+      model: "界".repeat(200),
+      offset_mm: 0,
+    };
+    expectedData.running_gear.rear.tire = { model: "Partial tire" };
     assert.deepEqual(
       setup.data,
-      beforeClear,
-      "section clear must preserve all unrelated technical data",
+      expectedData,
+      "disclosure and navigation preserve full data apart from explicit field edits",
     );
     await page.goBack();
     assert(
@@ -2121,7 +2214,7 @@ try {
     );
     await geometry();
     console.log(
-      `PASS ${width}x${height} Edit Sections vertical long/zero/partial previews, deletion hierarchy, sticky chevron/sheet focus, clear/cancel scope, validation/no-exit, successful replace/detail/Back`,
+      `PASS ${width}x${height} Edit Sections vertical long/zero/partial previews, deletion hierarchy, sticky chevron/sheet focus, no bulk-clear controls, single-trigger disclosure/keyboard, validation/no-exit, successful replace/detail/Back`,
     );
     await page.unrouteAll({ behavior: "wait" });
     await context.close();

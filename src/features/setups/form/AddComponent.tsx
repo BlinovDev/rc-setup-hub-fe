@@ -40,49 +40,47 @@ export function AddComponent({ section }: { section: SectionId }) {
         ref={trigger}
         type="button"
         data-add-section={section}
+        title={
+          !available.length
+            ? "All components in this section are already added"
+            : undefined
+        }
         aria-expanded={open}
         aria-controls={id}
         disabled={!available.length}
         onClick={() => setOpen((value) => !value)}
       >
         <span aria-hidden="true">+ </span>Add component
+        <span aria-hidden="true" className="add-component-chevron">
+          {open ? "⌃" : "⌄"}
+        </span>
       </Button>
-      {open && (
-        <div
-          id={id}
-          role="group"
-          aria-label="Available components"
-          className="available-components"
-        >
-          {available.map((spec) => (
-            <Button
-              key={spec.id}
-              type="button"
-              onClick={() => {
-                if (spec.id.endsWith("-spacing") && !getValues(spec.paths[0]!))
-                  setValue(spec.paths[0]!, {
-                    front_mm: "",
-                    rear_mm: "",
-                  } as never);
-                presentation.setAdded(spec.id, true);
-                presentation.setOpen(spec.id, true);
-                setOpen(false);
-              }}
-            >
-              Add {spec.label}
-            </Button>
-          ))}
+      <div
+        hidden={!open}
+        id={id}
+        role="group"
+        aria-label="Available components"
+        className="available-components"
+      >
+        {available.map((spec) => (
           <Button
+            key={spec.id}
             type="button"
             onClick={() => {
+              if (spec.id.endsWith("-spacing") && !getValues(spec.paths[0]!))
+                setValue(spec.paths[0]!, {
+                  front_mm: "",
+                  rear_mm: "",
+                } as never);
+              presentation.setAdded(spec.id, true);
+              presentation.setOpen(spec.id, true);
               setOpen(false);
-              trigger.current?.focus();
             }}
           >
-            Close component choices
+            {spec.label}
           </Button>
-        </div>
-      )}
+        ))}
+      </div>
     </div>
   );
 }

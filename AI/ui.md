@@ -53,7 +53,12 @@ all drafts without validation/deletion; Done validates that component and retain
 focuses invalid fields, otherwise closes. Save persists the full document.
 
 Each technical Edit section has one low-emphasis **+ Add component** chooser listing
-only absent parts with axle context. Adding an empty component keeps its editor
+only absent parts with axle context. The same native button toggles its associated
+panel (aria-expanded/aria-controls); the panel contains only named component choices,
+never a dismiss row. Escape closes it and restores trigger focus. Keep 44px choice
+targets with subtle hover/focus treatment. Section headings and existing inputs/cards
+precede this secondary disclosure, with no bulk-delete control or reserved gap.
+Adding an empty component keeps its editor
 available through Close/section switches; only explicit removal returns it to the
 chooser. Optional editors stay hidden until added/edited/revealed by validation.
 No nested accordions or per-part oversized Add/Edit/Remove buttons. Presentation
@@ -67,11 +72,10 @@ reveals hidden fields and focuses real controls after commit, including chassis 
 aggregate link errors. Resizing and section navigation retain drafts/errors.
 
 General is the top-level edit view and the only section with **Delete setup**.
-Technical sections have subdued, confirmed **Clear current section** actions;
-General's clear action affects notes only. Front/Rear clear their axle geometry/
-components plus knuckle/differential; Shocks clears both assemblies; Wheels & tires
-clears both running-gear axles; Electronics clears electronics. Confirmations name
-the scope; essentials/photos and unrelated sections/errors are always retained.
+There are no section-wide Clear actions, overflow substitutes or bulk-delete
+controls. Users can edit individual fields or explicitly remove an optional component
+with the existing confirmation. These actions retain unrelated sections/errors and
+photos; backend deletion APIs and other deletion flows are unchanged.
 
 Guard exit/unload for unsaved setup fields and queued files. Already-persisted photo
 changes are retained. Successful edit Save resets the dirty baseline and replaces

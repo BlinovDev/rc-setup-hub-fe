@@ -9,28 +9,6 @@ export const sections = [
   ["electronics", "Electronics"],
 ] as const;
 export type SectionId = (typeof sections)[number][0];
-// These scopes follow the six existing UI sections, not backend object names.
-export const sectionClearPaths: Record<
-  SectionId,
-  FieldPath<SetupFormValues>[]
-> = {
-  general: ["notes"],
-  front: ["front", "frontSteeringKnuckle"],
-  rear: ["rear", "rearDifferential"],
-  shocks: ["frontShock", "rearShock"],
-  wheels: ["runningGear"],
-  electronics: ["electronics"],
-};
-export const sectionClearDescription: Record<SectionId, string> = {
-  general: "Setup notes only; title, chassis and visibility stay unchanged.",
-  front:
-    "Front suspension geometry, lower arm mount, arm spacers, links and steering knuckle.",
-  rear: "Rear suspension geometry, lower arm mount, arm spacers, links and differential.",
-  shocks:
-    "Both front and rear shock assemblies, including springs, oil, pistons and seals.",
-  wheels: "Both front and rear hex, wheel and tire descriptions/offsets.",
-  electronics: "Motor, ESC, servo, gyro and radio descriptions only.",
-};
 export type ComponentSpec = {
   id: string;
   section: SectionId;

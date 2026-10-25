@@ -10,10 +10,6 @@ import {
 } from "react";
 import {
   sections,
-  componentSpecs,
-  sectionClearPaths,
-  sectionClearDescription,
-  valueAt,
   sectionForPath,
   focusPath,
   componentForPath,
@@ -69,11 +65,6 @@ export function SetupForm({
   const saving = useRef(false);
   const [savedVersion, setSavedVersion] = useState(0);
   const [added, setAdded] = useState<Record<string, boolean>>({});
-  const [clearSection, setClearSection] = useState<SectionId | null>(null);
-  const [sectionVersions, setSectionVersions] = useState<
-    Partial<Record<SectionId, number>>
-  >({});
-  const clearTrigger = useRef<HTMLButtonElement>(null);
   const [active, setActive] = useState<SectionId>("general");
   const [focusRequest, setFocusRequest] = useState<{
     section?: SectionId;
@@ -91,7 +82,6 @@ export function SetupForm({
   }, [form.formState.isDirty, onDirtyChange]);
   function select(section: SectionId) {
     if (setup) onSectionViewChange?.(section !== "general");
-    setClearSection(null);
     setActive(section);
     setFocusRequest({ section });
   }
@@ -169,7 +159,6 @@ export function SetupForm({
     setOpened({});
     setAdded({});
     setIssues([]);
-    setClearSection(null);
     setFocusRequest(null);
     setSavedVersion((value) => value + 1);
   }, [resetVersion, form, setup]);
@@ -344,99 +333,7 @@ export function SetupForm({
                     />
                   )}
                   <div className="setup-section-pane">
-                    {setup && (
-                      <div className="section-clear">
-                        <Button
-                          ref={clearTrigger}
-                          type="button"
-                          className="subdued-destructive"
-                          onClick={() => setClearSection(active)}
-                        >
-                          Clear current section:{" "}
-                          {sections.find(([id]) => id === active)?.[1]}
-                        </Button>
-                        {clearSection === active && (
-                          <div
-                            role="group"
-                            aria-label="Clear current section?"
-                            className="inline-confirmation"
-                          >
-                            <p>
-                              Clear only{" "}
-                              {sections.find(([id]) => id === active)?.[1]}?{" "}
-                              {sectionClearDescription[active]} Other sections,
-                              setup essentials and photos stay unchanged. Save
-                              setup to persist this removal.
-                            </p>
-                            <Button
-                              type="button"
-                              autoFocus
-                              onClick={() => {
-                                setClearSection(null);
-                                clearTrigger.current?.focus();
-                              }}
-                            >
-                              Cancel
-                            </Button>
-                            <Button
-                              type="button"
-                              className="subdued-destructive"
-                              onClick={() => {
-                                const paths = sectionClearPaths[active];
-                                const defaults = setupToForm();
-                                for (const path of paths) {
-                                  form.setValue(
-                                    path,
-                                    structuredClone(
-                                      valueAt(defaults, path),
-                                    ) as never,
-                                    { shouldDirty: true },
-                                  );
-                                  form.clearErrors(path);
-                                }
-                                setIssues((old) =>
-                                  old.filter(
-                                    (issue) =>
-                                      !paths.some((path) =>
-                                        matchesPath(issue.path, path),
-                                      ),
-                                  ),
-                                );
-                                setOpened((old) =>
-                                  Object.fromEntries(
-                                    Object.entries(old).filter(
-                                      ([id]) =>
-                                        componentSpecs.find((c) => c.id === id)
-                                          ?.section !== active,
-                                    ),
-                                  ),
-                                );
-                                setAdded((old) =>
-                                  Object.fromEntries(
-                                    Object.entries(old).filter(
-                                      ([id]) =>
-                                        componentSpecs.find((c) => c.id === id)
-                                          ?.section !== active,
-                                    ),
-                                  ),
-                                );
-                                setSectionVersions((old) => ({
-                                  ...old,
-                                  [active]: (old[active] ?? 0) + 1,
-                                }));
-                                setClearSection(null);
-                                clearTrigger.current?.focus();
-                              }}
-                            >
-                              Confirm clear current section
-                            </Button>
-                          </div>
-                        )}
-                      </div>
-                    )}
-
                     <section
-                      key={"general-" + (sectionVersions.general ?? 0)}
                       hidden={active !== "general"}
                       aria-labelledby="section-general"
                     >
@@ -452,42 +349,38 @@ export function SetupForm({
                       )}
                     </section>
                     <section
-                      key={"front-" + (sectionVersions.front ?? 0)}
                       hidden={active !== "front"}
                       aria-labelledby="section-front"
                     >
                       <h2 id="section-front" tabIndex={-1}>
                         Front
                       </h2>
-                      {setup && <AddComponent section="front" />}
                       <SuspensionSection side="front" setup={setup} />
                       <ComponentCard id="knuckle">
                         <FrontSteeringKnuckleSection setup={setup} />
                       </ComponentCard>
+                      {setup && <AddComponent section="front" />}
                     </section>
                     <section
-                      key={"rear-" + (sectionVersions.rear ?? 0)}
                       hidden={active !== "rear"}
                       aria-labelledby="section-rear"
                     >
                       <h2 id="section-rear" tabIndex={-1}>
                         Rear
                       </h2>
-                      {setup && <AddComponent section="rear" />}
                       <SuspensionSection side="rear" setup={setup} />
                       <ComponentCard id="differential">
                         <RearDifferentialSection setup={setup} />
                       </ComponentCard>
+                      {setup && <AddComponent section="rear" />}
                     </section>
                     <section
-                      key={"shocks-" + (sectionVersions.shocks ?? 0)}
                       hidden={active !== "shocks"}
                       aria-labelledby="section-shocks"
                     >
                       <h2 id="section-shocks" tabIndex={-1}>
                         Shocks
                       </h2>
-                      {setup && <AddComponent section="shocks" />}
                       {(["frontShock", "rearShock"] as const).map(
                         (side, index) => (
                           <fieldset
@@ -528,28 +421,26 @@ export function SetupForm({
                           </fieldset>
                         ),
                       )}
+                      {setup && <AddComponent section="shocks" />}
                     </section>
                     <section
-                      key={"wheels-" + (sectionVersions.wheels ?? 0)}
                       hidden={active !== "wheels"}
                       aria-labelledby="section-wheels"
                     >
                       <h2 id="section-wheels" tabIndex={-1}>
                         Wheels &amp; tires
                       </h2>
-                      {setup && <AddComponent section="wheels" />}
                       <RunningGearSection side="front" setup={setup} />
                       <RunningGearSection side="rear" setup={setup} />
+                      {setup && <AddComponent section="wheels" />}
                     </section>
                     <section
-                      key={"electronics-" + (sectionVersions.electronics ?? 0)}
                       hidden={active !== "electronics"}
                       aria-labelledby="section-electronics"
                     >
                       <h2 id="section-electronics" tabIndex={-1}>
                         Electronics
                       </h2>
-                      {setup && <AddComponent section="electronics" />}
                       <ComponentCard id="electronics">
                         <fieldset
                           id="setup-electronics"
@@ -571,6 +462,7 @@ export function SetupForm({
                           ))}
                         </fieldset>
                       </ComponentCard>
+                      {setup && <AddComponent section="electronics" />}
                     </section>
                   </div>
                 </div>
