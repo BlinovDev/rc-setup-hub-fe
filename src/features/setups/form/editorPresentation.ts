@@ -3,6 +3,8 @@ import type { components } from "../../../api/generated/schema";
 export type FormIssue = { path: string; message: string };
 export const EditorPresentation = createContext<{
   open: Record<string, boolean>;
+  added: Record<string, boolean>;
+  setAdded: (id: string, added: boolean) => void;
   setOpen: (id: string, open: boolean) => void;
   issues: FormIssue[];
   savedVersion: number;
@@ -10,6 +12,8 @@ export const EditorPresentation = createContext<{
   setup: components["schemas"]["Setup"] | undefined;
 }>({
   open: {},
+  added: {},
+  setAdded: () => {},
   setOpen: () => {},
   issues: [],
   savedVersion: 0,

@@ -346,22 +346,19 @@ it("deletes from edit and navigates back to owned setups", async () => {
   expect(router.state.location.pathname).toBe("/my/setups");
   expect(screen.queryByLabelText("Title")).not.toBeInTheDocument();
 });
-it("keeps whole-setup deletion at edit overview and section clearing scoped inside Edit Sections", async () => {
+it("keeps whole-setup deletion only in General and offers no section-wide clear", async () => {
   detail();
   renderSetupRoute(route);
   await screen.findByLabelText("Title");
   expect(screen.getByRole("button", { name: "Delete setup" })).toBeVisible();
-  const user = userEvent.setup();
-  await user.click(screen.getByRole("button", { name: "Edit sections" }));
+  setupControl("Front toe (degrees)");
   expect(
     screen.queryByRole("button", { name: "Delete setup" }),
   ).not.toBeInTheDocument();
   expect(
-    screen.getByRole("button", { name: "Clear current section: General" }),
-  ).toBeVisible();
-  await user.click(
-    screen.getByRole("button", { name: "Back to edit overview" }),
-  );
+    screen.queryByRole("button", { name: /clear current section/i }),
+  ).not.toBeInTheDocument();
+  setupControl("Title");
   expect(screen.getByRole("button", { name: "Delete setup" })).toBeVisible();
 });
 it("replaces a successful section editor in history; Back returns to the prior overview without stale draft", async () => {

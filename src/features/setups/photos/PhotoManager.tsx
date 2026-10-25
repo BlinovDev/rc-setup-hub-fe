@@ -1,3 +1,4 @@
+import { createPortal } from "react-dom";
 import { useEffect, useRef, useState } from "react";
 import type { components } from "../../../api/generated/schema";
 import { CropEditor } from "./CropEditor";
@@ -33,11 +34,23 @@ export function PhotoManager({
   useEffect(() => {
     if (selected) return;
     if (opener.current) {
-      if (opener.current.isConnected) opener.current.focus();
-      else
+      if (opener.current.isConnected && !opener.current.closest("[hidden]"))
+        opener.current.focus();
+      else if (!manager.current?.closest("[hidden]"))
         manager.current
           ?.querySelector<HTMLButtonElement>("button:not(:disabled)")
           ?.focus();
+      else {
+        // An upload can finish after General was hidden. Return from its modal
+        // to the visible section rather than trying to focus hidden photo UI.
+        Array.from(
+          document.querySelectorAll<HTMLElement>(
+            ".setup-edit-layout h2[id^=section-]",
+          ),
+        )
+          .find((heading) => !heading.closest("[hidden]"))
+          ?.focus();
+      }
       opener.current = null;
     }
     if (!photos.isSuccess) return;
@@ -139,19 +152,22 @@ export function PhotoManager({
           {photoError(actions.mutation.error)}
         </InlineNotice>
       )}
-      {selected && (
-        <CropEditor
-          key={selected.id}
-          photo={selected}
-          ownerId={ownerId}
-          onClose={closeEditor}
-          onReload={async () => {
-            const result = await photos.refetch();
-            if (!result.isSuccess) throw new Error("Reload failed");
-            return result.data?.find((p) => p.id === selected.id);
-          }}
-        />
-      )}
+      {/* Keep automatic crop offers outside hidden General, without moving their state owner. */}
+      {selected &&
+        createPortal(
+          <CropEditor
+            key={selected.id}
+            photo={selected}
+            ownerId={ownerId}
+            onClose={closeEditor}
+            onReload={async () => {
+              const result = await photos.refetch();
+              if (!result.isSuccess) throw new Error("Reload failed");
+              return result.data?.find((p) => p.id === selected.id);
+            }}
+          />,
+          document.body,
+        )}
     </section>
   );
 }

@@ -63,6 +63,13 @@ it("guards queued files even with untouched fields", async () => {
 it("successful saving replaces the editor with detail and clears the exit guard", async () => {
   let current = structuredClone(testSetup);
   server.use(
+    http.get(`${apiUrl}/api/v1/users/${testSetup.owner_id}`, () =>
+      HttpResponse.json({
+        id: testSetup.owner_id,
+        nickname: "Driver",
+        avatar_url: null,
+      }),
+    ),
     http.get(`${apiUrl}/api/v1/setups/${testSetup.id}`, () =>
       HttpResponse.json(current),
     ),

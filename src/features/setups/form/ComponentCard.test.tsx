@@ -32,9 +32,8 @@ it("unused controls stay undisclosed; Add keeps an empty editor open and does no
   expect(
     screen.queryByLabelText("Front hex offset (mm)"),
   ).not.toBeInTheDocument();
-  await user.click(
-    screen.getByRole("button", { name: "Add component: Front hex" }),
-  );
+  await user.click(screen.getByRole("button", { name: "Add component" }));
+  await user.click(screen.getByRole("button", { name: "Front hex" }));
   const input = screen.getByLabelText("Front hex offset (mm)");
   expect(input).toBeVisible();
   expect(input).not.toHaveFocus();
@@ -98,9 +97,8 @@ it("summaries preserve manufacturer/notes/zero-only data and save the whole unse
   await user.click(
     screen.getByRole("button", { name: "Confirm remove Front hex" }),
   );
-  await user.click(
-    screen.getByRole("button", { name: "Add component: Front hex" }),
-  );
+  await user.click(screen.getByRole("button", { name: "Add component" }));
+  await user.click(screen.getByRole("button", { name: "Front hex" }));
   expect(screen.getByLabelText("Front hex offset (mm)")).toHaveValue("");
   await user.click(screen.getByRole("button", { name: "Save setup" }));
   expect(save).toHaveBeenCalled();

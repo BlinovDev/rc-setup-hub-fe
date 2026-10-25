@@ -27,51 +27,64 @@ error states remain independent; no hidden counts or email/provider identity.
 
 ## Forms and numeric interaction
 
-The photo toolbar stays before always-visible essentials: Title (required), current
-chassis/selection and visibility with explanation. One persistent RHF document
-owns six sections: General (notes), Front, Rear, Shocks, Wheels & tires, Electronics.
-Desktop uses a sidebar from 768px; mobile uses a compact Sections/current trigger
-and native modal bottom sheet with current location and error counts. Selection
-closes the sheet and focuses the section heading; dismissal restores trigger focus.
-Keep safe-area padding, scroll, 44px targets and one document-level Save/Create.
+Create retains its existing photo-first flow, essentials, optional Add rows and
+six sections. Edit opens directly in **General**. Its six-section navigator precedes
+content; General contains photos, required Title, chassis selection, notes and
+visibility, in that order, without duplicate essentials above navigation. Other
+sections hide General without unmounting fields or the photo manager. Keep photo
+writes/queues independent of technical Save and outside its disabled fieldset.
+Automatic photo crop dialogs render outside hidden General and retain their state
+owner; dismissal restores a visible opener or the current section heading.
 
-Unused optional components expose Add component. Configured components start as
-compact summaries, including partial, manufacturer-only, notes-only and zero-only
-values with units. Add opens inline without focusing an input. Expansion is explicit
-presentation state, never inferred from field content and never used by serialization.
-Done validates only that component, retaining/focusing invalid fields; valid Done
-collapses. Explain that Done closes the editor and Save persists the document.
-Edit restores drafts; collapsed/other-section editors retain registrations, stable
-field-array IDs and selector state. Remove confirms populated components with Cancel
-focused, clears only their values/errors, and re-add starts blank.
+Desktop keeps a sidebar from 768px. Mobile Edit uses one distinct sticky
+current-section button above all content,
+with a small Section caption, blue-tinted surface/border, side spacing and a 12px
+gap below the safe top edge. Its geometric chevron stays vertically centered;
+the non-sticky app header scrolls away. It opens the native modal bottom
+sheet with current location/error counts. Selection focuses the section heading;
+Escape/dismissal restores the trigger. Keep focused controls below the picker and
+above fixed Save/site navigation; compact Save padding must retain 44px controls.
 
-Keep optional axle geometry visible within Front/Rear; shock basics precede piston/
-seal cards. Use two columns only for short related fields and full-width notes.
-Submission validates the whole document, shows a linked error overview and section
-counts, reveals hidden editors and focuses real controls after render, including
-chassis selection and aggregate link errors. Resizing preserves values, selection,
-errors and expansion. Guard route exit/unload for unsaved setup fields and queued
-files; already-persisted photo changes are retained and never described as unsaved.
-In the existing-setup editor, the top-level edit overview owns Delete setup.
-Opening Edit sections (or choosing a section) shows a distinct section view; Back
-to edit overview retains the mounted document and hides section controls. Whole-setup
-deletion is absent inside section views. Each section has a confirmed, subdued
-Clear current section action: General clears notes only; Front/Rear clear their
-axle geometry/components plus knuckle/differential respectively; Shocks clears both
-shock assemblies; Wheels & tires clears both running-gear axles; Electronics clears
-only electronics. Essentials and photos are never cleared by a section action.
-Component Remove remains available with secondary destructive emphasis.
+Existing configured Edit components are compact, vertical label–value summaries,
+including zero, partial/historical/manufacturer-only values and wrapped long text.
+The whole preview is a native keyboard-accessible edit target with visible focus
+and an edit hint. A separate 44px corner trash control has a specific accessible
+Remove name; it never opens the editor. Populated removal confirms with Cancel
+focused, clears only that component and re-add starts blank. Close editor retains
+all drafts without validation/deletion; Done validates that component and retains/
+focuses invalid fields, otherwise closes. Save persists the full document.
 
-Existing-setup card previews use compact vertical label–value rows, preserving units,
-partial fields and explicit zero; long values wrap/clamp without changing stored data.
-The mobile edit picker is a single sticky strip at the safe top edge, with a chevron
-and button border; the non-sticky app header scrolls away. Focused controls must remain
-reachable below it and above fixed Save/navigation. Create keeps its existing flow.
-Successful edit Save resets the dirty baseline and replaces the editor history entry
-with read-only detail. Validation/API/conflict errors stay in the editor. Queued files
-still require the existing exit confirmation; cancelling retains their original bytes
-and the saved form baseline. Persisted photo writes remain independent. Explicit
-conflict reload may discard/remount only after the existing user action.
+Each technical Edit section has one low-emphasis **+ Add component** chooser listing
+only absent parts with axle context. The same native button toggles its associated
+panel (aria-expanded/aria-controls); the panel contains only named component choices,
+never a dismiss row. Escape closes it and restores trigger focus. Keep 44px choice
+targets with subtle hover/focus treatment. Section headings and existing inputs/cards
+precede this secondary disclosure, with no bulk-delete control or reserved gap.
+Adding an empty component keeps its editor
+available through Close/section switches; only explicit removal returns it to the
+chooser. Optional editors stay hidden until added/edited/revealed by validation.
+No nested accordions or per-part oversized Add/Edit/Remove buttons. Presentation
+state never determines serialization. Mounted hidden editors preserve registrations,
+stable field-array IDs, incomplete numeric text and manufacturer cancel state.
+
+Keep optional axle geometry visible within Front/Rear and shock basics before
+piston/seal controls. Use two columns only for short related fields and full-width
+notes. Submission validates all sections, exposes a linked error overview/counts,
+reveals hidden fields and focuses real controls after commit, including chassis and
+aggregate link errors. Resizing and section navigation retain drafts/errors.
+
+General is the top-level edit view and the only section with **Delete setup**.
+There are no section-wide Clear actions, overflow substitutes or bulk-delete
+controls. Users can edit individual fields or explicitly remove an optional component
+with the existing confirmation. These actions retain unrelated sections/errors and
+photos; backend deletion APIs and other deletion flows are unchanged.
+
+Guard exit/unload for unsaved setup fields and queued files. Already-persisted photo
+changes are retained. Successful edit Save resets the dirty baseline and replaces
+the editor history entry with read-only detail. Validation/API/409 errors stay in
+edit. Queued files still require exit confirmation; cancelling retains original bytes
+and the saved form baseline. Explicit conflict reload remains the discard/remount
+boundary and returns to General. No change to read-only detail or other deletion flows.
 
 Use text inputs with inputMode=decimal for suspension; do not rewrite while typing,
 force integer steps or round precision. Signed angles, positive links/oil and

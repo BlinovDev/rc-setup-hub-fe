@@ -1,3 +1,4 @@
+import { Chevron } from "../../../shared/components/Chevron";
 import { trapDialogTab } from "./dialogFocus";
 import { useEffect, useId, useRef, useState } from "react";
 import { Button } from "../../../shared/components/Button";
@@ -53,16 +54,21 @@ export function SectionNavigation({
         ref={trigger}
         className={`sections-trigger${sticky ? " sections-trigger-sticky" : ""}`}
         type="button"
+        aria-label={
+          sticky
+            ? `Sections · ${sections.find(([key]) => key === active)?.[1]}`
+            : undefined
+        }
         aria-expanded={open}
         aria-controls={id}
         onClick={() => setOpen(true)}
       >
-        <span>Sections · {sections.find(([key]) => key === active)?.[1]}</span>
-        {sticky && (
-          <span aria-hidden="true" className="section-chevron">
-            ⌄
-          </span>
-        )}
+        <span className={sticky ? "section-trigger-label" : undefined}>
+          {sticky && <span className="section-trigger-caption">Section</span>}
+          {!sticky && "Sections · "}
+          {sections.find(([key]) => key === active)?.[1]}
+        </span>
+        {sticky && <Chevron className="section-chevron" />}
       </Button>
       <nav className="section-sidebar" aria-label="Setup sections">
         {links()}

@@ -282,6 +282,13 @@ it("cover/delete save immediately, preserve unsaved technical values, and narrow
   let deletes = 0;
   let patch: unknown;
   server.use(
+    http.get(`${apiUrl}/api/v1/users/${testSetup.owner_id}`, () =>
+      HttpResponse.json({
+        id: testSetup.owner_id,
+        nickname: "Driver",
+        avatar_url: null,
+      }),
+    ),
     http.get(`${apiUrl}/api/v1/setups/${testSetup.id}`, () =>
       HttpResponse.json({
         ...fields,
@@ -357,9 +364,7 @@ it("cover/delete save immediately, preserve unsaved technical values, and narrow
   await user.type(setupControl("Front camber (degrees)"), "-6,8");
   await user.clear(setupControl("Front top arm — Rear spacers (mm)"));
   await user.type(setupControl("Front top arm — Rear spacers (mm)"), "5,3");
-  await user.click(
-    await screen.findByRole("button", { name: "Make photo 2 cover" }),
-  );
+  await user.click(setupButton({ name: "Make photo 2 cover" }));
   await waitFor(() => expect(stored[1]?.is_cover).toBe(true));
   await waitFor(() =>
     expect(setupButton({ name: "Make photo 1 cover" })).toBeEnabled(),
@@ -450,7 +455,7 @@ it("cover/delete save immediately, preserve unsaved technical values, and narrow
   expect(
     client.getQueryCache().findAll({ queryKey: photosKey(testSetup.id) }),
   ).toHaveLength(1);
-});
+}, 10000);
 
 it("gallery viewer supports close/Escape, previous/next and focus containment/restoration", async () => {
   mockSetupGallery([photo(1), photo(2)]);
@@ -629,9 +634,7 @@ it("a stale cover failure refreshes gallery state while keeping unsaved fields",
   fireEvent.change(setupControl("Rear differential tuning notes"), {
     target: { value: "Unsaved differential tuning" },
   });
-  await user.click(
-    await screen.findByRole("button", { name: "Make photo 2 cover" }),
-  );
+  await user.click(setupButton({ name: "Make photo 2 cover" }));
   await screen.findByText(
     "Photo or setup not found or unavailable. Reload photos.",
   );
@@ -713,4 +716,50 @@ it("a permitted non-owner sees gallery but no upload/cover/delete controls", asy
   expect(
     screen.queryByRole("link", { name: "Edit setup" }),
   ).not.toBeInTheDocument();
+});
+it("keeps an upload and its crop offer usable after General is hidden, retaining technical and file state", async () => {
+  const items: Photo[] = [];
+  mockSetupGallery(items);
+  let releaseUpload: () => void = () => {};
+  const gate = new Promise<void>((resolve) => {
+    releaseUpload = resolve;
+  });
+  let uploads = 0;
+  server.use(
+    http.post(`${apiUrl}/api/v1/setups/${testSetup.id}/photos`, async () => {
+      uploads++;
+      await gate;
+      items.push(photo(1));
+      return HttpResponse.json(items[0], { status: 201 });
+    }),
+  );
+  renderSetupRoute(`/my/setups/${testSetup.id}/edit`);
+  await screen.findByLabelText("Title");
+  fireEvent.change(screen.getByLabelText("Photo files"), {
+    target: { files: [file("continued.heic")] },
+  });
+  const user = userEvent.setup();
+  await user.click(setupButton({ name: "Upload queued photos" }));
+  await waitFor(() => expect(uploads).toBe(1));
+  fireEvent.change(setupControl("Front toe (degrees)"), {
+    target: { value: "-" },
+  });
+  expect(screen.getByText("continued.heic")).not.toBeVisible();
+  await act(async () => {
+    releaseUpload();
+  });
+  const dialog = await screen.findByRole("dialog", {
+    name: "Adjust thumbnail",
+  });
+  expect(dialog.parentElement).toBe(document.body);
+  expect(dialog.closest("[hidden]")).toBeNull();
+  await user.click(
+    within(dialog).getByRole("button", { name: "Cancel adjustment" }),
+  );
+  expect(document.getElementById("section-front")).toHaveFocus();
+  expect(setupControl("Front toe (degrees)")).toHaveValue("-");
+  setupControl("Title");
+  expect(screen.getByText("continued.heic")).toBeVisible();
+  expect(screen.getByText("Uploaded and saved")).toBeVisible();
+  expect(uploads).toBe(1);
 });

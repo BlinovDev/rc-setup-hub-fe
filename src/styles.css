@@ -821,12 +821,12 @@
 }
 
 /* Edit Sections only: the app header scrolls normally, so the picker pins to
-   the safe top edge without a second header offset. Its workspace contains
+   a safe inset below the top edge without a second header offset. Its workspace contains
    the whole active section, keeping the strip pinned through long editors. */
 @media (max-width: 767px) {
   .sections-trigger-sticky {
     position: sticky;
-    top: env(safe-area-inset-top, 0px);
+    top: calc(0.75rem + env(safe-area-inset-top, 0px));
     z-index: 20;
     background: white;
     border: 2px solid #64748b;
@@ -836,12 +836,27 @@
   .edit-sections-workspace
     .setup-section-pane
     :is(input, textarea, select, button, h2) {
-    scroll-margin-top: calc(4rem + env(safe-area-inset-top, 0px));
+    scroll-margin-top: calc(6rem + env(safe-area-inset-top, 0px));
   }
 }
-.section-chevron {
-  font-size: 1.5rem;
-  line-height: 1;
+.disclosure-chevron {
+  display: block;
+  width: 1.5rem;
+  height: 1.5rem;
+  flex: 0 0 1.5rem;
+  align-self: center;
+}
+.section-trigger-label {
+  display: grid;
+  gap: 0.125rem;
+  text-align: left;
+  line-height: 1.25;
+}
+.section-trigger-caption {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
 }
 .component-summary:has(.component-summary-rows) {
   display: block;
@@ -875,6 +890,247 @@
   background: transparent;
   border-color: #cbd5e1;
 }
-.section-clear {
+
+/* Existing-setup editor only. Navigation precedes General photos and fields;
+   hidden sections stay mounted, including the independent photo manager. */
+.setup-edit-layout {
+  margin-top: 1rem;
+}
+.setup-edit-content {
+  min-width: 0;
+}
+.setup-edit-layout .setup-workspace {
+  display: block;
+}
+.setup-edit-layout .setup-section-pane {
+  min-width: 0;
+}
+.setup-edit-layout .general-photos h2 {
+  font-size: 1.25rem;
+  font-weight: 700;
+  margin-bottom: 0.75rem;
+}
+.setup-edit-layout .general-photos {
   margin-bottom: 1rem;
+}
+.setup-edit-layout .edit-setup-form {
+  margin-top: 0.75rem;
+}
+.setup-edit-layout :is(input, textarea, select, button, h2) {
+  scroll-margin-top: calc(6rem + env(safe-area-inset-top, 0px));
+}
+.setup-edit-layout fieldset {
+  min-width: 0;
+}
+.setup-edit-layout #setup-essentials {
+  border: 0;
+  padding: 0;
+}
+.setup-edit-layout #setup-essentials > legend {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+}
+.setup-edit-layout .setup-section-pane section > fieldset {
+  border-color: #e2e8f0;
+  padding: 0.75rem;
+  margin-block: 0.75rem;
+}
+.setup-edit-layout .form-actions {
+  padding: 0.35rem 0.75rem calc(0.35rem + env(safe-area-inset-bottom));
+}
+.setup-edit-layout .compact-component {
+  position: relative;
+  padding: 0;
+  border: 1px solid #e2e8f0;
+  border-radius: 0.5rem;
+  margin-block: 0.5rem;
+}
+.compact-component .component-preview {
+  position: relative;
+  min-height: 52px;
+  padding: 0.75rem;
+  padding-right: 3.5rem;
+  border-radius: inherit;
+}
+.compact-component .component-heading {
+  display: block;
+}
+.compact-component .component-heading h3 {
+  font-size: 0.95rem;
+  padding-right: 2rem;
+}
+.component-edit-hint {
+  position: absolute;
+  top: 0.85rem;
+  right: 3.5rem;
+  color: #475569;
+  font-size: 0.75rem;
+}
+.component-edit-target {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border-radius: inherit;
+  cursor: pointer;
+  background: transparent;
+}
+.component-edit-target:hover {
+  background: rgb(15 23 42 / 3%);
+}
+.component-edit-target:focus-visible {
+  outline: 3px solid #0369a1;
+  outline-offset: 2px;
+}
+.compact-component .component-remove-icon {
+  position: absolute;
+  top: 0.15rem;
+  right: 0.15rem;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: #64748b;
+  z-index: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.compact-component .component-remove-icon:hover {
+  background: #f1f5f9;
+  color: #991b1b;
+}
+.component-status {
+  font-size: 0.75rem;
+  color: #475569;
+}
+.compact-component .component-summary {
+  margin-block: 0.35rem 0;
+}
+.compact-component .component-summary-rows {
+  gap: 0.15rem;
+}
+.compact-component .component-summary-rows > div {
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 0.3rem;
+}
+.compact-component .component-summary-rows dt {
+  max-width: 55%;
+  flex-shrink: 0;
+}
+.compact-component .component-summary-rows dd {
+  flex: 1;
+  min-width: 0;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+  overflow: hidden;
+}
+
+.compact-component .component-editor {
+  padding: 0 0.75rem 0.75rem;
+  margin-top: 0.25rem;
+}
+.compact-component .component-editor fieldset {
+  border: 0;
+  padding: 0;
+}
+.compact-component .component-help {
+  font-size: 0.8rem;
+  color: #475569;
+}
+.component-editor-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+.compact-component .inline-confirmation {
+  margin: 0.75rem;
+}
+.add-component-chooser {
+  margin-block: 0.25rem 0.75rem;
+}
+.add-component-chooser > button {
+  border: 0;
+  padding-inline: 0.25rem;
+  font-weight: 550;
+  color: #075985;
+  background: transparent;
+}
+.available-components {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.25rem;
+  margin-top: 0.25rem;
+  padding: 0.5rem;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 0.5rem;
+}
+.available-components button {
+  text-align: left;
+  justify-content: flex-start;
+  border: 1px solid transparent;
+  background: transparent;
+  font-weight: 500;
+}
+.available-components button:hover {
+  background: #eaf2f8;
+}
+.available-components button:focus-visible {
+  outline: 2px solid #0369a1;
+  outline-offset: -2px;
+  background: #eaf2f8;
+}
+.add-component-chevron {
+  margin-left: 0.5rem;
+}
+@media (max-width: 767px) {
+  .setup-edit-layout > .sections-trigger-sticky {
+    min-height: 64px;
+    padding: 0.5rem 0.875rem;
+    border: 2px solid #0369a1;
+    background: #e0f2fe;
+    color: #0c4a6e;
+    box-shadow: 0 3px 10px rgb(15 23 42 / 16%);
+    margin-bottom: 1rem;
+  }
+}
+@media (min-width: 768px) {
+  .setup-edit-layout {
+    display: grid;
+    grid-template-columns: 11rem minmax(0, 1fr);
+    gap: 1.25rem;
+    align-items: start;
+  }
+  .setup-edit-layout > .section-sidebar {
+    top: 1rem;
+  }
+  .setup-edit-layout .form-actions {
+    padding: 0.5rem;
+  }
+  .available-components {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+/* Retain native select behavior; center a crisp, font-independent indicator. */
+.setup-edit-layout select {
+  appearance: none;
+  padding-inline-end: 2.75rem;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none'%3E%3Cpath d='m6 9 6 6 6-6' stroke='%23263749' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-position: right 0.75rem center;
+  background-size: 1.5rem 1.5rem;
+  background-repeat: no-repeat;
+}
+@media (forced-colors: active) {
+  .setup-edit-layout select {
+    appearance: auto;
+    background-image: none;
+  }
 }

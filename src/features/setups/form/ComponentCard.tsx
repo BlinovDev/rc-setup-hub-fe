@@ -117,11 +117,161 @@ export function ComponentCard({
     }
     presentation.validate(spec.paths);
     presentation.setOpen(id, false);
+    presentation.setAdded(id, false);
     setConfirm(false);
     setMounted(false);
     setGeneration((n) => n + 1);
-    requestAnimationFrame(() => opener.current?.focus());
+    requestAnimationFrame(() => {
+      if (setup)
+        document
+          .querySelector<HTMLButtonElement>(
+            `[data-add-section="${spec.section}"]`,
+          )
+          ?.focus();
+      else opener.current?.focus();
+    });
   };
+  const confirmation = confirm && (
+    <div
+      role="group"
+      aria-label={`Remove ${spec.label}?`}
+      className="inline-confirmation"
+    >
+      <p>Clear only {spec.label}? Save setup to persist this removal.</p>
+      <Button
+        type="button"
+        autoFocus
+        onClick={() => {
+          setConfirm(false);
+          removalTrigger.current?.focus();
+        }}
+      >
+        Cancel
+      </Button>
+      <Button
+        type="button"
+        variant={setup ? "secondary" : "danger"}
+        className={setup ? "subdued-destructive" : undefined}
+        onClick={clear}
+      >
+        Confirm remove {spec.label}
+      </Button>
+    </div>
+  );
+  if (setup) {
+    if (
+      !configured &&
+      !expanded &&
+      !mounted &&
+      !presentation.added[id] &&
+      !errors.length
+    )
+      return null;
+    return (
+      <section
+        className="component-card compact-component"
+        aria-label={spec.label}
+        data-component={id}
+      >
+        <div className="component-preview">
+          <div className="component-heading">
+            <h3>{spec.label}</h3>
+            <span className="component-edit-hint" aria-hidden="true">
+              Edit ↗
+            </span>
+          </div>
+          {dirty && <span className="component-status">Unsaved changes</span>}
+          {errors.length > 0 && (
+            <span role="status" className="component-status">
+              {errors.length} errors
+            </span>
+          )}
+          {!expanded && (
+            <div className="component-summary">
+              {configured ? (
+                <dl className="component-summary-rows">
+                  {summary.map((row, index) => (
+                    <div key={index}>
+                      <dt>{row.label}: </dt>
+                      <dd title={row.value}>{row.value}</dd>
+                    </div>
+                  ))}
+                </dl>
+              ) : (
+                "Not added"
+              )}
+            </div>
+          )}
+          <button
+            ref={opener}
+            type="button"
+            className="component-edit-target"
+            autoFocus={!!presentation.added[id] && !mounted}
+            aria-label={`Edit ${spec.label}`}
+            aria-expanded={expanded}
+            onClick={open}
+          />
+        </div>
+        <Button
+          type="button"
+          className="component-remove-icon"
+          ref={removalTrigger}
+          aria-label={`Remove ${spec.label}`}
+          title={`Remove ${spec.label}`}
+          onClick={() => {
+            if (configured) setConfirm(true);
+            else clear();
+          }}
+        >
+          <svg
+            aria-hidden="true"
+            width="18"
+            height="18"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.7"
+          >
+            <path d="M4 6h16M9 6V3h6v3M6 6l1 15h10l1-15M10 10v7M14 10v7" />
+          </svg>
+        </Button>
+        {confirmation}
+        <div hidden={!expanded} className="component-editor">
+          {(expanded || mounted || presentation.added[id]) && (
+            <div key={generation}>{children}</div>
+          )}
+          <p className="component-help">
+            Close retains your draft. Done checks this component. Save setup
+            saves all sections.
+          </p>
+          <div className="component-editor-actions">
+            <Button
+              type="button"
+              onClick={() => {
+                setMounted(true);
+                presentation.setOpen(id, false);
+                requestAnimationFrame(() => opener.current?.focus());
+              }}
+            >
+              Close {spec.label} editor
+            </Button>
+            <Button
+              type="button"
+              onClick={() => {
+                setMounted(true);
+                if (presentation.validate(spec.paths)) {
+                  presentation.setOpen(id, false);
+                  requestAnimationFrame(() => opener.current?.focus());
+                }
+              }}
+            >
+              Done {spec.label}
+            </Button>
+          </div>
+        </div>
+      </section>
+    );
+  }
   if (!configured && !expanded && !mounted && !dirty && !errors.length)
     return (
       <section
@@ -194,33 +344,7 @@ export function ComponentCard({
           </Button>
         )}
       </div>
-      {confirm && (
-        <div
-          role="group"
-          aria-label={`Remove ${spec.label}?`}
-          className="inline-confirmation"
-        >
-          <p>Clear only {spec.label}? Save setup to persist this removal.</p>
-          <Button
-            type="button"
-            autoFocus
-            onClick={() => {
-              setConfirm(false);
-              removalTrigger.current?.focus();
-            }}
-          >
-            Cancel
-          </Button>
-          <Button
-            type="button"
-            variant={setup ? "secondary" : "danger"}
-            className={setup ? "subdued-destructive" : undefined}
-            onClick={clear}
-          >
-            Confirm remove {spec.label}
-          </Button>
-        </div>
-      )}
+      {confirmation}
       <div hidden={!expanded} className="component-editor">
         {(expanded || mounted) && <div key={generation}>{children}</div>}
         <p>Done closes this editor. Save setup saves your changes.</p>

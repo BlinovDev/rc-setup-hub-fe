@@ -160,6 +160,7 @@ try {
     let photos = [];
     let creates = 0;
     let uploadCalls = 0;
+    let uploadGate = null;
     let fail = true;
     let cropWrites = 0;
     let cropFailure = 0;
@@ -343,6 +344,7 @@ try {
       } else if (path === `/api/v1/setups/${id}/photos`) {
         if (req.method() === "POST") {
           uploadCalls++;
+          if (uploadGate) await uploadGate;
           if (fail && uploadCalls === 2) {
             await route.fulfill({
               status: 503,
@@ -1791,16 +1793,219 @@ try {
     console.log(
       `PASS ${width}x${height} placeholder/create once/partial retry/crop shapes/pointer+touch+keyboard/preview match/revision refresh/reload/failure retry/gallery focus/unsaved fields/square lists/no N+1/cover-delete/no overflow; mocked HTTP, emulated Chromium`,
     );
-    // Approved PR #33 follow-up: exercise Edit Sections directly on every viewport.
+    // Issue #34: General is the initial edit view; the navigator precedes all fields.
+    await page.getByLabel("Title", { exact: true }).waitFor();
+    assert.equal(
+      await page
+        .locator('.section-sidebar button[aria-current="location"]')
+        .innerText(),
+      "General",
+    );
+    const placement = await page.evaluate(() => {
+      const nav = document.querySelector(".sections-trigger");
+      const photos = document.querySelector(".general-photos");
+      const title = document.querySelector('[name="title"]');
+      const notes = document.querySelector('[name="notes"]');
+      const visibility = document.querySelector('[name="visibility"]');
+      const follows = (a, b) =>
+        !!(a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING);
+      return (
+        follows(nav, photos) &&
+        follows(photos, title) &&
+        follows(title, notes) &&
+        follows(notes, visibility)
+      );
+    });
+    assert(
+      placement,
+      "General photos/title/chassis/notes/visibility must follow navigation in order",
+    );
+    for (const name of [
+      "General",
+      "Front",
+      "Rear",
+      "Shocks",
+      "Wheels & tires",
+      "Electronics",
+    ]) {
+      await selectSection(name);
+      assert.equal(
+        await page
+          .getByRole("button", { name: /clear current section/i })
+          .count(),
+        0,
+      );
+      assert.equal(await page.locator(".section-clear").count(), 0);
+      if (name === "Front") {
+        await page.evaluate(() => window.scrollTo(0, 0));
+        await geometry();
+        await page.screenshot({
+          path: `artifacts/photo-qa/correction-front-${width}x${height}.png`,
+          fullPage: true,
+        });
+        const add = page.getByRole("button", {
+          name: "Add component",
+          exact: true,
+        });
+        if (await add.isEnabled()) {
+          await add.click();
+          const panel = page.getByRole("group", {
+            name: "Available components",
+            exact: true,
+          });
+          await panel.waitFor({ state: "visible" });
+          const addBox = await add.boundingBox();
+          const addArrow = await add
+            .locator("svg.disclosure-chevron")
+            .boundingBox();
+          assert(
+            addBox &&
+              addArrow &&
+              Math.abs(
+                addArrow.y +
+                  addArrow.height / 2 -
+                  (addBox.y + addBox.height / 2),
+              ) < 2,
+            "Add component chevron must be vertically centered",
+          );
+          assert.equal(
+            await panel.getByRole("button", { name: /close/i }).count(),
+            0,
+          );
+          await page.screenshot({
+            path: `artifacts/photo-qa/correction-front-choices-${width}x${height}.png`,
+          });
+          await add.click();
+          await panel.waitFor({ state: "hidden" });
+        }
+      }
+    }
+    await selectSection("General");
+    const visibilityStyle = await page
+      .getByLabel("Visibility", { exact: true })
+      .evaluate((el) => {
+        const style = getComputedStyle(el);
+        return {
+          appearance: style.appearance,
+          position: style.backgroundPosition,
+          image: style.backgroundImage,
+        };
+      });
+    assert.equal(visibilityStyle.appearance, "none");
+    assert(
+      visibilityStyle.image.includes("svg") &&
+        visibilityStyle.position.includes("50%"),
+      "native select indicator must be centered",
+    );
+    await page.emulateMedia({ forcedColors: "active" });
+    assert.equal(
+      await page
+        .getByLabel("Visibility", { exact: true })
+        .evaluate((el) => getComputedStyle(el).appearance),
+      "auto",
+      "forced colors must retain the native indicator",
+    );
+    await page.emulateMedia({ forcedColors: "none" });
+    await page
+      .getByLabel("Notes", { exact: true })
+      .fill("General draft retained");
+    const queuedInput = page.getByLabel("Photo files", { exact: true });
+    await queuedInput.setInputFiles({
+      name: "section-draft.heic",
+      mimeType: "image/heic",
+      buffer: Buffer.from("original queued bytes"),
+    });
+    await page.getByText("section-draft.heic", { exact: true }).waitFor();
+    await selectSection("Front");
+    assert.equal(
+      await page.getByText("section-draft.heic", { exact: true }).isVisible(),
+      false,
+    );
+    await selectSection("General");
+    await page.getByText("section-draft.heic", { exact: true }).waitFor();
+    await page
+      .getByRole("button", {
+        name: "Remove queued section-draft.heic",
+        exact: true,
+      })
+      .click();
+    assert.equal(
+      await page.getByLabel("Notes", { exact: true }).inputValue(),
+      "General draft retained",
+    );
+
+    // An immediate photo upload must keep running when General is hidden. Its
+    // automatic crop offer must remain usable and must not discard technical state.
+    await queuedInput.setInputFiles({
+      name: "continued-upload.heic",
+      mimeType: "image/heic",
+      buffer: Buffer.from("original unchanged HEIF selection"),
+    });
+    let releaseUpload;
+    uploadGate = new Promise((resolve) => {
+      releaseUpload = resolve;
+    });
+    const uploadRequest = page.waitForRequest(
+      (request) =>
+        request.method() === "POST" &&
+        new URL(request.url()).pathname === `/api/v1/setups/${id}/photos`,
+    );
+    await page
+      .getByRole("button", { name: "Upload queued photos", exact: true })
+      .click();
+    await uploadRequest;
+    try {
+      await selectSection("Front");
+    } finally {
+      releaseUpload();
+      uploadGate = null;
+    }
+    await cropDialog.waitFor({ state: "visible" });
+    await cropDialog
+      .getByRole("button", { name: "Cancel adjustment", exact: true })
+      .click();
+    await cropDialog.waitFor({ state: "hidden" });
+    assert(
+      await page.evaluate(
+        () =>
+          document.activeElement !== document.body &&
+          !document.activeElement?.closest("[hidden]"),
+      ),
+      "crop dismissal restores visible section focus",
+    );
+    await selectSection("General");
+    assert.equal(
+      await page.getByLabel("Notes", { exact: true }).inputValue(),
+      "General draft retained",
+    );
+    await geometry();
+    await page.evaluate(() => window.scrollTo(0, 0));
+    await page.screenshot({
+      path: `artifacts/photo-qa/compact-general-${width}x${height}.png`,
+      fullPage: true,
+    });
+    if (width === 1280) {
+      await page
+        .locator(".setup-editor")
+        .evaluate((el) => (el.style.zoom = "2"));
+      await geometry();
+      await page.evaluate(() => window.scrollTo(0, 0));
+      await page.screenshot({
+        path: "artifacts/photo-qa/compact-edit-200-percent-form-zoom.png",
+        fullPage: true,
+      });
+      await page
+        .locator(".setup-editor")
+        .evaluate((el) => (el.style.zoom = ""));
+    }
+    // Retain all prior follow-up checks, with the approved compact controls.
     assert.equal(
       await page
         .getByRole("button", { name: "Delete setup", exact: true })
         .count(),
       1,
     );
-    await page
-      .getByRole("button", { name: "Edit sections", exact: true })
-      .click();
+    await selectSection("Wheels & tires");
     assert.equal(
       await page
         .getByRole("button", { name: "Delete setup", exact: true })
@@ -1808,6 +2013,132 @@ try {
       0,
     );
     await selectSection("Wheels & tires");
+    assert.equal(
+      await page
+        .getByRole("button", { name: "Add component", exact: true })
+        .count(),
+      1,
+    );
+    await page
+      .getByRole("button", { name: "Add component", exact: true })
+      .click();
+    const choices = page.getByRole("group", {
+      name: "Available components",
+      exact: true,
+    });
+    await choices.waitFor({ state: "visible" });
+    await page.screenshot({
+      path: `artifacts/photo-qa/compact-add-choices-${width}x${height}.png`,
+    });
+    assert.equal(
+      await choices
+        .getByRole("button", { name: "Front wheel", exact: true })
+        .count(),
+      0,
+    );
+    assert.equal(
+      await choices
+        .getByRole("button", { name: "Rear differential", exact: true })
+        .count(),
+      0,
+    );
+    assert.equal(
+      await choices.getByRole("button", { name: /close/i }).count(),
+      0,
+    );
+    assert.deepEqual(await choices.getByRole("button").allTextContents(), [
+      "Front hex",
+      "Rear hex",
+    ]);
+    const disclosure = page.getByRole("button", {
+      name: "Add component",
+      exact: true,
+    });
+    assert.equal(await disclosure.getAttribute("aria-expanded"), "true");
+    const panelId = await disclosure.getAttribute("aria-controls");
+    assert.equal(await choices.getAttribute("id"), panelId);
+    await disclosure.click();
+    await choices.waitFor({ state: "hidden" });
+    assert.equal(await disclosure.getAttribute("aria-expanded"), "false");
+    await disclosure.focus();
+    await page.keyboard.press("Enter");
+    await choices.waitFor({ state: "visible" });
+    await page.keyboard.press(" ");
+    await choices.waitFor({ state: "hidden" });
+    await disclosure.click();
+    await choices.waitFor({ state: "visible" });
+    await choices
+      .getByRole("button", { name: "Front hex", exact: true })
+      .focus();
+    await page.keyboard.press("Escape");
+    await choices.waitFor({ state: "hidden" });
+    assert(await disclosure.evaluate((el) => el === document.activeElement));
+    // Exercise actual touch events on phone/landscape contexts, plus mouse on desktop.
+    if (mobile) {
+      await disclosure.tap();
+      await choices.waitFor({ state: "visible" });
+      await disclosure.tap();
+      await choices.waitFor({ state: "hidden" });
+    }
+    // Selecting an actual choice opens exactly that editor and closes disclosure.
+    if (mobile) await disclosure.tap();
+    else await disclosure.click();
+    const chosenComponent = choices.getByRole("button", {
+      name: "Front hex",
+      exact: true,
+    });
+    if (mobile) await chosenComponent.tap();
+    else await chosenComponent.click();
+    await page
+      .getByLabel("Front hex offset (mm)", { exact: true })
+      .waitFor({ state: "visible" });
+    await choices.waitFor({ state: "hidden" });
+    await page
+      .getByRole("button", { name: "Close Front hex editor", exact: true })
+      .click();
+    await page
+      .getByLabel("Front hex offset (mm)", { exact: true })
+      .waitFor({ state: "hidden" });
+    await disclosure.click();
+    await choices.waitFor({ state: "visible" });
+    assert.deepEqual(await choices.getByRole("button").allTextContents(), [
+      "Rear hex",
+    ]);
+    await disclosure.click();
+    await choices.waitFor({ state: "hidden" });
+
+    const wholeCard = page.getByRole("button", {
+      name: "Edit Front wheel",
+      exact: true,
+    });
+    await wholeCard.focus();
+    await page.keyboard.press("Enter");
+    await page
+      .getByLabel("Front wheel model", { exact: true })
+      .fill("Uncommitted draft");
+    await page.screenshot({
+      path: `artifacts/photo-qa/compact-inline-editor-${width}x${height}.png`,
+    });
+    await page
+      .getByRole("button", { name: "Close Front wheel editor", exact: true })
+      .click();
+    await page
+      .getByLabel("Front wheel model", { exact: true })
+      .waitFor({ state: "hidden" });
+    assert.equal(
+      await page.getByLabel("Front wheel model", { exact: true }).isVisible(),
+      false,
+    );
+    await page
+      .getByRole("button", { name: "Remove Front wheel", exact: true })
+      .click();
+    assert.equal(await wholeCard.getAttribute("aria-expanded"), "false");
+    await page.getByRole("button", { name: "Cancel", exact: true }).click();
+    await wholeCard.click();
+    assert.equal(
+      await page.getByLabel("Front wheel model", { exact: true }).inputValue(),
+      "Uncommitted draft",
+    );
     await (
       await formField("Front wheel model", { exact: true })
     ).fill("界".repeat(200));
@@ -1820,6 +2151,7 @@ try {
     const preview = page.locator(
       '[data-component="front-wheel"] .component-summary-rows',
     );
+    await preview.waitFor({ state: "visible" });
     assert.equal(await preview.locator("dt").count(), 2);
     assert.equal(await preview.locator("dd").last().innerText(), "0");
     assert.equal(
@@ -1837,8 +2169,9 @@ try {
       "preview fields must occupy separate vertical rows",
     );
     await geometry();
+    await page.evaluate(() => window.scrollTo(0, 0));
     await page.screenshot({
-      path: `artifacts/photo-qa/edit-summary-rows-${width}x${height}.png`,
+      path: `artifacts/photo-qa/compact-summary-rows-${width}x${height}.png`,
       fullPage: true,
     });
     // Expand a long editor, then scroll within the same section. The compact
@@ -1847,6 +2180,14 @@ try {
       await formField("Rear tire model", { exact: true })
     ).fill("Partial tire");
     if (mobile) {
+      // Reduced visual space approximates an open keyboard, not native iOS keyboard behavior.
+      await page.setViewportSize({ width, height: Math.min(height, 460) });
+      await page.getByLabel("Rear tire model", { exact: true }).click();
+      await assertFocusAboveActions("Rear tire model");
+      await page.screenshot({
+        path: `artifacts/photo-qa/compact-focused-short-${width}x${height}.png`,
+      });
+      await page.setViewportSize({ width, height });
       await page
         .getByLabel("Rear tire model", { exact: true })
         .scrollIntoViewIfNeeded();
@@ -1854,12 +2195,26 @@ try {
       const strip = page.locator(".sections-trigger-sticky");
       const box = await strip.boundingBox();
       assert(
-        box && box.y >= -1 && box.y < 4 && box.height >= 44 && box.height < 70,
-        "one compact sticky strip must remain at the safe top edge",
+        box && box.y >= 11 && box.y < 16 && box.height >= 64 && box.height < 90,
+        "distinct section picker must retain breathing room below the safe top edge",
       );
-      assert.equal(await strip.locator(".section-chevron").count(), 1);
+      assert.equal(await strip.locator("svg.section-chevron").count(), 1);
+      assert.equal(
+        await strip.getByText("Section", { exact: true }).count(),
+        1,
+      );
+      const arrow = await strip.locator("svg.section-chevron").boundingBox();
+      assert(
+        arrow &&
+          Math.abs(arrow.y + arrow.height / 2 - (box.y + box.height / 2)) < 2,
+        "section chevron must be vertically centered",
+      );
+      assert.equal(
+        await strip.evaluate((el) => getComputedStyle(el).backgroundColor),
+        "rgb(224, 242, 254)",
+      );
       await page.screenshot({
-        path: `artifacts/photo-qa/edit-sticky-${width}x${height}.png`,
+        path: `artifacts/photo-qa/compact-sticky-${width}x${height}.png`,
       });
       await strip.click();
       const sheet = page.getByRole("dialog", {
@@ -1879,19 +2234,7 @@ try {
       await sheet.waitFor({ state: "hidden" });
       assert(await strip.evaluate((el) => el === document.activeElement));
     }
-    const beforeClear = structuredClone(setup.data);
-    const clear = page.getByRole("button", {
-      name: "Clear current section: Wheels & tires",
-      exact: true,
-    });
-    await clear.click();
-    assert(
-      await page
-        .getByRole("button", { name: "Cancel", exact: true })
-        .evaluate((el) => el === document.activeElement),
-    );
-    await page.getByRole("button", { name: "Cancel", exact: true }).click();
-    assert(await clear.evaluate((el) => el === document.activeElement));
+    const beforeCorrectionSave = structuredClone(setup.data);
     await (
       await formField("Front wheel offset (mm)", { exact: true })
     ).fill("Infinity");
@@ -1900,13 +2243,15 @@ try {
     assert(new URL(page.url()).pathname.endsWith("/edit"));
     assert.equal(setupPatches, failedPatches);
     await assertFocusAboveActions("Front wheel offset (mm)");
-    await clear.click();
-    await page
-      .getByRole("button", {
-        name: "Confirm clear current section",
-        exact: true,
-      })
-      .click();
+    await (
+      await formField("Front wheel offset (mm)", { exact: true })
+    ).fill("0");
+    assert.equal(
+      await page
+        .getByRole("button", { name: /clear current section/i })
+        .count(),
+      0,
+    );
     // Save has real route replacement; do not reopen through the helper here.
     await page.getByRole("button", { name: "Save setup", exact: true }).click();
     await page.waitForURL(`**/setups/${id}`);
@@ -1915,11 +2260,16 @@ try {
       .getByLabel("Title", { exact: true })
       .waitFor({ state: "detached" });
     assert.equal(await page.getByLabel("Title", { exact: true }).count(), 0);
-    delete beforeClear.running_gear;
+    const expectedData = structuredClone(beforeCorrectionSave);
+    expectedData.running_gear.front.wheel = {
+      model: "界".repeat(200),
+      offset_mm: 0,
+    };
+    expectedData.running_gear.rear.tire = { model: "Partial tire" };
     assert.deepEqual(
       setup.data,
-      beforeClear,
-      "section clear must preserve all unrelated technical data",
+      expectedData,
+      "disclosure and navigation preserve full data apart from explicit field edits",
     );
     await page.goBack();
     assert(
@@ -1928,7 +2278,7 @@ try {
     );
     await geometry();
     console.log(
-      `PASS ${width}x${height} Edit Sections vertical long/zero/partial previews, deletion hierarchy, sticky chevron/sheet focus, clear/cancel scope, validation/no-exit, successful replace/detail/Back`,
+      `PASS ${width}x${height} Edit Sections vertical long/zero/partial previews, deletion hierarchy, sticky chevron/sheet focus, no bulk-clear controls, single-trigger disclosure/keyboard, validation/no-exit, successful replace/detail/Back`,
     );
     await page.unrouteAll({ behavior: "wait" });
     await context.close();
