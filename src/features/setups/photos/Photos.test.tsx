@@ -1,3 +1,4 @@
+import { setupControl, setupButton } from "../form/testDriver";
 import {
   act,
   fireEvent,
@@ -105,11 +106,11 @@ it("places the shared photo toolbar before General on create and edit without su
   const user = userEvent.setup();
   await user.clear(title);
   await user.type(title, "Unsaved toolbar title");
-  const picker = screen.getByRole("button", { name: "Choose photos" });
+  const picker = setupButton({ name: "Choose photos" });
   expect(
     picker.compareDocumentPosition(title) & Node.DOCUMENT_POSITION_FOLLOWING,
   ).toBeTruthy();
-  await user.click(screen.getByRole("button", { name: "Photo information" }));
+  await user.click(setupButton({ name: "Photo information" }));
   expect(
     screen.getByRole("region", { name: "Photo information details" }),
   ).toHaveTextContent("save immediately");
@@ -159,19 +160,16 @@ it("saves a new setup once, retains partial success, and retries the same file/U
   renderSetupRoute("/my/setups/new");
   const user = userEvent.setup();
   await screen.findByLabelText("Title");
-  await user.type(screen.getByLabelText("Title"), "With photos");
-  expect(screen.getByLabelText("Photo files")).toHaveAttribute(
+  await user.type(setupControl("Title"), "With photos");
+  expect(setupControl("Photo files")).toHaveAttribute(
     "accept",
     expect.stringContaining(".heic"),
   );
-  await user.upload(screen.getByLabelText("Photo files"), [
-    file(),
-    file("phone.heic"),
-  ]);
+  await user.upload(setupControl("Photo files"), [file(), file("phone.heic")]);
   expect(
     screen.getByText("2/10 photo slots used (saved and queued)."),
   ).toBeInTheDocument();
-  await user.click(screen.getByRole("button", { name: "Create setup" }));
+  await user.click(setupButton({ name: "Create setup" }));
   await screen.findByRole("button", { name: "Retry phone.heic" });
   expect(creates).toBe(1);
   expect(uploads).toHaveLength(2);
@@ -181,7 +179,7 @@ it("saves a new setup once, retains partial success, and retries the same file/U
   ).not.toBeInTheDocument();
   expect(screen.getByText("Uploaded and saved")).toBeInTheDocument();
   fail = false;
-  await user.click(screen.getByRole("button", { name: "Retry phone.heic" }));
+  await user.click(setupButton({ name: "Retry phone.heic" }));
   await waitFor(() => expect(stored).toHaveLength(2));
   await waitFor(() =>
     expect(screen.getAllByText("Uploaded and saved")).toHaveLength(2),
@@ -214,19 +212,17 @@ it("queue removal never sends DELETE and optional invalid photos do not block te
   renderSetupRoute("/my/setups/new");
   const user = userEvent.setup({ applyAccept: false });
   await screen.findByLabelText("Title");
-  await user.type(screen.getByLabelText("Title"), "Optional");
-  await user.upload(screen.getByLabelText("Photo files"), file());
-  await user.click(
-    screen.getByRole("button", { name: "Remove queued car.jpg" }),
-  );
+  await user.type(setupControl("Title"), "Optional");
+  await user.upload(setupControl("Photo files"), file());
+  await user.click(setupButton({ name: "Remove queued car.jpg" }));
   await user.upload(
-    screen.getByLabelText("Photo files"),
+    setupControl("Photo files"),
     new File(["svg"], "bad.svg", { type: "image/svg+xml" }),
   );
   await screen.findByText(
     "Choose JPEG, PNG, WebP or HEIC/HEIF files. No files were added.",
   );
-  await user.click(screen.getByRole("button", { name: "Create setup" }));
+  await user.click(setupButton({ name: "Create setup" }));
   await screen.findByText("Setup created.");
   expect(deletes).toBe(0);
   expect(uploads).toBe(0);
@@ -238,10 +234,8 @@ it("counts stored plus queued files, rejects an entire over-limit selection with
   renderSetupRoute(`/my/setups/${testSetup.id}/edit`);
   const user = userEvent.setup();
   await screen.findByLabelText("Photo files");
-  await waitFor(() =>
-    expect(screen.getByLabelText("Photo files")).toBeEnabled(),
-  );
-  await user.upload(screen.getByLabelText("Photo files"), [
+  await waitFor(() => expect(setupControl("Photo files")).toBeEnabled());
+  await user.upload(setupControl("Photo files"), [
     file("a.jpg"),
     file("b.jpg"),
   ]);
@@ -251,15 +245,15 @@ it("counts stored plus queued files, rejects an entire over-limit selection with
   expect(screen.queryByText("Queued — not uploaded")).not.toBeInTheDocument();
   const large = file("large.jpg");
   Object.defineProperty(large, "size", { value: 25 * 1024 * 1024 + 1 });
-  await user.upload(screen.getByLabelText("Photo files"), large);
+  await user.upload(setupControl("Photo files"), large);
   await screen.findByText(
     "Each photo must be at most 25 MiB. Choose smaller files; no files were added.",
   );
-  await user.upload(screen.getByLabelText("Photo files"), file());
+  await user.upload(setupControl("Photo files"), file());
   expect(
     screen.getByText("10/10 photo slots used (saved and queued)."),
   ).toBeInTheDocument();
-  await user.upload(screen.getByLabelText("Photo files"), file("extra.jpg"));
+  await user.upload(setupControl("Photo files"), file("extra.jpg"));
   await screen.findByText(
     "You selected 1 files, but only 0 photo slots remain. Choose fewer files; no files were added.",
   );
@@ -333,77 +327,63 @@ it("cover/delete save immediately, preserve unsaved technical values, and narrow
   client.setQueryData(["setups", "search", { q: "track" }], "cached");
   const user = userEvent.setup();
   await screen.findByLabelText("Title");
-  await user.type(screen.getByLabelText("Title"), " unsaved");
-  fireEvent.change(screen.getByLabelText("Front hex offset (mm)"), {
+  await user.type(setupControl("Title"), " unsaved");
+  fireEvent.change(setupControl("Front hex offset (mm)"), {
     target: { value: "-2,123456789" },
   });
-  fireEvent.change(screen.getByLabelText("Rear wheel offset (mm)"), {
+  fireEvent.change(setupControl("Rear wheel offset (mm)"), {
     target: { value: "0" },
   });
-  fireEvent.change(screen.getByLabelText("Front tire model"), {
+  fireEvent.change(setupControl("Front tire model"), {
     target: { value: "Unsaved tire" },
   });
 
-  fireEvent.change(
-    screen.getByLabelText("Front lower arm mount configuration notes"),
-    { target: { value: "Unsaved front mount config" } },
-  );
-  fireEvent.change(
-    screen.getByLabelText("Rear lower arm mount model / part number"),
-    { target: { value: "Unsaved rear mount" } },
-  );
-  fireEvent.change(
-    screen.getByLabelText("Front knuckle part number / description"),
-    { target: { value: "Unsaved knuckle part" } },
-  );
-  fireEvent.change(screen.getByLabelText("Front piston notes"), {
+  fireEvent.change(setupControl("Front lower arm mount configuration notes"), {
+    target: { value: "Unsaved front mount config" },
+  });
+  fireEvent.change(setupControl("Rear lower arm mount model / part number"), {
+    target: { value: "Unsaved rear mount" },
+  });
+  fireEvent.change(setupControl("Front knuckle part number / description"), {
+    target: { value: "Unsaved knuckle part" },
+  });
+  fireEvent.change(setupControl("Front piston notes"), {
     target: { value: "Unsaved piston" },
   });
-  fireEvent.change(screen.getByLabelText("Rear differential tuning notes"), {
+  fireEvent.change(setupControl("Rear differential tuning notes"), {
     target: { value: "Unsaved differential tuning" },
   });
-  await user.clear(screen.getByLabelText("Front camber (degrees)"));
-  await user.type(screen.getByLabelText("Front camber (degrees)"), "-6,8");
-  await user.clear(screen.getByLabelText("Front top arm — Rear spacers (mm)"));
-  await user.type(
-    screen.getByLabelText("Front top arm — Rear spacers (mm)"),
-    "5,3",
-  );
+  await user.clear(setupControl("Front camber (degrees)"));
+  await user.type(setupControl("Front camber (degrees)"), "-6,8");
+  await user.clear(setupControl("Front top arm — Rear spacers (mm)"));
+  await user.type(setupControl("Front top arm — Rear spacers (mm)"), "5,3");
   await user.click(
     await screen.findByRole("button", { name: "Make photo 2 cover" }),
   );
   await waitFor(() => expect(stored[1]?.is_cover).toBe(true));
   await waitFor(() =>
-    expect(
-      screen.getByRole("button", { name: "Make photo 1 cover" }),
-    ).toBeEnabled(),
+    expect(setupButton({ name: "Make photo 1 cover" })).toBeEnabled(),
   );
-  expect(screen.getByLabelText("Rear differential tuning notes")).toHaveValue(
+  expect(setupControl("Rear differential tuning notes")).toHaveValue(
     "Unsaved differential tuning",
   );
-  expect(screen.getByLabelText("Title")).toHaveValue("Track setup unsaved");
-  expect(screen.getByLabelText("Front hex offset (mm)")).toHaveValue(
-    "-2,123456789",
-  );
-  expect(screen.getByLabelText("Rear wheel offset (mm)")).toHaveValue("0");
-  expect(screen.getByLabelText("Front tire model")).toHaveValue("Unsaved tire");
+  expect(setupControl("Title")).toHaveValue("Track setup unsaved");
+  expect(setupControl("Front hex offset (mm)")).toHaveValue("-2,123456789");
+  expect(setupControl("Rear wheel offset (mm)")).toHaveValue("0");
+  expect(setupControl("Front tire model")).toHaveValue("Unsaved tire");
 
-  expect(
-    screen.getByLabelText("Front lower arm mount configuration notes"),
-  ).toHaveValue("Unsaved front mount config");
-  expect(
-    screen.getByLabelText("Rear lower arm mount model / part number"),
-  ).toHaveValue("Unsaved rear mount");
-  expect(
-    screen.getByLabelText("Front knuckle part number / description"),
-  ).toHaveValue("Unsaved knuckle part");
-  expect(screen.getByLabelText("Front piston notes")).toHaveValue(
-    "Unsaved piston",
+  expect(setupControl("Front lower arm mount configuration notes")).toHaveValue(
+    "Unsaved front mount config",
   );
-  expect(screen.getByLabelText("Front camber (degrees)")).toHaveValue("-6,8");
-  expect(
-    screen.getByLabelText("Front top arm — Rear spacers (mm)"),
-  ).toHaveValue("5,3");
+  expect(setupControl("Rear lower arm mount model / part number")).toHaveValue(
+    "Unsaved rear mount",
+  );
+  expect(setupControl("Front knuckle part number / description")).toHaveValue(
+    "Unsaved knuckle part",
+  );
+  expect(setupControl("Front piston notes")).toHaveValue("Unsaved piston");
+  expect(setupControl("Front camber (degrees)")).toHaveValue("-6,8");
+  expect(setupControl("Front top arm — Rear spacers (mm)")).toHaveValue("5,3");
   expect(patch).toBeUndefined();
   expect(client.getQueryState(mineKey)?.isInvalidated).toBe(true);
   expect(client.getQueryState(userSetupsKey(testUser.id))?.isInvalidated).toBe(
@@ -413,46 +393,38 @@ it("cover/delete save immediately, preserve unsaved technical values, and narrow
     client.getQueryState(userSetupsKey("other-owner"))?.isInvalidated,
   ).toBe(false);
   expect(client.getQueryData(["unrelated"])).toBe("keep");
-  await user.click(screen.getByRole("button", { name: "Delete photo 2" }));
-  await user.click(screen.getByRole("button", { name: "Keep photo" }));
+  await user.click(setupButton({ name: "Delete photo 2" }));
+  await user.click(setupButton({ name: "Keep photo" }));
   expect(deletes).toBe(0);
-  expect(screen.getByRole("button", { name: "Delete photo 2" })).toHaveFocus();
-  await user.click(screen.getByRole("button", { name: "Delete photo 2" }));
-  await user.click(
-    screen.getByRole("button", { name: "Confirm delete photo 2" }),
-  );
+  expect(setupButton({ name: "Delete photo 2" })).toHaveFocus();
+  await user.click(setupButton({ name: "Delete photo 2" }));
+  await user.click(setupButton({ name: "Confirm delete photo 2" }));
   await waitFor(() => expect(stored).toHaveLength(1));
   await screen.findByText("Cover photo");
   expect(stored[0]?.is_cover).toBe(true);
-  await user.click(screen.getByRole("button", { name: "Delete photo 1" }));
-  await user.click(
-    screen.getByRole("button", { name: "Confirm delete photo 1" }),
-  );
+  await user.click(setupButton({ name: "Delete photo 1" }));
+  await user.click(setupButton({ name: "Confirm delete photo 1" }));
   await waitFor(() => expect(stored).toHaveLength(0));
-  expect(screen.getByLabelText("Rear differential tuning notes")).toHaveValue(
+  expect(setupControl("Rear differential tuning notes")).toHaveValue(
     "Unsaved differential tuning",
   );
-  expect(screen.getByLabelText("Title")).toHaveValue("Track setup unsaved");
-  expect(screen.getByLabelText("Front hex offset (mm)")).toHaveValue(
-    "-2,123456789",
-  );
-  expect(screen.getByLabelText("Rear wheel offset (mm)")).toHaveValue("0");
-  expect(screen.getByLabelText("Front tire model")).toHaveValue("Unsaved tire");
+  expect(setupControl("Title")).toHaveValue("Track setup unsaved");
+  expect(setupControl("Front hex offset (mm)")).toHaveValue("-2,123456789");
+  expect(setupControl("Rear wheel offset (mm)")).toHaveValue("0");
+  expect(setupControl("Front tire model")).toHaveValue("Unsaved tire");
 
-  expect(
-    screen.getByLabelText("Front lower arm mount configuration notes"),
-  ).toHaveValue("Unsaved front mount config");
-  expect(
-    screen.getByLabelText("Rear lower arm mount model / part number"),
-  ).toHaveValue("Unsaved rear mount");
-  expect(
-    screen.getByLabelText("Front knuckle part number / description"),
-  ).toHaveValue("Unsaved knuckle part");
-  expect(screen.getByLabelText("Front piston notes")).toHaveValue(
-    "Unsaved piston",
+  expect(setupControl("Front lower arm mount configuration notes")).toHaveValue(
+    "Unsaved front mount config",
   );
-  await user.click(screen.getByRole("button", { name: "Save setup" }));
-  await screen.findByText("Setup saved.");
+  expect(setupControl("Rear lower arm mount model / part number")).toHaveValue(
+    "Unsaved rear mount",
+  );
+  expect(setupControl("Front knuckle part number / description")).toHaveValue(
+    "Unsaved knuckle part",
+  );
+  expect(setupControl("Front piston notes")).toHaveValue("Unsaved piston");
+  await user.click(setupButton({ name: "Save setup" }));
+  await screen.findByRole("link", { name: "Edit setup" });
   expect(patch).not.toHaveProperty("photos");
   expect(patch).toMatchObject({
     title: "Track setup unsaved",
@@ -507,7 +479,7 @@ it("gallery viewer supports close/Escape, previous/next and focus containment/re
   await waitFor(() => expect(opener).toHaveFocus());
   expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
   await user.click(opener);
-  await user.click(screen.getByRole("button", { name: "Close photo" }));
+  await user.click(setupButton({ name: "Close photo" }));
   expect(opener).toHaveFocus();
 });
 
@@ -524,13 +496,9 @@ it.each([400, 409, 503, 500])(
     );
     renderSetupRoute(`/my/setups/${testSetup.id}/edit`);
     const user = userEvent.setup();
-    await waitFor(() =>
-      expect(screen.getByLabelText("Photo files")).toBeEnabled(),
-    );
-    await user.upload(screen.getByLabelText("Photo files"), file());
-    await user.click(
-      screen.getByRole("button", { name: "Upload queued photos" }),
-    );
+    await waitFor(() => expect(setupControl("Photo files")).toBeEnabled());
+    await user.upload(setupControl("Photo files"), file());
+    await user.click(setupButton({ name: "Upload queued photos" }));
     await screen.findByRole("button", { name: "Retry car.jpg" });
     expect(writes).toBe(1);
     expect(screen.getByText("Upload failed")).toBeInTheDocument();
@@ -548,13 +516,9 @@ it("suppresses duplicate pending uploads and photo writes", async () => {
   );
   renderSetupRoute(`/my/setups/${testSetup.id}/edit`);
   const user = userEvent.setup();
-  await waitFor(() =>
-    expect(screen.getByLabelText("Photo files")).toBeEnabled(),
-  );
-  await user.upload(screen.getByLabelText("Photo files"), file());
-  await user.dblClick(
-    screen.getByRole("button", { name: "Upload queued photos" }),
-  );
+  await waitFor(() => expect(setupControl("Photo files")).toBeEnabled());
+  await user.upload(setupControl("Photo files"), file());
+  await user.dblClick(setupButton({ name: "Upload queued photos" }));
   await screen.findByText("Uploaded and saved");
   expect(writes).toBe(1);
 });
@@ -577,7 +541,7 @@ it("media 401 expires the session; inaccessible media does not pretend to be a z
   );
   await userEvent
     .setup()
-    .click(screen.getByRole("button", { name: "Enlarge photo 1 (cover)" }));
+    .click(setupButton({ name: "Enlarge photo 1 (cover)" }));
   await screen.findByRole("button", { name: "Sign in with Google" });
 });
 it("revokes object URLs and gallery state after access is lost", async () => {
@@ -639,33 +603,30 @@ it("a stale cover failure refreshes gallery state while keeping unsaved fields",
   renderSetupRoute(`/my/setups/${testSetup.id}/edit`);
   const user = userEvent.setup();
   await screen.findByLabelText("Title");
-  await user.type(screen.getByLabelText("Title"), " unsaved");
-  fireEvent.change(screen.getByLabelText("Front hex offset (mm)"), {
+  await user.type(setupControl("Title"), " unsaved");
+  fireEvent.change(setupControl("Front hex offset (mm)"), {
     target: { value: "-2,123456789" },
   });
-  fireEvent.change(screen.getByLabelText("Rear wheel offset (mm)"), {
+  fireEvent.change(setupControl("Rear wheel offset (mm)"), {
     target: { value: "0" },
   });
-  fireEvent.change(screen.getByLabelText("Front tire model"), {
+  fireEvent.change(setupControl("Front tire model"), {
     target: { value: "Unsaved tire" },
   });
 
-  fireEvent.change(
-    screen.getByLabelText("Front lower arm mount configuration notes"),
-    { target: { value: "Unsaved front mount config" } },
-  );
-  fireEvent.change(
-    screen.getByLabelText("Rear lower arm mount model / part number"),
-    { target: { value: "Unsaved rear mount" } },
-  );
-  fireEvent.change(
-    screen.getByLabelText("Front knuckle part number / description"),
-    { target: { value: "Unsaved knuckle part" } },
-  );
-  fireEvent.change(screen.getByLabelText("Front piston notes"), {
+  fireEvent.change(setupControl("Front lower arm mount configuration notes"), {
+    target: { value: "Unsaved front mount config" },
+  });
+  fireEvent.change(setupControl("Rear lower arm mount model / part number"), {
+    target: { value: "Unsaved rear mount" },
+  });
+  fireEvent.change(setupControl("Front knuckle part number / description"), {
+    target: { value: "Unsaved knuckle part" },
+  });
+  fireEvent.change(setupControl("Front piston notes"), {
     target: { value: "Unsaved piston" },
   });
-  fireEvent.change(screen.getByLabelText("Rear differential tuning notes"), {
+  fireEvent.change(setupControl("Rear differential tuning notes"), {
     target: { value: "Unsaved differential tuning" },
   });
   await user.click(
@@ -675,28 +636,24 @@ it("a stale cover failure refreshes gallery state while keeping unsaved fields",
     "Photo or setup not found or unavailable. Reload photos.",
   );
   await waitFor(() => expect(galleries).toBeGreaterThan(1));
-  expect(screen.getByLabelText("Rear differential tuning notes")).toHaveValue(
+  expect(setupControl("Rear differential tuning notes")).toHaveValue(
     "Unsaved differential tuning",
   );
-  expect(screen.getByLabelText("Title")).toHaveValue("Track setup unsaved");
-  expect(screen.getByLabelText("Front hex offset (mm)")).toHaveValue(
-    "-2,123456789",
-  );
-  expect(screen.getByLabelText("Rear wheel offset (mm)")).toHaveValue("0");
-  expect(screen.getByLabelText("Front tire model")).toHaveValue("Unsaved tire");
+  expect(setupControl("Title")).toHaveValue("Track setup unsaved");
+  expect(setupControl("Front hex offset (mm)")).toHaveValue("-2,123456789");
+  expect(setupControl("Rear wheel offset (mm)")).toHaveValue("0");
+  expect(setupControl("Front tire model")).toHaveValue("Unsaved tire");
 
-  expect(
-    screen.getByLabelText("Front lower arm mount configuration notes"),
-  ).toHaveValue("Unsaved front mount config");
-  expect(
-    screen.getByLabelText("Rear lower arm mount model / part number"),
-  ).toHaveValue("Unsaved rear mount");
-  expect(
-    screen.getByLabelText("Front knuckle part number / description"),
-  ).toHaveValue("Unsaved knuckle part");
-  expect(screen.getByLabelText("Front piston notes")).toHaveValue(
-    "Unsaved piston",
+  expect(setupControl("Front lower arm mount configuration notes")).toHaveValue(
+    "Unsaved front mount config",
   );
+  expect(setupControl("Rear lower arm mount model / part number")).toHaveValue(
+    "Unsaved rear mount",
+  );
+  expect(setupControl("Front knuckle part number / description")).toHaveValue(
+    "Unsaved knuckle part",
+  );
+  expect(setupControl("Front piston notes")).toHaveValue("Unsaved piston");
   expect(writes).toBe(1);
 });
 it("changing session identity discards local queued previews and fields", async () => {
@@ -704,19 +661,17 @@ it("changing session identity discards local queued previews and fields", async 
   const { client } = renderSetupRoute("/my/setups/new");
   const user = userEvent.setup();
   await screen.findByLabelText("Title");
-  await user.type(screen.getByLabelText("Title"), "Private draft");
-  fireEvent.change(
-    screen.getByLabelText("Front knuckle part number / description"),
-    { target: { value: "Private knuckle draft" } },
-  );
-  fireEvent.change(
-    screen.getByLabelText("Front lower arm mount configuration notes"),
-    { target: { value: "Private mount draft" } },
-  );
-  fireEvent.change(screen.getByLabelText("Rear differential tuning notes"), {
+  await user.type(setupControl("Title"), "Private draft");
+  fireEvent.change(setupControl("Front knuckle part number / description"), {
+    target: { value: "Private knuckle draft" },
+  });
+  fireEvent.change(setupControl("Front lower arm mount configuration notes"), {
+    target: { value: "Private mount draft" },
+  });
+  fireEvent.change(setupControl("Rear differential tuning notes"), {
     target: { value: "Private differential tuning" },
   });
-  await user.upload(screen.getByLabelText("Photo files"), file());
+  await user.upload(setupControl("Photo files"), file());
   await screen.findByText("Queued — not uploaded");
   await act(() => {
     client.setQueryData(["auth", "me"], {
@@ -728,16 +683,14 @@ it("changing session identity discards local queued previews and fields", async 
   await waitFor(() =>
     expect(screen.queryByText("Queued — not uploaded")).not.toBeInTheDocument(),
   );
-  expect(screen.getByLabelText("Rear differential tuning notes")).toHaveValue(
+  expect(setupControl("Rear differential tuning notes")).toHaveValue("");
+  expect(setupControl("Front lower arm mount configuration notes")).toHaveValue(
     "",
   );
-  expect(
-    screen.getByLabelText("Front lower arm mount configuration notes"),
-  ).toHaveValue("");
-  expect(
-    screen.getByLabelText("Front knuckle part number / description"),
-  ).toHaveValue("");
-  expect(screen.getByLabelText("Title")).toHaveValue("");
+  expect(setupControl("Front knuckle part number / description")).toHaveValue(
+    "",
+  );
+  expect(setupControl("Title")).toHaveValue("");
   expect(URL.revokeObjectURL).toHaveBeenCalled();
 });
 it("a permitted non-owner sees gallery but no upload/cover/delete controls", async () => {

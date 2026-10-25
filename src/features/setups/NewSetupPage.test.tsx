@@ -1,3 +1,4 @@
+import { setupControl, setupButton, setupGroup } from "./form/testDriver";
 import { userSetupsKey } from "./queries";
 import { fireEvent, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
@@ -14,7 +15,7 @@ import {
 } from "./testUtils";
 
 function input(label: string, value: string) {
-  fireEvent.change(screen.getByLabelText(label), { target: { value } });
+  fireEvent.change(setupControl(label), { target: { value } });
 }
 it("creates Custom with numeric zero and omitted blank angles through the existing client", async () => {
   mockActiveCatalog();
@@ -38,9 +39,7 @@ it("creates Custom with numeric zero and omitted blank angles through the existi
   await screen.findByLabelText("Title");
   input("Title", "  Track setup  ");
   input("Front toe (degrees)", "0");
-  await userEvent
-    .setup()
-    .click(screen.getByRole("button", { name: "Create setup" }));
+  await userEvent.setup().click(setupButton({ name: "Create setup" }));
   expect(await screen.findByText("Setup created.")).toBeInTheDocument();
   expect(router.state.location.pathname).toBe("/my/setups");
   expect(client.getQueryState(searchKey)?.isInvalidated).toBe(true);
@@ -70,23 +69,16 @@ it("blocks a selected brand without model and validates required title", async (
   );
   renderSetupRoute("/my/setups/new");
   await screen.findByLabelText("Title");
-  await userEvent
-    .setup()
-    .click(screen.getByRole("button", { name: "Create setup" }));
+  await userEvent.setup().click(setupButton({ name: "Create setup" }));
   expect(
     await screen.findByText("This field is required."),
   ).toBeInTheDocument();
   input("Title", "Title");
-  await within(screen.getByRole("group", { name: "Chassis" })).findByRole(
-    "option",
-    { name: "MST" },
-  );
-  await userEvent
-    .setup()
-    .selectOptions(screen.getByLabelText("Brand"), activeBrand);
-  await userEvent
-    .setup()
-    .click(screen.getByRole("button", { name: "Create setup" }));
+  await within(setupGroup({ name: "Chassis" })).findByRole("option", {
+    name: "MST",
+  });
+  await userEvent.setup().selectOptions(setupControl("Brand"), activeBrand);
+  await userEvent.setup().click(setupButton({ name: "Create setup" }));
   expect(
     await screen.findByText("Select a model for the chosen brand."),
   ).toBeInTheDocument();
@@ -107,20 +99,19 @@ it("creates a realistic document with active chassis, links, shocks and electron
   renderSetupRoute("/my/setups/new");
   await screen.findByLabelText("Title");
   input("Title", "  Race  ");
-  await within(screen.getByRole("group", { name: "Chassis" })).findByRole(
-    "option",
-    { name: "MST" },
-  );
+  await within(setupGroup({ name: "Chassis" })).findByRole("option", {
+    name: "MST",
+  });
   const events = userEvent.setup();
-  await events.selectOptions(screen.getByLabelText("Brand"), activeBrand);
+  await events.selectOptions(setupControl("Brand"), activeBrand);
   await screen.findByRole("option", { name: "RMX" });
-  await events.selectOptions(screen.getByLabelText("Model"), activeModel);
-  await events.selectOptions(screen.getByLabelText("Visibility"), "public");
+  await events.selectOptions(setupControl("Model"), activeModel);
+  await events.selectOptions(setupControl("Visibility"), "public");
   input("Notes", " Track note ");
   input("Front camber (degrees)", "-1.5");
   input("Front toe (degrees)", "0");
   input("Rear caster (degrees)", "2");
-  await events.click(screen.getByRole("button", { name: "Add front link" }));
+  await events.click(setupButton({ name: "Add front link" }));
   input("Front link 1 name", " Upper ");
   input("Front link 1 length (mm)", "25");
   input("Front shock manufacturer", " Yokomo ");
@@ -134,7 +125,7 @@ it("creates a realistic document with active chassis, links, shocks and electron
   input("Servo", "Servo");
   input("Gyro", "Gyro");
   input("Radio", "Radio");
-  await events.click(screen.getByRole("button", { name: "Create setup" }));
+  await events.click(setupButton({ name: "Create setup" }));
   await screen.findByText("Setup created.");
   expect(received).toEqual({
     title: "Race",
@@ -150,21 +141,20 @@ it("validates independent front/rear link rows and removes empty rows rather tha
   await screen.findByLabelText("Title");
   input("Title", "Title");
   const events = userEvent.setup();
-  await events.click(screen.getByRole("button", { name: "Add front link" }));
-  await events.click(screen.getByRole("button", { name: "Add rear link" }));
+  await events.click(setupButton({ name: "Add front link" }));
+  await events.click(setupButton({ name: "Add rear link" }));
   input("Front link 1 name", "Upper");
   input("Front link 1 length (mm)", "0");
   input("Rear link 1 name", "Rear");
   input("Rear link 1 length (mm)", "30");
-  await events.click(screen.getByRole("button", { name: "Create setup" }));
+  await events.click(setupButton({ name: "Create setup" }));
   expect(
     await screen.findByText("Enter a finite length greater than zero."),
   ).toBeInTheDocument();
-  await events.click(
-    screen.getByRole("button", { name: "Remove front link 1" }),
-  );
+  await events.click(setupButton({ name: "Remove front link 1" }));
+  await events.click(setupButton({ name: "Confirm remove front link 1" }));
   expect(screen.queryByLabelText("Front link 1 name")).not.toBeInTheDocument();
-  expect(screen.getByLabelText("Rear link 1 length (mm)")).toHaveValue("30");
+  expect(setupControl("Rear link 1 length (mm)")).toHaveValue("30");
 });
 it.each([400, 403, 500, 415])(
   "shows safe create %s failure without discarding the form",
@@ -178,9 +168,7 @@ it.each([400, 403, 500, 415])(
     renderSetupRoute("/my/setups/new");
     await screen.findByLabelText("Title");
     input("Title", "Title");
-    await userEvent
-      .setup()
-      .click(screen.getByRole("button", { name: "Create setup" }));
+    await userEvent.setup().click(setupButton({ name: "Create setup" }));
     expect(await screen.findByRole("alert")).toHaveTextContent(
       status === 400
         ? "request was rejected"
@@ -188,7 +176,7 @@ it.each([400, 403, 500, 415])(
           ? "request is not allowed"
           : "Unable to save setup",
     );
-    expect(screen.getByLabelText("Title")).toHaveValue("Title");
+    expect(setupControl("Title")).toHaveValue("Title");
     expect(screen.queryByText("Internal details")).not.toBeInTheDocument();
   },
 );
@@ -202,9 +190,7 @@ it("create 401 clears existing authenticated UI", async () => {
   renderSetupRoute("/my/setups/new");
   await screen.findByLabelText("Title");
   input("Title", "Title");
-  await userEvent
-    .setup()
-    .click(screen.getByRole("button", { name: "Create setup" }));
+  await userEvent.setup().click(setupButton({ name: "Create setup" }));
   await screen.findByRole("button", { name: "Sign in with Google" });
   expect(screen.queryByLabelText("Title")).not.toBeInTheDocument();
 });

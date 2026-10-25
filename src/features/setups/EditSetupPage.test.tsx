@@ -1,3 +1,4 @@
+import { setupControl, setupButton } from "./form/testDriver";
 import { userSetupsKey } from "./queries";
 import { fireEvent, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
@@ -16,36 +17,41 @@ import { detailKey } from "./queries";
 const route = `/my/setups/${testSetup.id}/edit`;
 function detail() {
   server.use(
+    http.get(`${apiUrl}/api/v1/users/${testSetup.owner_id}`, () =>
+      HttpResponse.json({
+        id: testSetup.owner_id,
+        nickname: "Driver",
+        avatar_url: null,
+      }),
+    ),
     http.get(`${apiUrl}/api/v1/setups/${testSetup.id}`, () =>
       HttpResponse.json(testSetup),
     ),
   );
 }
 function input(label: string, value: string) {
-  fireEvent.change(screen.getByLabelText(label), { target: { value } });
+  fireEvent.change(setupControl(label), { target: { value } });
 }
 it("initializes every schema-v1 section including zero and missing values without loading active catalog", async () => {
   detail();
   renderSetupRoute(route);
   await screen.findByLabelText("Title");
-  expect(screen.getByLabelText("Title")).toHaveValue(testSetup.title);
-  expect(screen.getByLabelText("Front toe (degrees)")).toHaveValue("0");
-  expect(screen.getByLabelText("Front caster (degrees)")).toHaveValue("");
-  expect(screen.getByLabelText("Front link 1 name")).toHaveValue("Upper");
-  expect(screen.getByLabelText("Front link 1 length (mm)")).toHaveValue("25");
-  expect(screen.getByLabelText("Rear caster (degrees)")).toHaveValue("2");
-  expect(screen.getByLabelText("Front shock manufacturer")).toHaveValue(
-    "Yokomo",
-  );
-  expect(screen.getByLabelText("Front shock model")).toHaveValue("Big bore");
-  expect(screen.getByLabelText("Front spring manufacturer")).toHaveValue("MST");
-  expect(screen.getByLabelText("Front spring color")).toHaveValue("Red");
-  expect(screen.getByLabelText("Front shock oil (cSt)")).toHaveValue("100");
-  expect(screen.getByLabelText("Rear shock model")).toHaveValue("Rear shock");
+  expect(setupControl("Title")).toHaveValue(testSetup.title);
+  expect(setupControl("Front toe (degrees)")).toHaveValue("0");
+  expect(setupControl("Front caster (degrees)")).toHaveValue("");
+  expect(setupControl("Front link 1 name")).toHaveValue("Upper");
+  expect(setupControl("Front link 1 length (mm)")).toHaveValue("25");
+  expect(setupControl("Rear caster (degrees)")).toHaveValue("2");
+  expect(setupControl("Front shock manufacturer")).toHaveValue("Yokomo");
+  expect(setupControl("Front shock model")).toHaveValue("Big bore");
+  expect(setupControl("Front spring manufacturer")).toHaveValue("MST");
+  expect(setupControl("Front spring color")).toHaveValue("Red");
+  expect(setupControl("Front shock oil (cSt)")).toHaveValue("100");
+  expect(setupControl("Rear shock model")).toHaveValue("Rear shock");
   for (const label of ["Motor", "ESC", "Servo", "Gyro", "Radio"])
-    expect(screen.getByLabelText(label)).not.toHaveValue("");
-  expect(screen.getByLabelText("Notes")).toHaveValue("Old note");
-  expect(screen.getByLabelText("Visibility")).toHaveValue("friends");
+    expect(setupControl(label)).not.toHaveValue("");
+  expect(setupControl("Notes")).toHaveValue("Old note");
+  expect(setupControl("Visibility")).toHaveValue("friends");
   expect(
     screen.getByText("Current chassis: Historical Yokomo RD2.0"),
   ).toBeInTheDocument();
@@ -71,6 +77,11 @@ it("PATCHes the complete technical document, preserves historical chassis by omi
       async ({ request }) => {
         expect(request.credentials).toBe("include");
         received = await request.json();
+        server.use(
+          http.get(`${apiUrl}/api/v1/setups/${testSetup.id}`, () =>
+            HttpResponse.json(saved),
+          ),
+        );
         return HttpResponse.json(saved);
       },
     ),
@@ -84,10 +95,8 @@ it("PATCHes the complete technical document, preserves historical chassis by omi
   await screen.findByLabelText("Title");
   input("Front toe (degrees)", "1");
   input("Notes", "");
-  await userEvent
-    .setup()
-    .click(screen.getByRole("button", { name: "Save setup" }));
-  await screen.findByText("Setup saved.");
+  await userEvent.setup().click(setupButton({ name: "Save setup" }));
+  await screen.findByRole("link", { name: "Edit setup" });
   expect(received).toEqual({
     title: testSetup.title,
     visibility: testSetup.visibility,
@@ -125,19 +134,17 @@ it.each(["custom", "active", "cancel"])(
     renderSetupRoute(route);
     await screen.findByLabelText("Title");
     const events = userEvent.setup();
-    await events.click(screen.getByRole("button", { name: "Change chassis" }));
+    await events.click(setupButton({ name: "Change chassis" }));
     await screen.findByRole("option", { name: "MST" });
     if (change !== "custom") {
-      await events.selectOptions(screen.getByLabelText("Brand"), activeBrand);
+      await events.selectOptions(setupControl("Brand"), activeBrand);
       await screen.findByRole("option", { name: "RMX" });
-      await events.selectOptions(screen.getByLabelText("Model"), activeModel);
+      await events.selectOptions(setupControl("Model"), activeModel);
     }
     if (change === "cancel")
-      await events.click(
-        screen.getByRole("button", { name: "Cancel chassis change" }),
-      );
-    await events.click(screen.getByRole("button", { name: "Save setup" }));
-    await screen.findByText("Setup saved.");
+      await events.click(setupButton({ name: "Cancel chassis change" }));
+    await events.click(setupButton({ name: "Save setup" }));
+    await screen.findByRole("link", { name: "Edit setup" });
     if (change === "cancel")
       expect(received).not.toHaveProperty("chassis_model_id");
     else
@@ -167,23 +174,28 @@ it("preserves user edits on 409, blocks stale retry and reloads only after expli
   renderSetupRoute(route);
   await screen.findByLabelText("Title");
   input("Title", "Unsaved title");
+  input("Front toe (degrees)", "0,5");
+  expect(
+    screen.queryByRole("button", { name: "Delete setup" }),
+  ).not.toBeInTheDocument();
   const events = userEvent.setup();
-  await events.click(screen.getByRole("button", { name: "Save setup" }));
+  await events.click(setupButton({ name: "Save setup" }));
   expect(await screen.findByRole("alert")).toHaveTextContent(
     "changed concurrently",
   );
-  expect(screen.getByLabelText("Title")).toHaveValue("Unsaved title");
-  expect(screen.getByRole("button", { name: "Save setup" })).toBeDisabled();
+  expect(setupControl("Title")).toHaveValue("Unsaved title");
+  expect(setupButton({ name: "Save setup" })).toBeDisabled();
   expect(patches).toBe(1);
   await events.click(
-    screen.getByRole("button", {
+    setupButton({
       name: "Reload setup (discard unsaved changes)",
     }),
   );
   expect(
     await screen.findByDisplayValue("New server title"),
   ).toBeInTheDocument();
-  expect(screen.getByRole("button", { name: "Save setup" })).toBeEnabled();
+  expect(setupButton({ name: "Save setup" })).toBeEnabled();
+  expect(screen.getByRole("button", { name: "Delete setup" })).toBeVisible();
   expect(patches).toBe(1);
 });
 it.each([400, 404])(
@@ -265,9 +277,7 @@ it("recovers from detail server failure through explicit retry", async () => {
   );
   renderSetupRoute(route);
   await screen.findByRole("alert");
-  await userEvent
-    .setup()
-    .click(screen.getByRole("button", { name: "Retry setup" }));
+  await userEvent.setup().click(setupButton({ name: "Retry setup" }));
   await screen.findByLabelText("Title");
   expect(requests).toBe(2);
 });
@@ -282,9 +292,7 @@ it.each([400, 403, 404, 500])(
     );
     renderSetupRoute(route);
     await screen.findByLabelText("Title");
-    await userEvent
-      .setup()
-      .click(screen.getByRole("button", { name: "Save setup" }));
+    await userEvent.setup().click(setupButton({ name: "Save setup" }));
     await screen.findByRole("alert");
     expect(
       screen.queryByRole("button", { name: "Sign in with Google" }),
@@ -292,7 +300,7 @@ it.each([400, 403, 404, 500])(
     expect(screen.queryByText("Internal")).not.toBeInTheDocument();
     if (status === 404)
       expect(screen.queryByLabelText("Title")).not.toBeInTheDocument();
-    else expect(screen.getByLabelText("Title")).toHaveValue(testSetup.title);
+    else expect(setupControl("Title")).toHaveValue(testSetup.title);
   },
 );
 it.each(["get", "patch"])(
@@ -314,9 +322,7 @@ it.each(["get", "patch"])(
     renderSetupRoute(route);
     if (operation === "patch") {
       await screen.findByLabelText("Title");
-      await userEvent
-        .setup()
-        .click(screen.getByRole("button", { name: "Save setup" }));
+      await userEvent.setup().click(setupButton({ name: "Save setup" }));
     }
     await screen.findByRole("button", { name: "Sign in with Google" });
     expect(screen.queryByLabelText("Title")).not.toBeInTheDocument();
@@ -334,9 +340,80 @@ it("deletes from edit and navigates back to owned setups", async () => {
   const { router } = renderSetupRoute(route);
   await screen.findByLabelText("Title");
   const events = userEvent.setup();
-  await events.click(screen.getByRole("button", { name: "Delete setup" }));
-  await events.click(screen.getByRole("button", { name: "Confirm delete" }));
+  await events.click(setupButton({ name: "Delete setup" }));
+  await events.click(setupButton({ name: "Confirm delete" }));
   await screen.findByText("Setup deleted.");
   expect(router.state.location.pathname).toBe("/my/setups");
   expect(screen.queryByLabelText("Title")).not.toBeInTheDocument();
+});
+it("keeps whole-setup deletion at edit overview and section clearing scoped inside Edit Sections", async () => {
+  detail();
+  renderSetupRoute(route);
+  await screen.findByLabelText("Title");
+  expect(screen.getByRole("button", { name: "Delete setup" })).toBeVisible();
+  const user = userEvent.setup();
+  await user.click(screen.getByRole("button", { name: "Edit sections" }));
+  expect(
+    screen.queryByRole("button", { name: "Delete setup" }),
+  ).not.toBeInTheDocument();
+  expect(
+    screen.getByRole("button", { name: "Clear current section: General" }),
+  ).toBeVisible();
+  await user.click(
+    screen.getByRole("button", { name: "Back to edit overview" }),
+  );
+  expect(screen.getByRole("button", { name: "Delete setup" })).toBeVisible();
+});
+it("replaces a successful section editor in history; Back returns to the prior overview without stale draft", async () => {
+  detail();
+  server.use(
+    http.patch(`${apiUrl}/api/v1/setups/${testSetup.id}`, async ({ request }) =>
+      HttpResponse.json({
+        ...testSetup,
+        ...((await request.json()) as object),
+      }),
+    ),
+  );
+  const { router } = renderSetupRoute(`/setups/${testSetup.id}`);
+  const user = userEvent.setup();
+  await user.click(await screen.findByRole("link", { name: "Edit setup" }));
+  input("Front toe (degrees)", "0,123456789");
+  await user.click(screen.getByRole("button", { name: "Save setup" }));
+  await screen.findByRole("link", { name: "Edit setup" });
+  expect(router.state.location.pathname).toBe(`/setups/${testSetup.id}`);
+  expect(router.state.historyAction).toBe("REPLACE");
+  expect(screen.queryByLabelText("Title")).not.toBeInTheDocument();
+  const event = new Event("beforeunload", { cancelable: true });
+  window.dispatchEvent(event);
+  expect(event.defaultPrevented).toBe(false);
+  await import("@testing-library/react").then(({ act }) =>
+    act(() => router.navigate(-1)),
+  );
+  expect(router.state.location.pathname).toBe(`/setups/${testSetup.id}`);
+  expect(screen.queryByLabelText("Title")).not.toBeInTheDocument();
+});
+it("does not discard queued original photo bytes when setup Save succeeds", async () => {
+  detail();
+  server.use(
+    http.patch(`${apiUrl}/api/v1/setups/${testSetup.id}`, () =>
+      HttpResponse.json(testSetup),
+    ),
+  );
+  const { router } = renderSetupRoute(route);
+  await screen.findByLabelText("Title");
+  const file = new File(["original HEIF bytes"], "iphone.heic", {
+    type: "image/heic",
+  });
+  fireEvent.change(screen.getByLabelText("Photo files"), {
+    target: { files: [file] },
+  });
+  const user = userEvent.setup();
+  await user.click(screen.getByRole("button", { name: "Save setup" }));
+  await screen.findByRole("dialog", { name: "Leave unsaved changes?" });
+  expect(router.state.location.pathname).toBe(route);
+  await user.click(screen.getByRole("button", { name: "Keep editing" }));
+  expect(screen.getByText("iphone.heic")).toBeVisible();
+  expect(screen.getByLabelText("Title")).toHaveValue(testSetup.title);
+  await user.click(screen.getByRole("link", { name: "Back to my setups" }));
+  await screen.findByRole("dialog", { name: "Leave unsaved changes?" });
 });

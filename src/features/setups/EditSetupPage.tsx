@@ -1,7 +1,9 @@
+import { DraftGuard } from "./form/DraftGuard";
+import { usePhotoQueue } from "./photos/usePhotoQueue";
 import { PhotoManager } from "./photos/PhotoManager";
 import { InlineNotice, LoadingState } from "../../shared/components/Feedback";
 import { Button } from "../../shared/components/Button";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router";
 import { z } from "zod";
 import type { components } from "../../api/generated/schema";
@@ -17,6 +19,22 @@ export function EditSetupPage({
   user: components["schemas"]["User"];
 }) {
   const { setupId = "" } = useParams();
+  return <SetupEditor key={setupId} setupId={setupId} user={user} />;
+}
+
+// A different setup is a different document/queue lifetime. Section switches and
+// successful saves keep this owner mounted; confirmed cross-document exits do not.
+function SetupEditor({
+  user,
+  setupId,
+}: {
+  user: components["schemas"]["User"];
+  setupId: string;
+}) {
+  const [sectionView, setSectionView] = useState(false);
+  const [dirty, setDirty] = useState(false);
+  const allowExit = useRef(false);
+  const queue = usePhotoQueue();
   const valid = z.string().uuid().safeParse(setupId).success;
   const detail = useSetup(setupId, valid);
   const update = usePatchSetup(setupId);
@@ -73,7 +91,16 @@ export function EditSetupPage({
     <section className="setup-editor mt-8">
       <h2 className="text-2xl font-semibold">Edit setup</h2>
       <Link to="/my/setups">Back to my setups</Link>
-      <PhotoManager key={setupId} setupId={setupId} ownerId={user.id} />
+      <DraftGuard
+        dirty={dirty || queue.items.some((item) => item.state !== "uploaded")}
+        allowExit={allowExit}
+      />
+      <PhotoManager
+        key={setupId}
+        setupId={setupId}
+        ownerId={user.id}
+        queue={queue}
+      />
       {saved && <InlineNotice>Setup saved.</InlineNotice>}
       {update.isError && (
         <InlineNotice tone="error">
@@ -89,6 +116,7 @@ export function EditSetupPage({
             const result = await detail.refetch();
             if (result.isSuccess) {
               update.reset();
+              setSectionView(false);
               setRevision((value) => value + 1);
               setSaved(false);
             }
@@ -100,6 +128,14 @@ export function EditSetupPage({
       )}
       <SetupForm
         key={`${setupId}-${revision}`}
+        onDirtyChange={setDirty}
+        onSectionViewChange={setSectionView}
+        onSaved={() => {
+          allowExit.current = !queue.items.some(
+            (item) => item.state !== "uploaded",
+          );
+          navigate(`/setups/${setupId}`, { replace: true });
+        }}
         setup={detail.data}
         pending={update.isPending || reloading}
         blocked={conflict}
@@ -108,18 +144,21 @@ export function EditSetupPage({
           try {
             await update.mutateAsync(serializePatch(values));
             setSaved(true);
-            setRevision((value) => value + 1);
+            return true;
           } catch {
-            /* Safe error feedback comes from mutation state. */
+            return false;
           }
         }}
       />
-      <DeleteSetupButton
-        id={setupId}
-        onDeleted={() => {
-          navigate("/my/setups", { state: { message: "Setup deleted." } });
-        }}
-      />
+      {!sectionView && (
+        <DeleteSetupButton
+          id={setupId}
+          onDeleted={() => {
+            allowExit.current = true;
+            navigate("/my/setups", { state: { message: "Setup deleted." } });
+          }}
+        />
+      )}
     </section>
   );
 }

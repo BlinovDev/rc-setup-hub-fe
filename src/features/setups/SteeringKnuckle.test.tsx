@@ -1,8 +1,10 @@
+import { waitFor } from "@testing-library/react";
+import { setupControl, setupButton } from "./form/testDriver";
 import type { components } from "../../api/generated/schema";
 import { fireEvent, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { http, HttpResponse } from "msw";
-import { expect, it } from "vitest";
+import { beforeEach, expect, it } from "vitest";
 import { apiUrl } from "../../api/config";
 import { server } from "../../test/server";
 import { testSetup, testUser } from "./testFixtures";
@@ -24,7 +26,7 @@ const setup: Schemas["Setup"] = {
 };
 const path = `/my/setups/${setup.id}/edit`;
 const fill = (label: string, value: string) =>
-  fireEvent.change(screen.getByLabelText(label), { target: { value } });
+  fireEvent.change(setupControl(label), { target: { value } });
 function serve(value = setup) {
   server.use(
     http.get(`${apiUrl}/api/v1/setups/${setup.id}`, () =>
@@ -51,15 +53,16 @@ it("creates an independent front knuckle and shares the existing credentialed br
   );
   renderSetupRoute("/my/setups/new");
   await screen.findByLabelText("Title");
+  setupControl("Front knuckle part number / description");
   fill("Title", "Knuckle");
   const user = userEvent.setup();
-  const selector = screen.getByLabelText("Front knuckle manufacturer");
+  const selector = setupControl("Front knuckle manufacturer");
   await within(selector).findByRole("option", { name: "MST" });
   await user.selectOptions(selector, activeBrand);
   fill("Front knuckle part number / description", " Part #42\nAluminum ");
   fill("Front toe (degrees)", "0");
   fill("Rear camber (degrees)", "-1,25");
-  await user.click(screen.getByRole("button", { name: "Create setup" }));
+  await user.click(setupButton({ name: "Create setup" }));
   await screen.findByText("Setup created.");
   expect(received).toMatchObject({
     chassis_model_id: null,
@@ -85,22 +88,26 @@ it("retains historical selection and complete data on unrelated edits without ca
     }),
     http.patch(`${apiUrl}/api/v1/setups/${setup.id}`, async ({ request }) => {
       received = (await request.json()) as Schemas["PatchSetup"];
+      server.use(
+        http.get(`${apiUrl}/api/v1/setups/${setup.id}`, () =>
+          HttpResponse.json({ ...setup, ...received }),
+        ),
+      );
       return HttpResponse.json(setup);
     }),
   );
   renderSetupRoute(path);
   await screen.findByLabelText("Title");
+  setupControl("Front knuckle part number / description");
   expect(
     screen.getByText("Front knuckle manufacturer: Historical knuckle brand"),
   ).toBeVisible();
-  expect(
-    screen.getByLabelText("Front knuckle part number / description"),
-  ).toHaveValue("Part #42\nAluminum");
+  expect(setupControl("Front knuckle part number / description")).toHaveValue(
+    "Part #42\nAluminum",
+  );
   fill("Title", "Title only");
-  await userEvent
-    .setup()
-    .click(screen.getByRole("button", { name: "Save setup" }));
-  await screen.findByText("Setup saved.");
+  await userEvent.setup().click(setupButton({ name: "Save setup" }));
+  await screen.findByRole("link", { name: "Edit setup" });
   expect(received?.data).toEqual(setup.data);
   expect(received).not.toHaveProperty("chassis_model_id");
   expect(received).not.toHaveProperty("front_steering_knuckle_manufacturer");
@@ -118,31 +125,26 @@ it("retries catalog failures and cancels changed manufacturer without discarding
   );
   renderSetupRoute(path);
   await screen.findByLabelText("Title");
+  setupControl("Front knuckle part number / description");
   fill("Front knuckle part number / description", "Unsaved part");
   const user = userEvent.setup();
-  await user.click(
-    screen.getByRole("button", { name: "Change knuckle manufacturer" }),
-  );
+  await user.click(setupButton({ name: "Change knuckle manufacturer" }));
   expect(await screen.findByText(/Unable to load manufacturers/)).toBeVisible();
   expect(screen.queryByText("Private server detail")).not.toBeInTheDocument();
-  expect(screen.getByLabelText("Front knuckle manufacturer")).toHaveValue(
+  expect(setupControl("Front knuckle manufacturer")).toHaveValue(
     testSetup.chassis.brand_id,
   );
-  await user.click(
-    screen.getByRole("button", { name: "Retry knuckle manufacturers" }),
-  );
-  const selector = screen.getByLabelText("Front knuckle manufacturer");
+  await user.click(setupButton({ name: "Retry knuckle manufacturers" }));
+  const selector = setupControl("Front knuckle manufacturer");
   await within(selector).findByRole("option", { name: "MST" });
   await user.selectOptions(selector, activeBrand);
-  await user.click(
-    screen.getByRole("button", { name: "Cancel manufacturer change" }),
-  );
+  await user.click(setupButton({ name: "Cancel manufacturer change" }));
   expect(
     screen.getByText("Front knuckle manufacturer: Historical knuckle brand"),
   ).toBeVisible();
-  expect(
-    screen.getByLabelText("Front knuckle part number / description"),
-  ).toHaveValue("Unsaved part");
+  expect(setupControl("Front knuckle part number / description")).toHaveValue(
+    "Unsaved part",
+  );
   expect(calls).toBe(2);
 });
 it("blocks invalid writes with associated focus and clears/re-adds independent fields", async () => {
@@ -154,6 +156,11 @@ it("blocks invalid writes with associated focus and clears/re-adds independent f
     http.patch(`${apiUrl}/api/v1/setups/${setup.id}`, async ({ request }) => {
       writes++;
       received = (await request.json()) as Schemas["PatchSetup"];
+      server.use(
+        http.get(`${apiUrl}/api/v1/setups/${setup.id}`, () =>
+          HttpResponse.json({ ...setup, ...received }),
+        ),
+      );
       return HttpResponse.json({
         ...setup,
         data: received.data,
@@ -163,39 +170,35 @@ it("blocks invalid writes with associated focus and clears/re-adds independent f
   );
   renderSetupRoute(path);
   await screen.findByLabelText("Title");
+  setupControl("Front knuckle part number / description");
   fill("Front knuckle part number / description", "界".repeat(201));
   const user = userEvent.setup();
-  await user.click(screen.getByRole("button", { name: "Save setup" }));
-  const description = screen.getByLabelText(
-    "Front knuckle part number / description",
-  );
-  expect(description).toHaveFocus();
+  await user.click(setupButton({ name: "Save setup" }));
+  const description = setupControl("Front knuckle part number / description");
+  await waitFor(() => expect(description).toHaveFocus());
   expect(description).toHaveAccessibleDescription(
     "Use at most 200 characters.",
   );
   expect(writes).toBe(0);
-  await user.click(screen.getByRole("button", { name: "Clear front knuckle" }));
-  expect(description).toHaveValue("");
-  expect(description).toHaveAttribute("aria-invalid", "false");
+  await user.click(setupButton({ name: "Clear front knuckle" }));
+  expect(description).not.toBeInTheDocument();
   // Clear then cancel a new choice must not restore the historical selection.
-  await user.click(
-    screen.getByRole("button", { name: "Change knuckle manufacturer" }),
-  );
-  const selector = screen.getByLabelText("Front knuckle manufacturer");
+  await user.click(setupButton({ name: "Change knuckle manufacturer" }));
+  const selector = setupControl("Front knuckle manufacturer");
   await within(selector).findByRole("option", { name: "MST" });
   await user.selectOptions(selector, activeBrand);
-  await user.click(
-    screen.getByRole("button", { name: "Cancel manufacturer change" }),
-  );
+  await user.click(setupButton({ name: "Cancel manufacturer change" }));
   expect(
     screen.getByText("Front knuckle manufacturer: Not specified"),
   ).toBeVisible();
-  await user.click(screen.getByRole("button", { name: "Save setup" }));
-  await screen.findByText("Setup saved.");
+  await user.click(setupButton({ name: "Save setup" }));
+  await screen.findByRole("link", { name: "Edit setup" });
   expect(received?.data).toEqual(testSetup.data);
+  await user.click(screen.getByRole("link", { name: "Edit setup" }));
+  await screen.findByLabelText("Title");
   fill("Front knuckle part number / description", "Description only");
-  await user.click(screen.getByRole("button", { name: "Save setup" }));
-  await screen.findByText("Setup saved.");
+  await user.click(setupButton({ name: "Save setup" }));
+  await screen.findByRole("link", { name: "Edit setup" });
   expect(received?.data?.front_steering_knuckle).toEqual({
     description: "Description only",
   });
@@ -241,9 +244,10 @@ it("edits legacy setups with blank controls", async () => {
   serve(testSetup);
   renderSetupRoute(path);
   await screen.findByLabelText("Title");
-  expect(
-    screen.getByLabelText("Front knuckle part number / description"),
-  ).toHaveValue("");
+  setupControl("Front knuckle part number / description");
+  expect(setupControl("Front knuckle part number / description")).toHaveValue(
+    "",
+  );
   expect(
     screen.getByText("Front knuckle manufacturer: Not specified"),
   ).toBeVisible();
@@ -270,3 +274,15 @@ it.each([null, {}])(
     ).not.toBeInTheDocument();
   },
 );
+
+beforeEach(() => {
+  server.use(
+    http.get(`${apiUrl}/api/v1/users/${testSetup.owner_id}`, () =>
+      HttpResponse.json({
+        id: testSetup.owner_id,
+        nickname: "Driver",
+        avatar_url: null,
+      }),
+    ),
+  );
+});
