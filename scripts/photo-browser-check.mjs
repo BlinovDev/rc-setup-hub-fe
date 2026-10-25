@@ -1854,6 +1854,20 @@ try {
             exact: true,
           });
           await panel.waitFor({ state: "visible" });
+          const addBox = await add.boundingBox();
+          const addArrow = await add
+            .locator("svg.disclosure-chevron")
+            .boundingBox();
+          assert(
+            addBox &&
+              addArrow &&
+              Math.abs(
+                addArrow.y +
+                  addArrow.height / 2 -
+                  (addBox.y + addBox.height / 2),
+              ) < 2,
+            "Add component chevron must be vertically centered",
+          );
           assert.equal(
             await panel.getByRole("button", { name: /close/i }).count(),
             0,
@@ -1867,6 +1881,31 @@ try {
       }
     }
     await selectSection("General");
+    const visibilityStyle = await page
+      .getByLabel("Visibility", { exact: true })
+      .evaluate((el) => {
+        const style = getComputedStyle(el);
+        return {
+          appearance: style.appearance,
+          position: style.backgroundPosition,
+          image: style.backgroundImage,
+        };
+      });
+    assert.equal(visibilityStyle.appearance, "none");
+    assert(
+      visibilityStyle.image.includes("svg") &&
+        visibilityStyle.position.includes("50%"),
+      "native select indicator must be centered",
+    );
+    await page.emulateMedia({ forcedColors: "active" });
+    assert.equal(
+      await page
+        .getByLabel("Visibility", { exact: true })
+        .evaluate((el) => getComputedStyle(el).appearance),
+      "auto",
+      "forced colors must retain the native indicator",
+    );
+    await page.emulateMedia({ forcedColors: "none" });
     await page
       .getByLabel("Notes", { exact: true })
       .fill("General draft retained");
@@ -2156,10 +2195,24 @@ try {
       const strip = page.locator(".sections-trigger-sticky");
       const box = await strip.boundingBox();
       assert(
-        box && box.y >= -1 && box.y < 4 && box.height >= 44 && box.height < 70,
-        "one compact sticky strip must remain at the safe top edge",
+        box && box.y >= 11 && box.y < 16 && box.height >= 64 && box.height < 90,
+        "distinct section picker must retain breathing room below the safe top edge",
       );
-      assert.equal(await strip.locator(".section-chevron").count(), 1);
+      assert.equal(await strip.locator("svg.section-chevron").count(), 1);
+      assert.equal(
+        await strip.getByText("Section", { exact: true }).count(),
+        1,
+      );
+      const arrow = await strip.locator("svg.section-chevron").boundingBox();
+      assert(
+        arrow &&
+          Math.abs(arrow.y + arrow.height / 2 - (box.y + box.height / 2)) < 2,
+        "section chevron must be vertically centered",
+      );
+      assert.equal(
+        await strip.evaluate((el) => getComputedStyle(el).backgroundColor),
+        "rgb(224, 242, 254)",
+      );
       await page.screenshot({
         path: `artifacts/photo-qa/compact-sticky-${width}x${height}.png`,
       });

@@ -1,3 +1,4 @@
+import { Chevron } from "../../../shared/components/Chevron";
 import { useId, useRef, useState } from "react";
 import { useFormContext, useWatch } from "react-hook-form";
 import { Button } from "../../../shared/components/Button";
@@ -51,9 +52,7 @@ export function AddComponent({ section }: { section: SectionId }) {
         onClick={() => setOpen((value) => !value)}
       >
         <span aria-hidden="true">+ </span>Add component
-        <span aria-hidden="true" className="add-component-chevron">
-          {open ? "⌃" : "⌄"}
-        </span>
+        <Chevron className="add-component-chevron" up={open} />
       </Button>
       <div
         hidden={!open}

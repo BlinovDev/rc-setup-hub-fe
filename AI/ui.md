@@ -36,9 +36,11 @@ writes/queues independent of technical Save and outside its disabled fieldset.
 Automatic photo crop dialogs render outside hidden General and retain their state
 owner; dismissal restores a visible opener or the current section heading.
 
-Desktop keeps a sidebar from 768px. Mobile Edit uses one modest 50px sticky current
-section/chevron button above all content, with a light border, side spacing and safe
-top inset; the non-sticky app header scrolls away. It opens the native modal bottom
+Desktop keeps a sidebar from 768px. Mobile Edit uses one distinct sticky
+current-section button above all content,
+with a small Section caption, blue-tinted surface/border, side spacing and a 12px
+gap below the safe top edge. Its geometric chevron stays vertically centered;
+the non-sticky app header scrolls away. It opens the native modal bottom
 sheet with current location/error counts. Selection focuses the section heading;
 Escape/dismissal restores the trigger. Keep focused controls below the picker and
 above fixed Save/site navigation; compact Save padding must retain 44px controls.

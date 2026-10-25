@@ -821,12 +821,12 @@
 }
 
 /* Edit Sections only: the app header scrolls normally, so the picker pins to
-   the safe top edge without a second header offset. Its workspace contains
+   a safe inset below the top edge without a second header offset. Its workspace contains
    the whole active section, keeping the strip pinned through long editors. */
 @media (max-width: 767px) {
   .sections-trigger-sticky {
     position: sticky;
-    top: env(safe-area-inset-top, 0px);
+    top: calc(0.75rem + env(safe-area-inset-top, 0px));
     z-index: 20;
     background: white;
     border: 2px solid #64748b;
@@ -836,12 +836,27 @@
   .edit-sections-workspace
     .setup-section-pane
     :is(input, textarea, select, button, h2) {
-    scroll-margin-top: calc(4rem + env(safe-area-inset-top, 0px));
+    scroll-margin-top: calc(6rem + env(safe-area-inset-top, 0px));
   }
 }
-.section-chevron {
-  font-size: 1.5rem;
-  line-height: 1;
+.disclosure-chevron {
+  display: block;
+  width: 1.5rem;
+  height: 1.5rem;
+  flex: 0 0 1.5rem;
+  align-self: center;
+}
+.section-trigger-label {
+  display: grid;
+  gap: 0.125rem;
+  text-align: left;
+  line-height: 1.25;
+}
+.section-trigger-caption {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
 }
 .component-summary:has(.component-summary-rows) {
   display: block;
@@ -902,7 +917,7 @@
   margin-top: 0.75rem;
 }
 .setup-edit-layout :is(input, textarea, select, button, h2) {
-  scroll-margin-top: calc(4.25rem + env(safe-area-inset-top, 0px));
+  scroll-margin-top: calc(6rem + env(safe-area-inset-top, 0px));
 }
 .setup-edit-layout fieldset {
   min-width: 0;
@@ -1077,12 +1092,12 @@
 }
 @media (max-width: 767px) {
   .setup-edit-layout > .sections-trigger-sticky {
-    min-height: 50px;
-    height: 50px;
-    padding: 0.5rem 0.75rem;
-    border: 1px solid #cbd5e1;
-    background: #f8fafc;
-    box-shadow: 0 1px 3px rgb(15 23 42 / 8%);
+    min-height: 64px;
+    padding: 0.5rem 0.875rem;
+    border: 2px solid #0369a1;
+    background: #e0f2fe;
+    color: #0c4a6e;
+    box-shadow: 0 3px 10px rgb(15 23 42 / 16%);
     margin-bottom: 1rem;
   }
 }
@@ -1101,5 +1116,21 @@
   }
   .available-components {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+/* Retain native select behavior; center a crisp, font-independent indicator. */
+.setup-edit-layout select {
+  appearance: none;
+  padding-inline-end: 2.75rem;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none'%3E%3Cpath d='m6 9 6 6 6-6' stroke='%23263749' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-position: right 0.75rem center;
+  background-size: 1.5rem 1.5rem;
+  background-repeat: no-repeat;
+}
+@media (forced-colors: active) {
+  .setup-edit-layout select {
+    appearance: auto;
+    background-image: none;
   }
 }

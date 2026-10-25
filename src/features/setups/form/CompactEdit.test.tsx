@@ -195,3 +195,13 @@ it("explicit conflict reload resets technical editors without remounting the pho
   select("Front");
   expect(screen.getByLabelText("Front toe (degrees)")).toHaveValue("0");
 });
+
+it("identifies the section picker separately from the editable content and uses a geometric disclosure icon", () => {
+  show();
+  const picker = screen.getByRole("button", { name: "Sections · General" });
+  expect(within(picker).getByText("Section")).toBeVisible();
+  const icon = picker.querySelector("svg.section-chevron");
+  expect(icon).toHaveAttribute("aria-hidden", "true");
+  expect(icon).toHaveAttribute("viewBox", "0 0 24 24");
+  expect(picker.textContent).not.toMatch(/[⌄⌃]/);
+});
