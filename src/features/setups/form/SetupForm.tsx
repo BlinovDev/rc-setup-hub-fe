@@ -93,26 +93,17 @@ export function SetupForm({
       setOpened((current) => ({ ...current, [component.id]: true }));
     setFocusRequest({ path });
   }
-  function validateComponent(paths: string[]) {
-    const parsed = setupFormSchema.safeParse(form.getValues());
-    const next: FormIssue[] = parsed.success
+  function validationIssues(
+    parsed: ReturnType<typeof setupFormSchema.safeParse>,
+  ): FormIssue[] {
+    return parsed.success
       ? []
-      : parsed.error.issues
-          .map((issue) => ({
-            path: issue.path.join("."),
-            message: issue.message,
-          }))
-          .filter((issue) =>
-            paths.some((root) => matchesPath(issue.path, root)),
-          );
-    for (const path of paths)
-      form.clearErrors(path as FieldPath<SetupFormValues>);
-    setIssues((old) => [
-      ...old.filter(
-        (issue) => !paths.some((root) => matchesPath(issue.path, root)),
-      ),
-      ...next,
-    ]);
+      : parsed.error.issues.map((issue) => ({
+          path: issue.path.join("."),
+          message: issue.message,
+        }));
+  }
+  function showIssues(next: FormIssue[]) {
     next.forEach((issue) =>
       form.setError(issue.path as FieldPath<SetupFormValues>, {
         type: "validate",
@@ -120,6 +111,20 @@ export function SetupForm({
       }),
     );
     if (next[0]) reveal(next[0].path);
+  }
+  function validateComponent(paths: string[]) {
+    const inComponent = (issue: FormIssue) =>
+      paths.some((root) => matchesPath(issue.path, root));
+    const next = validationIssues(
+      setupFormSchema.safeParse(form.getValues()),
+    ).filter(inComponent);
+    for (const path of paths)
+      form.clearErrors(path as FieldPath<SetupFormValues>);
+    setIssues((old) => [
+      ...old.filter((issue) => !inComponent(issue)),
+      ...next,
+    ]);
+    showIssues(next);
     return !next.length;
   }
   const counts: Partial<Record<SectionId, number>> = {};
@@ -213,18 +218,9 @@ export function SetupForm({
                 form.clearErrors();
                 const parsed = setupFormSchema.safeParse(values);
                 if (!parsed.success) {
-                  const next = parsed.error.issues.map((issue) => ({
-                    path: issue.path.join("."),
-                    message: issue.message,
-                  }));
+                  const next = validationIssues(parsed);
                   setIssues(next);
-                  next.forEach((issue) =>
-                    form.setError(issue.path as FieldPath<SetupFormValues>, {
-                      type: "validate",
-                      message: issue.message,
-                    }),
-                  );
-                  if (next[0]) reveal(next[0].path);
+                  showIssues(next);
                   return;
                 }
                 setIssues([]);

@@ -1,3 +1,4 @@
+import { chassisLabel } from "../setups/api";
 import { PhotoImage } from "../setups/photos/PhotoImage";
 import { PublicIdentity } from "../users/PublicIdentity";
 import { Link } from "react-router";
@@ -19,11 +20,7 @@ export function SetupSearchCard({
         <p>
           <PublicIdentity user={item.owner} />
         </p>
-        <p>
-          {item.chassis
-            ? `${item.chassis.brand_name} ${item.chassis.model_name}`
-            : "Custom / not listed"}
-        </p>
+        <p>{chassisLabel(item)}</p>
         <p>
           Created:{" "}
           <time dateTime={item.created_at}>

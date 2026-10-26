@@ -5,7 +5,7 @@ import {
   type QueryClient,
 } from "@tanstack/react-query";
 import { currentUserOptions } from "../../auth/queries";
-import { detailKey, mineKey, userSetupsKey, withSession } from "../queries";
+import { detailKey, refreshSetupLists, withSession } from "../queries";
 import {
   chooseCover,
   cropPhoto,
@@ -24,9 +24,7 @@ export async function refreshPhotos(
   await Promise.all([
     client.invalidateQueries({ queryKey: photosKey(id) }),
     client.invalidateQueries({ queryKey: detailKey(id), exact: true }),
-    client.invalidateQueries({ queryKey: mineKey, exact: true }),
-    client.invalidateQueries({ queryKey: userSetupsKey(ownerId), exact: true }),
-    client.invalidateQueries({ queryKey: ["setups", "search"] }),
+    refreshSetupLists(client, ownerId),
   ]);
 }
 export function usePhotos(id: string, enabled = true) {
@@ -40,17 +38,27 @@ export function usePhotos(id: string, enabled = true) {
     gcTime: 0,
   });
 }
+function photoMutationRefresh(
+  client: QueryClient,
+  id: string,
+  ownerId: string,
+  statuses = [404, 409],
+) {
+  return {
+    retry: false as const,
+    onSuccess: () => refreshPhotos(client, id, ownerId),
+    onError: async (error: Error) => {
+      if (error instanceof SetupError && statuses.includes(error.status))
+        await refreshPhotos(client, id, ownerId);
+    },
+  };
+}
 export function usePhotoActions(id: string, ownerId: string) {
   const client = useQueryClient();
   const upload = useMutation({
     mutationFn: ({ file, requestId }: { file: File; requestId: string }) =>
       withSession(client, () => uploadPhoto(id, file, requestId)),
-    retry: false,
-    onSuccess: () => refreshPhotos(client, id, ownerId),
-    onError: async (error) => {
-      if (error instanceof SetupError && [400, 404, 409].includes(error.status))
-        await refreshPhotos(client, id, ownerId);
-    },
+    ...photoMutationRefresh(client, id, ownerId, [400, 404, 409]),
   });
   const mutation = useMutation({
     mutationFn: ({ photoId, remove }: { photoId: string; remove: boolean }) =>
@@ -58,12 +66,7 @@ export function usePhotoActions(id: string, ownerId: string) {
         if (remove) await deletePhoto(id, photoId);
         else await chooseCover(id, photoId);
       }),
-    retry: false,
-    onSuccess: () => refreshPhotos(client, id, ownerId),
-    onError: async (error) => {
-      if (error instanceof SetupError && [404, 409].includes(error.status))
-        await refreshPhotos(client, id, ownerId);
-    },
+    ...photoMutationRefresh(client, id, ownerId),
   });
   return { upload, mutation };
 }
@@ -77,11 +80,6 @@ export function useCropPhoto(id: string, ownerId: string) {
       photoId: string;
       body: components["schemas"]["PhotoCropUpdate"];
     }) => withSession(client, () => cropPhoto(id, photoId, body)),
-    retry: false,
-    onSuccess: () => refreshPhotos(client, id, ownerId),
-    onError: async (error) => {
-      if (error instanceof SetupError && [404, 409].includes(error.status))
-        await refreshPhotos(client, id, ownerId);
-    },
+    ...photoMutationRefresh(client, id, ownerId),
   });
 }
