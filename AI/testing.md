@@ -41,7 +41,12 @@ npx playwright install --with-deps chromium
 npm run test:photos:browser
 ```
 
-The script starts local Vite, uses mock backend HTTP, and checks 320/375/390/768/1280
+The script starts local Vite and runs independent `lifecycle` and `compact-edit`
+scenarios, each with a fresh browser context and explicit backend fixture. Failures
+are named by scenario/viewport and collected so later scenarios still run. To
+reproduce one suite, use `PHOTO_BROWSER_SCENARIO=compact-edit npm run test:photos:browser`
+(or `lifecycle`); the required gate remains the unfiltered command. It uses mock
+backend HTTP and checks 320/375/390/768/1280
 plus 640x360. It covers chooser/toolbar, save-once/partial retry, gallery/focus,
 crop mouse/emulated touch/arrows/sliders, integer preview/frame, all six shapes,
 revision/blob refresh, bounded square lists/long titles/placeholder/errors and
