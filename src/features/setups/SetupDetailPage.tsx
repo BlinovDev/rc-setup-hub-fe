@@ -58,6 +58,7 @@ export function SetupDetailPage({
     <article className="space-y-4">
       <h2 className="text-2xl font-semibold">{setup.title}</h2>
       <Owner id={setup.owner_id} />
+      <Gallery key={setup.id} setupId={setup.id} />
       <p>{chassisLabel(setup)}</p>
       <VisibilityBadge value={setup.visibility} />
       <p>
@@ -116,7 +117,6 @@ export function SetupDetailPage({
           />
         </InlineNotice>
       )}
-      <Gallery key={setup.id} setupId={setup.id} />
       {setup.schema_version === 1 ? (
         <TechnicalData
           runningGearManufacturers={setup.running_gear_manufacturers}

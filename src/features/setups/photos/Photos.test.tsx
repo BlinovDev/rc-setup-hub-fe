@@ -530,7 +530,7 @@ it("suppresses duplicate pending uploads and photo writes", async () => {
 it("media 401 expires the session; inaccessible media does not pretend to be a zero-photo setup", async () => {
   mockSetupGallery([photo(1)]);
   server.use(
-    http.get(`${apiUrl}/api/v1/setups/:id/photos/:photoId/thumbnail`, () =>
+    http.get(`${apiUrl}/api/v1/setups/:id/photos/:photoId/image`, () =>
       HttpResponse.json({ error: "gone" }, { status: 404 }),
     ),
   );
@@ -762,4 +762,48 @@ it("keeps an upload and its crop offer usable after General is hidden, retaining
   expect(screen.getByText("continued.heic")).toBeVisible();
   expect(screen.getByText("Uploaded and saved")).toBeVisible();
   expect(uploads).toBe(1);
+});
+
+it("navigates the native full-aspect gallery by scroll and keyboard without opening the lightbox", async () => {
+  mockSetupGallery([photo(1), photo(2), photo(3)]);
+  renderSetupRoute(`/setups/${testSetup.id}`);
+  const user = userEvent.setup();
+  const track = await screen.findByRole("group", { name: "Photo slides" });
+  Object.defineProperty(track, "clientWidth", {
+    configurable: true,
+    value: 300,
+  });
+  track.scrollLeft = 300;
+  fireEvent.scroll(track);
+  const gallery = screen.getByRole("region", { name: "Setup gallery" });
+  expect(within(gallery).getByText("Photo 2 of 3")).toBeVisible();
+  expect(
+    within(gallery).getByRole("button", { name: "Enlarge photo 2" }),
+  ).toBeVisible();
+  expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+  track.focus();
+  await user.keyboard("{End}");
+  expect(within(gallery).getByText("Photo 3 of 3")).toBeVisible();
+  await user.keyboard("{Home}");
+  expect(within(gallery).getByText("Photo 1 of 3")).toBeVisible();
+  expect(track).toHaveFocus();
+});
+it("offers one-photo expansion without redundant carousel navigation", async () => {
+  mockSetupGallery([photo(1)]);
+  renderSetupRoute(`/setups/${testSetup.id}`);
+  expect(await screen.findByText("Photo 1 of 1")).toBeVisible();
+  expect(
+    screen.queryByRole("button", { name: "Next gallery photo" }),
+  ).not.toBeInTheDocument();
+  const user = userEvent.setup();
+  await user.click(
+    screen.getByRole("button", { name: "Enlarge photo 1 (cover)" }),
+  );
+  expect(
+    screen.queryByRole("button", { name: "Next photo" }),
+  ).not.toBeInTheDocument();
+  await user.keyboard("{Escape}");
+  expect(
+    screen.getByRole("button", { name: "Enlarge photo 1 (cover)" }),
+  ).toHaveFocus();
 });

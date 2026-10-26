@@ -156,6 +156,8 @@ it("applies integer keyboard/slider coordinates and reopens the persisted frame;
   fireEvent.load(img);
   expect(screen.getByLabelText("Horizontal position")).toHaveValue("13");
   await user.click(screen.getByRole("button", { name: "Reset to center" }));
+  expect(writes).toHaveLength(1);
+  await user.click(screen.getByRole("button", { name: "Apply thumbnail" }));
   await waitFor(() =>
     expect(writes[1]).toEqual({ expected_revision: 2, crop: null }),
   );
@@ -229,5 +231,34 @@ it("removes the normalized preview and blocks apply when a crop races with delet
   await user.click(screen.getByRole("button", { name: "Cancel adjustment" }));
   await waitFor(() =>
     expect(screen.getByRole("button", { name: "Choose photos" })).toHaveFocus(),
+  );
+});
+
+it("uses a moderate zoom range instead of source-pixel magnification", async () => {
+  await open();
+  const zoom = screen.getByLabelText("Zoom");
+  expect(Number(zoom.getAttribute("max"))).toBeLessThanOrEqual(4);
+  expect(zoom).toHaveAttribute("step", "0.05");
+});
+
+it("keeps reset as an unsaved draft until Apply; cancel and reopen retain the old frame", async () => {
+  const user = await open();
+  fireEvent.change(screen.getByLabelText("Zoom"), { target: { value: "2" } });
+  await user.click(screen.getByRole("button", { name: "Reset to center" }));
+  expect(writes).toEqual([]);
+  expect(screen.getByLabelText("Zoom")).toHaveValue("1");
+  await user.click(screen.getByRole("button", { name: "Cancel adjustment" }));
+  await user.click(screen.getByRole("button", { name: "Adjust thumbnail 1" }));
+  expect(screen.getByLabelText("Vertical position")).toHaveValue("50");
+  expect(writes).toEqual([]);
+});
+it("preserves historical extreme saved crops until explicitly reset", async () => {
+  photo.crop = { x: 20, y: 60, size: 1 };
+  const user = await open();
+  expect(screen.getByLabelText("Zoom")).toBeDisabled();
+  expect(screen.getByText(/saved crop is tighter/)).toBeVisible();
+  await user.click(screen.getByRole("button", { name: "Apply thumbnail" }));
+  await waitFor(() =>
+    expect(writes[0]?.crop).toEqual({ x: 20, y: 60, size: 1 }),
   );
 });

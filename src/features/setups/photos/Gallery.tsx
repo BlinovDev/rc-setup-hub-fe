@@ -5,16 +5,38 @@ import {
   InlineNotice,
   LoadingState,
 } from "../../../shared/components/Feedback";
+import { trapDialogTab } from "../form/dialogFocus";
 import { PhotoImage } from "./PhotoImage";
 import { usePhotos } from "./queries";
+type Photo = components["schemas"]["SetupPhoto"];
+
 export function Gallery({ setupId }: { setupId: string }) {
-  const photos = usePhotos(setupId);
+  const query = usePhotos(setupId);
+  if (query.isPending) return <LoadingState>Loading photos…</LoadingState>;
+  if (query.isError)
+    return (
+      <InlineNotice tone="error">
+        Photos not found or unavailable.{" "}
+        <Button onClick={() => void query.refetch()}>Retry photos</Button>
+      </InlineNotice>
+    );
+  if (!query.data.length) return <p>No photos yet.</p>;
+  return <PhotoCarousel key={setupId} photos={query.data} />;
+}
+
+function PhotoCarousel({ photos }: { photos: Photo[] }) {
+  const [active, setActive] = useState(photos[0]!.id);
+  const activeRef = useRef(active);
+  const index = Math.max(
+    0,
+    photos.findIndex((p) => p.id === active),
+  );
+  const track = useRef<HTMLDivElement>(null);
   const [selected, setSelected] = useState<string>();
   const trigger = useRef<HTMLButtonElement | null>(null);
   const dialog = useRef<HTMLDialogElement>(null);
-  const gallery = photos.isError ? [] : (photos.data ?? []);
-  const index = gallery.findIndex((p) => p.id === selected);
-  const current = gallery[index];
+  const selectedIndex = photos.findIndex((p) => p.id === selected);
+  const current = photos[selectedIndex];
   useEffect(() => {
     if (current && !dialog.current?.open) {
       dialog.current?.showModal();
@@ -22,73 +44,182 @@ export function Gallery({ setupId }: { setupId: string }) {
     }
     if (!current && dialog.current?.open) dialog.current.close();
   }, [current]);
+  useEffect(() => {
+    const element = dialog.current;
+    const dismiss = element?.close.bind(element);
+    return () => dismiss?.();
+  }, []);
+  useEffect(() => {
+    const element = track.current;
+    if (!element || typeof ResizeObserver === "undefined") return;
+    const observer = new ResizeObserver(() => {
+      const next = Math.max(
+        0,
+        photos.findIndex((p) => p.id === activeRef.current),
+      );
+      element.scrollTo({
+        left: next * element.clientWidth,
+        behavior: "instant",
+      });
+    });
+    observer.observe(element);
+    return () => observer.disconnect();
+  }, [photos]);
+  function go(next: number) {
+    const bounded = (next + photos.length) % photos.length;
+    activeRef.current = photos[bounded]!.id;
+    setActive(activeRef.current);
+    track.current?.scrollTo?.({
+      left: bounded * track.current.clientWidth,
+      behavior: "instant",
+    });
+  }
   function close() {
     setSelected(undefined);
-    trigger.current?.focus();
+    if (trigger.current?.isConnected)
+      trigger.current.focus({ preventScroll: true });
   }
-  if (photos.isPending) return <LoadingState>Loading photos…</LoadingState>;
-  if (photos.isError)
-    return (
-      <InlineNotice tone="error">
-        Photos not found or unavailable.{" "}
-        <Button onClick={() => void photos.refetch()}>Retry photos</Button>
-      </InlineNotice>
-    );
-  if (!gallery.length) return <p>No photos yet.</p>;
+  function view(next: number) {
+    setSelected(photos[(next + photos.length) % photos.length]!.id);
+  }
   return (
-    <section aria-label="Setup gallery" className="space-y-3">
+    <section
+      aria-label="Setup gallery"
+      aria-roledescription="carousel"
+      className="photo-carousel"
+    >
       <h3 className="font-semibold">Photos</h3>
-      <div className="photo-grid">
-        {gallery.map((p, i) => (
-          <Button
-            key={p.id}
-            className="photo-open"
-            aria-label={`Enlarge photo ${i + 1}${p.is_cover ? " (cover)" : ""}`}
-            onClick={(e) => {
-              trigger.current = e.currentTarget;
-              setSelected(p.id);
-            }}
+      <div
+        ref={track}
+        className="photo-slides"
+        role="group"
+        aria-label="Photo slides"
+        tabIndex={0}
+        onScroll={(e) => {
+          const width = e.currentTarget.clientWidth;
+          if (!width) return;
+          const next = Math.max(
+            0,
+            Math.min(
+              photos.length - 1,
+              Math.round(e.currentTarget.scrollLeft / width),
+            ),
+          );
+          activeRef.current = photos[next]!.id;
+          setActive(activeRef.current);
+        }}
+        onKeyDown={(e) => {
+          const next = {
+            ArrowLeft: index - 1,
+            ArrowRight: index + 1,
+            Home: 0,
+            End: photos.length - 1,
+          }[e.key];
+          if (next === undefined) return;
+          e.preventDefault();
+          e.currentTarget.focus({ preventScroll: true });
+          go(next);
+        }}
+      >
+        {photos.map((photo, i) => (
+          <div
+            key={photo.id}
+            className="photo-slide"
+            role="group"
+            aria-roledescription="slide"
+            aria-label={`${i + 1} of ${photos.length}`}
+            aria-hidden={i !== index}
           >
-            <PhotoImage photo={p} alt={`Setup photo ${i + 1}`} />
-            {p.is_cover && <span>Cover</span>}
-          </Button>
+            <Button
+              className="photo-hero"
+              tabIndex={i === index ? 0 : -1}
+              aria-label={`Enlarge photo ${i + 1}${photo.is_cover ? " (cover)" : ""}`}
+              onClick={(e) => {
+                trigger.current = e.currentTarget;
+                setSelected(photo.id);
+              }}
+            >
+              {Math.abs(i - index) <= 1 && (
+                <PhotoImage
+                  photo={photo}
+                  alt={`Setup photo ${i + 1}`}
+                  thumbnail={false}
+                />
+              )}
+              <span className="photo-expand-hint">Enlarge</span>
+            </Button>
+          </div>
         ))}
       </div>
+      <div className="gallery-controls">
+        {photos.length > 1 && (
+          <Button
+            onClick={() => go(index - 1)}
+            aria-label="Previous gallery photo"
+          >
+            ←
+          </Button>
+        )}
+        <p role="status" aria-live="polite" aria-atomic="true">
+          Photo {index + 1} of {photos.length}
+        </p>
+        {photos.length > 1 && (
+          <Button onClick={() => go(index + 1)} aria-label="Next gallery photo">
+            →
+          </Button>
+        )}
+      </div>
+      {photos.length > 1 && (
+        <div
+          className="gallery-thumbnails"
+          role="group"
+          aria-label="Choose photo"
+        >
+          {photos.map((photo, i) => (
+            <Button
+              key={photo.id}
+              aria-label={`Show photo ${i + 1}`}
+              aria-pressed={i === index}
+              onClick={() => go(i)}
+            >
+              <PhotoImage photo={photo} alt={`Photo ${i + 1} thumbnail`} />
+            </Button>
+          ))}
+        </div>
+      )}
       <dialog
         ref={dialog}
         aria-label="Enlarged setup photo"
         className="photo-viewer"
-        onKeyDown={(event) => {
-          if (event.key === "Escape") {
-            event.preventDefault();
+        onCancel={(e) => {
+          e.preventDefault();
+          close();
+        }}
+        onClose={close}
+        onKeyDown={(e) => {
+          trapDialogTab(e);
+          if (e.key === "Escape") {
+            e.preventDefault();
             close();
-            return;
-          }
-          if (event.key === "Tab") {
-            const buttons = Array.from(
-              event.currentTarget.querySelectorAll<HTMLButtonElement>(
-                "button:not(:disabled)",
-              ),
+          } else if (
+            ["ArrowLeft", "ArrowRight", "Home", "End"].includes(e.key)
+          ) {
+            e.preventDefault();
+            view(
+              e.key === "Home"
+                ? 0
+                : e.key === "End"
+                  ? photos.length - 1
+                  : selectedIndex + (e.key === "ArrowRight" ? 1 : -1),
             );
-            const first = buttons[0],
-              last = buttons.at(-1);
-            if (event.shiftKey && document.activeElement === first) {
-              event.preventDefault();
-              last?.focus();
-            } else if (!event.shiftKey && document.activeElement === last) {
-              event.preventDefault();
-              first?.focus();
-            }
           }
         }}
-        onCancel={close}
-        onClose={close}
       >
         {current && (
           <>
             <div className="flex flex-wrap justify-between gap-3">
-              <p>
-                Photo {index + 1} of {gallery.length}
+              <p role="status" aria-live="polite">
+                Photo {selectedIndex + 1} of {photos.length}
               </p>
               <Button autoFocus onClick={close}>
                 Close photo
@@ -97,26 +228,15 @@ export function Gallery({ setupId }: { setupId: string }) {
             <PhotoImage
               key={current.id}
               photo={current}
-              alt={`Enlarged setup photo ${index + 1}`}
+              alt={`Enlarged setup photo ${selectedIndex + 1}`}
               thumbnail={false}
             />
-            {gallery.length > 1 && (
+            {photos.length > 1 && (
               <div className="flex justify-between gap-3">
-                <Button
-                  onClick={() =>
-                    setSelected(
-                      gallery[(index + gallery.length - 1) % gallery.length]!
-                        .id,
-                    )
-                  }
-                >
+                <Button onClick={() => view(selectedIndex - 1)}>
                   Previous photo
                 </Button>
-                <Button
-                  onClick={() =>
-                    setSelected(gallery[(index + 1) % gallery.length]!.id)
-                  }
-                >
+                <Button onClick={() => view(selectedIndex + 1)}>
                   Next photo
                 </Button>
               </div>

@@ -990,6 +990,91 @@ try {
         assert.equal(cropWrites, 1);
         await geometry();
         await page.goto(`http://127.0.0.1:5173/setups/${id}`);
+        const carousel = page.getByRole("region", { name: "Setup gallery" });
+        const slides = carousel.getByRole("group", { name: "Photo slides" });
+        await slides.scrollIntoViewIfNeeded();
+        await carousel.getByText("Photo 1 of 2", { exact: true }).waitFor();
+        assert.equal(
+          await slides.evaluate((el) => getComputedStyle(el).scrollSnapType),
+          "x mandatory",
+        );
+        assert(
+          await carousel.evaluate((el) => {
+            const owner = el.previousElementSibling;
+            return owner?.textContent?.startsWith("Owner:");
+          }),
+          "detail gallery must follow title/author before technical metadata",
+        );
+        if (mobile) {
+          const touch = await context.newCDPSession(page);
+          const box = await slides.boundingBox();
+          const y = box.y + box.height / 2;
+          await touch.send("Input.dispatchTouchEvent", {
+            type: "touchStart",
+            touchPoints: [{ x: box.x + box.width * 0.8, y }],
+          });
+          for (let step = 1; step <= 6; step++)
+            await touch.send("Input.dispatchTouchEvent", {
+              type: "touchMove",
+              touchPoints: [{ x: box.x + box.width * (0.8 - step * 0.1), y }],
+            });
+          await touch.send("Input.dispatchTouchEvent", {
+            type: "touchEnd",
+            touchPoints: [],
+          });
+          await carousel.getByText("Photo 2 of 2", { exact: true }).waitFor();
+          await slides.scrollIntoViewIfNeeded();
+          const vertical = await slides.boundingBox();
+          const beforeScroll = await page.evaluate(() => window.scrollY);
+          await touch.send("Input.dispatchTouchEvent", {
+            type: "touchStart",
+            touchPoints: [
+              {
+                x: vertical.x + vertical.width / 2,
+                y: vertical.y + vertical.height * 0.75,
+              },
+            ],
+          });
+          for (let step = 1; step <= 6; step++)
+            await touch.send("Input.dispatchTouchEvent", {
+              type: "touchMove",
+              touchPoints: [
+                {
+                  x: vertical.x + vertical.width / 2,
+                  y: vertical.y + vertical.height * (0.75 - step * 0.07),
+                },
+              ],
+            });
+          await touch.send("Input.dispatchTouchEvent", {
+            type: "touchEnd",
+            touchPoints: [],
+          });
+          await page.waitForFunction(
+            (before) => window.scrollY > before + 20,
+            beforeScroll,
+          );
+          await touch.detach();
+        } else {
+          await carousel
+            .getByRole("button", { name: "Show photo 2", exact: true })
+            .click();
+          await carousel.getByText("Photo 2 of 2", { exact: true }).waitFor();
+        }
+        await slides.focus();
+        await page.keyboard.press("Home");
+        await carousel.getByText("Photo 1 of 2", { exact: true }).waitFor();
+        assert.equal(
+          await carousel
+            .locator(".photo-hero .photo-enlarged")
+            .first()
+            .evaluate((el) => getComputedStyle(el).objectFit),
+          "contain",
+        );
+        await geometry();
+        await slides.scrollIntoViewIfNeeded();
+        await page.screenshot({
+          path: `artifacts/photo-qa/swipe-gallery-${width}x${height}.png`,
+        });
         for (const axle of ["Front", "Rear"]) {
           const section = page
             .getByRole("heading", { name: `${axle} shocks`, exact: true })
@@ -1273,7 +1358,21 @@ try {
             "Normalized photo crop preview",
           );
           await normalized.waitFor();
-          await cropDialog.getByLabel("Zoom", { exact: true }).fill("2");
+          const zoomControl = cropDialog.getByLabel("Zoom", { exact: true });
+          assert(
+            Number(await zoomControl.getAttribute("max")) <= 4,
+            "normal zoom cannot scale to source-pixel magnification",
+          );
+          assert.equal(await zoomControl.getAttribute("step"), "0.05");
+          const zoomBox = await zoomControl.boundingBox();
+          await zoomControl.click({
+            position: { x: zoomBox.width / 2, y: zoomBox.height / 2 },
+          });
+          assert(
+            Number(await zoomControl.inputValue()) <= 4,
+            "native slider midpoint must stay moderate",
+          );
+          await zoomControl.fill("2");
           await geometry();
           // Mouse/pointer pan and touch pointer pan are both dispatched through the actual handlers.
           const preview = cropDialog.getByRole("group", {
@@ -1283,6 +1382,32 @@ try {
           const box = await preview.boundingBox();
           if (width < 768) {
             const touch = await context.newCDPSession(page);
+            const y = box.y + box.height / 2;
+            const middle = box.x + box.width / 2;
+            await touch.send("Input.dispatchTouchEvent", {
+              type: "touchStart",
+              touchPoints: [
+                { x: middle - 40, y, id: 1 },
+                { x: middle + 40, y, id: 2 },
+              ],
+            });
+            await touch.send("Input.dispatchTouchEvent", {
+              type: "touchMove",
+              touchPoints: [
+                { x: middle - 60, y, id: 1 },
+                { x: middle + 60, y, id: 2 },
+              ],
+            });
+            await touch.send("Input.dispatchTouchEvent", {
+              type: "touchEnd",
+              touchPoints: [],
+            });
+            assert(
+              Number(await zoomControl.inputValue()) > 2 &&
+                Number(await zoomControl.inputValue()) <= 4,
+              "pinch must zoom smoothly within bounds",
+            );
+            // Restart one-finger drag after pinch; pointer-count transitions must not jump.
             await touch.send("Input.dispatchTouchEvent", {
               type: "touchStart",
               touchPoints: [{ x: box.x + 40, y: box.y + 40, id: 1 }],
@@ -1311,13 +1436,10 @@ try {
             y: Number(
               await cropDialog.getByLabel("Vertical position").inputValue(),
             ),
-            size: Math.round(
-              Math.min(shapes[n].width, shapes[n].height) /
-                Number(
-                  await cropDialog
-                    .getByLabel("Zoom", { exact: true })
-                    .inputValue(),
-                ),
+            size: await normalized.evaluate(
+              (image, sourceWidth) =>
+                Math.round((sourceWidth * 100) / parseFloat(image.style.width)),
+              shapes[n].width,
             ),
           };
           const expectedColors = await normalized.evaluate((image, crop) => {
@@ -1427,6 +1549,33 @@ try {
             ),
             draft.y,
           );
+          if (n === 0) {
+            const beforeReset = cropWrites;
+            await cropDialog
+              .getByRole("button", { name: "Reset to center" })
+              .click();
+            assert.equal(
+              cropWrites,
+              beforeReset,
+              "reset is a draft, not a hidden save",
+            );
+            await cropDialog
+              .getByRole("button", { name: "Cancel adjustment" })
+              .click();
+            await cropDialog.waitFor({ state: "hidden" });
+            await (
+              await formButton({
+                name: `Adjust thumbnail ${n + 1}`,
+                exact: true,
+              })
+            ).click();
+            await cropDialog.waitFor();
+            assert.deepEqual(
+              photos[n].crop,
+              draft,
+              "reset/cancel must retain saved crop",
+            );
+          }
           await page.keyboard.press("Escape");
           await cropDialog.waitFor({ state: "hidden" });
           assert(
