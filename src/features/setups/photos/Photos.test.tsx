@@ -577,7 +577,7 @@ it("revokes object URLs and gallery state after access is lost", async () => {
       .findAll({ queryKey: [...detailKey(testSetup.id), "media"] }),
   ).toHaveLength(0);
 });
-it("broken thumbnail decoding uses the bundled fallback", async () => {
+it("broken full-image decoding uses the bundled fallback", async () => {
   mockSetupGallery([photo(1)]);
   renderSetupRoute(`/setups/${testSetup.id}`);
   const image = await screen.findByAltText("Setup photo 1");
@@ -696,27 +696,30 @@ it("changing session identity discards local queued previews and fields", async 
   expect(setupControl("Title")).toHaveValue("");
   expect(URL.revokeObjectURL).toHaveBeenCalled();
 });
-it("a permitted non-owner sees gallery but no upload/cover/delete controls", async () => {
-  mockSetupGallery([photo(1)]);
-  const owner = "22222222-2222-4222-8222-222222222222";
-  server.use(
-    http.get(`${apiUrl}/api/v1/setups/${testSetup.id}`, () =>
-      HttpResponse.json({ ...testSetup, owner_id: owner }),
-    ),
-    http.get(`${apiUrl}/api/v1/users/${owner}`, () =>
-      HttpResponse.json({ id: owner, nickname: "Owner", avatar_url: null }),
-    ),
-  );
-  renderSetupRoute(`/setups/${testSetup.id}`);
-  await screen.findByRole("button", { name: "Enlarge photo 1 (cover)" });
-  expect(screen.queryByLabelText("Photo files")).not.toBeInTheDocument();
-  expect(
-    screen.queryByRole("button", { name: /Make photo|Delete photo/ }),
-  ).not.toBeInTheDocument();
-  expect(
-    screen.queryByRole("link", { name: "Edit setup" }),
-  ).not.toBeInTheDocument();
-});
+it.each(["public", "friends"] as const)(
+  "a permitted %s non-owner sees gallery but no upload/cover/delete controls",
+  async (visibility) => {
+    mockSetupGallery([photo(1)]);
+    const owner = "22222222-2222-4222-8222-222222222222";
+    server.use(
+      http.get(`${apiUrl}/api/v1/setups/${testSetup.id}`, () =>
+        HttpResponse.json({ ...testSetup, owner_id: owner, visibility }),
+      ),
+      http.get(`${apiUrl}/api/v1/users/${owner}`, () =>
+        HttpResponse.json({ id: owner, nickname: "Owner", avatar_url: null }),
+      ),
+    );
+    renderSetupRoute(`/setups/${testSetup.id}`);
+    await screen.findByRole("button", { name: "Enlarge photo 1 (cover)" });
+    expect(screen.queryByLabelText("Photo files")).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: /Make photo|Delete photo/ }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("link", { name: "Edit setup" }),
+    ).not.toBeInTheDocument();
+  },
+);
 it("keeps an upload and its crop offer usable after General is hidden, retaining technical and file state", async () => {
   const items: Photo[] = [];
   mockSetupGallery(items);

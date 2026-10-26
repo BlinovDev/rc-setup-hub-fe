@@ -1070,6 +1070,25 @@ try {
             .evaluate((el) => getComputedStyle(el).objectFit),
           "contain",
         );
+        assert(
+          await carousel
+            .locator(".photo-hero")
+            .first()
+            .evaluate((hero) => {
+              const image = hero.querySelector("img");
+              if (!image || !image.complete || !image.naturalWidth)
+                return false;
+              const frame = hero.getBoundingClientRect();
+              const rendered = image.getBoundingClientRect();
+              return (
+                rendered.left >= frame.left - 1 &&
+                rendered.top >= frame.top - 1 &&
+                rendered.right <= frame.right + 1 &&
+                rendered.bottom <= frame.bottom + 1
+              );
+            }),
+          "contain-fit image box must stay inside the gallery stage without clipping",
+        );
         await geometry();
         await slides.scrollIntoViewIfNeeded();
         await page.screenshot({
@@ -1687,9 +1706,18 @@ try {
           .waitFor();
         await geometry();
         // Readable foreign detail and direct foreign edit use the existing ownership guard.
-        setup = { ...setup, owner_id: otherOwner };
-        await page.reload();
-        await page.getByText("Other owner", { exact: true }).waitFor();
+        for (const visibility of ["public", "friends"]) {
+          setup = { ...setup, owner_id: otherOwner, visibility };
+          await page.reload();
+          await page.getByText("Other owner", { exact: true }).waitFor();
+          await page.getByRole("region", { name: "Setup gallery" }).waitFor();
+          assert.equal(
+            await page
+              .getByRole("link", { name: "Edit setup", exact: true })
+              .count(),
+            0,
+          );
+        }
         assert.equal(
           await page
             .getByRole("link", { name: "Edit setup", exact: true })
