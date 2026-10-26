@@ -3,10 +3,10 @@ import {
   useMutation,
   useQueryClient,
 } from "@tanstack/react-query";
-import { captureSession } from "./sessionCache";
+import { captureSession, currentUserKey } from "./sessionCache";
 import { getCurrentUser, logout } from "./api";
 
-export const currentUserKey = ["auth", "me"] as const;
+export { currentUserKey } from "./sessionCache";
 
 export const currentUserOptions = queryOptions({
   queryKey: currentUserKey,

@@ -1,6 +1,6 @@
 import type { QueryClient } from "@tanstack/react-query";
 import type { components } from "../../api/generated/schema";
-import { currentUserKey } from "./queries";
+export const currentUserKey = ["auth", "me"] as const;
 
 const generations = new WeakMap<QueryClient, number>();
 const viewer = (client: QueryClient) =>
