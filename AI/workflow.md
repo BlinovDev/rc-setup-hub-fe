@@ -35,12 +35,10 @@ owns when documentation changes are needed and where task evidence belongs.
 Ordinary fixes/refactors with unchanged enduring rules may have **zero evergreen-doc
 changes**; explain that in the PR. Edit the canonical owner and link from consumers.
 
-Local owners are [architecture](architecture.md) for boundaries, [API](api.md)
-for transport/cache/forms, [UI](ui.md) for interaction, [testing](testing.md) for
-check commands and [deployment](deployment.md) for the frontend release boundary.
-[README](../README.md) owns setup commands; [AGENTS](../AGENTS.md) routes task context;
-[engineering skills](engineering-skills.md) owns skill roles/provenance/maintenance.
-Accepted [decisions](decisions.md) explain intent, not a parallel procedure.
+[AGENTS](../AGENTS.md) routes to local canonical owners; [README](../README.md)
+owns setup commands. Accepted [decisions](decisions.md) explain intent, not a
+parallel procedure. Engineering skill roles/provenance/maintenance live in
+[engineering skills](engineering-skills.md), not in implementation guides.
 Historical [plans](archive/README.md) are traceability only, not instructions/backlog.
 
 Project Issue intake uses the [frontend setup](project-intake.md); ChatGPT Inbox
