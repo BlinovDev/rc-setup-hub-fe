@@ -21,6 +21,22 @@ export const mineKey = ["setups", "mine"] as const;
 export const userSetupsKey = (userId: string) =>
   ["setups", "user", userId] as const;
 export const detailKey = (id: string) => ["setups", "detail", id] as const;
+// All setup writes refresh the same list projections; detail/media lifetimes
+// remain with the mutation that owns them.
+export async function refreshSetupLists(client: QueryClient, ownerId?: string) {
+  await Promise.all([
+    client.invalidateQueries({ queryKey: mineKey, exact: true }),
+    client.invalidateQueries({ queryKey: ["setups", "search"] }),
+    ...(ownerId
+      ? [
+          client.invalidateQueries({
+            queryKey: userSetupsKey(ownerId),
+            exact: true,
+          }),
+        ]
+      : []),
+  ]);
+}
 export async function withSession<T>(
   client: QueryClient,
   request: () => Promise<T>,
@@ -74,14 +90,7 @@ export function useCreateSetup() {
       withSession(client, () => createSetup(body)),
     retry: false,
     onSuccess: async (setup) => {
-      await Promise.all([
-        client.invalidateQueries({ queryKey: mineKey, exact: true }),
-        client.invalidateQueries({ queryKey: ["setups", "search"] }),
-        client.invalidateQueries({
-          queryKey: userSetupsKey(setup.owner_id),
-          exact: true,
-        }),
-      ]);
+      await refreshSetupLists(client, setup.owner_id);
     },
   });
 }
@@ -96,14 +105,7 @@ export function usePatchSetup(id: string) {
       await client.cancelQueries({ queryKey: detailKey(id), exact: true });
       if (!isCurrent?.()) return;
       client.setQueryData(detailKey(id), setup);
-      await Promise.all([
-        client.invalidateQueries({ queryKey: mineKey, exact: true }),
-        client.invalidateQueries({ queryKey: ["setups", "search"] }),
-        client.invalidateQueries({
-          queryKey: userSetupsKey(setup.owner_id),
-          exact: true,
-        }),
-      ]);
+      await refreshSetupLists(client, setup.owner_id);
     },
   });
 }
@@ -126,18 +128,7 @@ export function useDeleteSetup(id: string) {
       client.setQueryData<components["schemas"]["Setup"][]>(mineKey, (old) =>
         old?.filter((setup) => setup.id !== id),
       );
-      await Promise.all([
-        client.invalidateQueries({ queryKey: mineKey, exact: true }),
-        client.invalidateQueries({ queryKey: ["setups", "search"] }),
-        ...(ownerId
-          ? [
-              client.invalidateQueries({
-                queryKey: userSetupsKey(ownerId),
-                exact: true,
-              }),
-            ]
-          : []),
-      ]);
+      await refreshSetupLists(client, ownerId);
     },
   });
 }

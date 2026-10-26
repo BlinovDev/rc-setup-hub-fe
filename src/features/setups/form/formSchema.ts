@@ -68,14 +68,22 @@ export function parseArmSpacingNumber(input: string): number | undefined {
     );
   return value;
 }
-const spacerTotal = z.string().refine((value) => {
-  try {
-    parseArmSpacingNumber(value);
-    return true;
-  } catch {
-    return false;
-  }
-}, "Enter a finite spacer total greater than or equal to zero.");
+const optionalMeasurement = (
+  parse: (value: string) => number | undefined,
+  message: string,
+) =>
+  z.string().refine((value) => {
+    try {
+      parse(value);
+      return true;
+    } catch {
+      return false;
+    }
+  }, message);
+const spacerTotal = optionalMeasurement(
+  parseArmSpacingNumber,
+  "Enter a finite spacer total greater than or equal to zero.",
+);
 const armSpacing = z.object({ front_mm: spacerTotal, rear_mm: spacerTotal });
 const axle = z.object({
   lowerArmMount: z.object({
@@ -115,18 +123,6 @@ export function parsePistonDiameter(input: string): number | undefined {
     throw new Error("Enter a finite diameter greater than zero.");
   return value;
 }
-const optionalMeasurement = (
-  parse: (value: string) => number | undefined,
-  message: string,
-) =>
-  z.string().refine((value) => {
-    try {
-      parse(value);
-      return true;
-    } catch {
-      return false;
-    }
-  }, message);
 export function parseWheelOffset(input: string): number | undefined {
   const value = input.trim();
   if (!value) return undefined;

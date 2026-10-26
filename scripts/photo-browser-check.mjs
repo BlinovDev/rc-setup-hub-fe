@@ -1648,8 +1648,9 @@ try {
           exact: true,
         });
         await typeSelect.focus();
-        // Native typeahead selects Spool without Enter submitting the form on macOS.
-        await page.keyboard.press("s");
+        // End selects the final option with the keyboard across headless platforms;
+        // native character typeahead is unavailable in some Chromium builds.
+        await page.keyboard.press("End");
         await page.keyboard.press("Tab");
         assert.equal(await typeSelect.inputValue(), "spool");
         await (await formButton({ name: "Save setup", exact: true })).click();

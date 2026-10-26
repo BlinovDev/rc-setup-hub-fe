@@ -1,3 +1,7 @@
+import {
+  selectedChassisModelId,
+  type ChassisSelection,
+} from "../../chassis/selection";
 import type { components } from "../../../api/generated/schema";
 import {
   parseOptionalNumber,
@@ -14,6 +18,20 @@ const optionalText = (value: string) =>
   value.trim() === "" ? undefined : value.trim();
 const numberInput = (value: number | null | undefined) =>
   value == null ? "" : String(value);
+
+// Catalog-backed parts share identity/model mapping; their optional measurements
+// and notes are serialized by the owning component below.
+function manufacturerModel(value: {
+  manufacturerId: string | null;
+  model: string;
+}): Pick<Schemas["Tire"], "manufacturer_id" | "model"> {
+  const result: Pick<Schemas["Tire"], "manufacturer_id" | "model"> = {};
+  if (value.manufacturerId !== null)
+    result.manufacturer_id = value.manufacturerId;
+  const model = optionalText(value.model);
+  if (model !== undefined) result.model = model;
+  return result;
+}
 
 export function setupToForm(setup?: Schemas["Setup"]): SetupFormValues {
   const spacing = (value?: Schemas["ArmSpacing"] | null) =>
@@ -104,12 +122,10 @@ export function serializeData(values: SetupFormValues): Schemas["SetupDataV1"] {
     value: SetupFormValues["front"],
   ): Schemas["AxleSuspension"] | undefined {
     const result: Schemas["AxleSuspension"] = {};
-    const mount: Schemas["LowerArmMount"] = {};
-    if (value.lowerArmMount.manufacturerId !== null)
-      mount.manufacturer_id = value.lowerArmMount.manufacturerId;
-    const model = optionalText(value.lowerArmMount.model),
-      notes = optionalText(value.lowerArmMount.configurationNotes);
-    if (model !== undefined) mount.model = model;
+    const mount: Schemas["LowerArmMount"] = manufacturerModel(
+      value.lowerArmMount,
+    );
+    const notes = optionalText(value.lowerArmMount.configurationNotes);
     if (notes !== undefined) mount.configuration_notes = notes;
     if (Object.keys(mount).length) result.lower_arm_mount = mount;
     for (const arm of ["top_arm_spacing", "lower_arm_spacing"] as const) {
@@ -174,19 +190,12 @@ export function serializeData(values: SetupFormValues): Schemas["SetupDataV1"] {
     const result: Schemas["AxleRunningGear"] = {};
     const hexOffset = parseSuspensionNumber(value.hexOffset);
     if (hexOffset !== undefined) result.hex = { offset_mm: hexOffset };
-    const wheel: Schemas["Wheel"] = {};
+    const wheel: Schemas["Wheel"] = manufacturerModel(value.wheel);
     const wheelOffset = parseWheelOffset(value.wheel.offset);
     if (wheelOffset !== undefined) wheel.offset_mm = wheelOffset;
-    if (value.wheel.manufacturerId !== null)
-      wheel.manufacturer_id = value.wheel.manufacturerId;
-    const wheelModel = optionalText(value.wheel.model);
-    if (wheelModel !== undefined) wheel.model = wheelModel;
+
     if (Object.keys(wheel).length) result.wheel = wheel;
-    const tire: Schemas["Tire"] = {};
-    if (value.tire.manufacturerId !== null)
-      tire.manufacturer_id = value.tire.manufacturerId;
-    const tireModel = optionalText(value.tire.model);
-    if (tireModel !== undefined) tire.model = tireModel;
+    const tire = manufacturerModel(value.tire);
     if (Object.keys(tire).length) result.tire = tire;
     if (Object.keys(result).length) runningGear[side] = result;
   }
@@ -198,14 +207,10 @@ export function serializeData(values: SetupFormValues): Schemas["SetupDataV1"] {
   const description = optionalText(frontKnuckle.description);
   if (description !== undefined) knuckle.description = description;
   if (Object.keys(knuckle).length) data.front_steering_knuckle = knuckle;
-  const differential: Schemas["RearDifferential"] = {};
   const diff = values.rearDifferential;
+  const differential: Schemas["RearDifferential"] = manufacturerModel(diff);
   if (diff.type) differential.type = diff.type;
-  if (diff.manufacturerId !== null)
-    differential.manufacturer_id = diff.manufacturerId;
-  const model = optionalText(diff.model),
-    tuning = optionalText(diff.tuningNotes);
-  if (model !== undefined) differential.model = model;
+  const tuning = optionalText(diff.tuningNotes);
   if (tuning !== undefined) differential.tuning_notes = tuning;
   if (Object.keys(differential).length) data.rear_differential = differential;
   const suspension: Schemas["Suspension"] = {},
@@ -236,24 +241,23 @@ function common(values: SetupFormValues) {
     data: serializeData(values),
   };
 }
+function chassisModelId(selection: ChassisSelection) {
+  const id = selectedChassisModelId(selection);
+  if (id === undefined) throw new Error("Select a model.");
+  return id;
+}
 export function serializeCreate(
   values: SetupFormValues,
 ): Schemas["CreateSetup"] {
-  if (values.selection.brandId !== null && values.selection.modelId === null)
-    throw new Error("Select a model.");
+  const id = chassisModelId(values.selection);
   return {
     ...common(values),
-    chassis_model_id:
-      values.selection.brandId === null ? null : values.selection.modelId,
+    chassis_model_id: id,
   };
 }
 export function serializePatch(values: SetupFormValues): Schemas["PatchSetup"] {
   const body: Schemas["PatchSetup"] = common(values);
-  if (values.changeChassis) {
-    if (values.selection.brandId !== null && values.selection.modelId === null)
-      throw new Error("Select a model.");
-    body.chassis_model_id =
-      values.selection.brandId === null ? null : values.selection.modelId;
-  }
+  if (values.changeChassis)
+    body.chassis_model_id = chassisModelId(values.selection);
   return body;
 }

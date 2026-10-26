@@ -60,7 +60,9 @@ export function setupErrorMessage(
   }
   return `Unable to ${action} ${action === "load" ? "setups" : "setup"}. Please try again.`;
 }
-export function chassisLabel(setup: components["schemas"]["Setup"]) {
+export function chassisLabel(
+  setup: Pick<components["schemas"]["Setup"], "chassis">,
+) {
   return setup.chassis
     ? `${setup.chassis.brand_name} ${setup.chassis.model_name}`
     : "Custom / not listed";
