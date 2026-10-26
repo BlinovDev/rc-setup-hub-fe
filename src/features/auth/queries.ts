@@ -3,9 +3,10 @@ import {
   useMutation,
   useQueryClient,
 } from "@tanstack/react-query";
+import { captureSession, currentUserKey } from "./sessionCache";
 import { getCurrentUser, logout } from "./api";
 
-export const currentUserKey = ["auth", "me"] as const;
+export { currentUserKey } from "./sessionCache";
 
 export const currentUserOptions = queryOptions({
   queryKey: currentUserKey,
@@ -21,13 +22,15 @@ export function useLogout() {
   return useMutation({
     mutationFn: logout,
     retry: false,
-    onSuccess: async () => {
+    onMutate: () => captureSession(queryClient),
+    onSuccess: async (_data, _body, isCurrent) => {
+      if (!isCurrent?.()) return;
       // Prevent an older in-flight /me response from restoring logged-out UI.
       await queryClient.cancelQueries({
         queryKey: currentUserKey,
         exact: true,
       });
-      queryClient.setQueryData(currentUserKey, null);
+      if (isCurrent?.()) queryClient.setQueryData(currentUserKey, null);
     },
   });
 }

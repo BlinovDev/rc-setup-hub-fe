@@ -72,6 +72,7 @@ try {
       },
     ]);
     const page = await context.newPage();
+    const pendingRoutes = new Set();
     page.on("dialog", (dialog) => dialog.accept()); // Full-page test navigation explicitly discards local drafts.
     const {
       field: formField,
@@ -219,7 +220,7 @@ try {
       );
       return Buffer.from(jpeg, "base64");
     }
-    await page.route("http://127.0.0.1:8080/**", async (route) => {
+    const handleApiRoute = async (route) => {
       const req = route.request(),
         path = new URL(req.url()).pathname;
       const headers = {
@@ -456,6 +457,15 @@ try {
         contentType: "application/json",
         body: JSON.stringify(body),
       });
+    };
+    await page.route("http://127.0.0.1:8080/**", async (route) => {
+      const task = handleApiRoute(route);
+      pendingRoutes.add(task);
+      try {
+        await task;
+      } finally {
+        pendingRoutes.delete(task);
+      }
     });
     const geometry = async () =>
       assert(
@@ -1490,8 +1500,9 @@ try {
       exact: true,
     });
     await typeSelect.focus();
-    await page.keyboard.press("End");
-    await page.keyboard.press("Enter");
+    // Native typeahead selects Spool without Enter submitting the form on macOS.
+    await page.keyboard.press("s");
+    await page.keyboard.press("Tab");
     assert.equal(await typeSelect.inputValue(), "spool");
     await (await formButton({ name: "Save setup", exact: true })).click();
     await savedAndReopen();
@@ -2280,6 +2291,11 @@ try {
     console.log(
       `PASS ${width}x${height} Edit Sections vertical long/zero/partial previews, deletion hierarchy, sticky chevron/sheet focus, no bulk-clear controls, single-trigger disclosure/keyboard, validation/no-exit, successful replace/detail/Back`,
     );
+    // Finish media reads before draining routes and closing the context.
+    await page.waitForLoadState("networkidle");
+    // Cancelled image requests can stop counting as network activity while their
+    // mock thumbnail renderer is still running. Finish those callbacks first.
+    while (pendingRoutes.size) await Promise.all([...pendingRoutes]);
     await page.unrouteAll({ behavior: "wait" });
     await context.close();
   }

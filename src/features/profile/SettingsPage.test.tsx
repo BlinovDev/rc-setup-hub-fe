@@ -63,7 +63,7 @@ it.each([user.avatar_url, null])(
     ).toBeDisabled();
   },
 );
-it("normalizes the PATCH body and updates settings, root shell and only the current-user cache", async () => {
+it("normalizes the PATCH body and updates settings, shell and affected public identity caches", async () => {
   const saved = { ...user, nickname: "New Driver" };
   let patches = 0;
   server.use(
@@ -82,6 +82,16 @@ it("normalizes the PATCH body and updates settings, root shell and only the curr
   const client = setup();
   client.setQueryData(["unrelated"], "keep");
   await edit("  New Driver  ");
+  const publicKey = ["users", "public", user.id];
+  const otherKey = ["users", "public", "other-user"];
+  const discoveryKey = ["setups", "search", { q: "track" }];
+  client.setQueryData(publicKey, {
+    id: user.id,
+    nickname: user.nickname,
+    avatar_url: user.avatar_url,
+  });
+  client.setQueryData(otherKey, { nickname: "Other driver" });
+  client.setQueryData(discoveryKey, { pages: [], pageParams: [null] });
   await userEvent
     .setup()
     .click(screen.getByRole("button", { name: "Save nickname" }));
@@ -92,6 +102,14 @@ it("normalizes the PATCH body and updates settings, root shell and only the curr
   expect(screen.getByText("New Driver")).toBeInTheDocument();
   expect(screen.getByRole("textbox")).toHaveValue("New Driver");
   expect(client.getQueryData(currentUserKey)).toEqual(saved);
+  expect(client.getQueryData(publicKey)).toEqual({
+    id: user.id,
+    nickname: saved.nickname,
+    avatar_url: user.avatar_url,
+  });
+  expect(client.getQueryState(discoveryKey)?.isInvalidated).toBe(true);
+  expect(client.getQueryData(otherKey)).toEqual({ nickname: "Other driver" });
+  expect(client.getQueryState(otherKey)?.isInvalidated).toBe(false);
   expect(client.getQueryData(["unrelated"])).toBe("keep");
   await userEvent.setup().click(screen.getByRole("link", { name: "Home" }));
   expect(screen.getByText("New Driver")).toBeInTheDocument();

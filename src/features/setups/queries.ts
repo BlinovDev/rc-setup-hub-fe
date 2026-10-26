@@ -5,6 +5,7 @@ import {
   type QueryClient,
 } from "@tanstack/react-query";
 import type { components } from "../../api/generated/schema";
+import { captureSession } from "../auth/sessionCache";
 import { currentUserKey } from "../auth/queries";
 import {
   SetupError,
@@ -24,12 +25,17 @@ export async function withSession<T>(
   client: QueryClient,
   request: () => Promise<T>,
 ): Promise<T> {
+  const isCurrent = captureSession(client);
   try {
-    return await request();
+    const result = await request();
+    if (!isCurrent()) throw new Error("Session changed during request.");
+    return result;
   } catch (error) {
+    if (!isCurrent())
+      throw new Error("Session changed during request.", { cause: error });
     if (error instanceof SetupError && error.status === 401) {
       await client.cancelQueries({ queryKey: currentUserKey, exact: true });
-      client.setQueryData(currentUserKey, null);
+      if (isCurrent()) client.setQueryData(currentUserKey, null);
     }
     throw error;
   }
@@ -85,8 +91,10 @@ export function usePatchSetup(id: string) {
     mutationFn: (body: components["schemas"]["PatchSetup"]) =>
       withSession(client, () => patchSetup(id, body)),
     retry: false,
-    onSuccess: async (setup) => {
+    onMutate: () => captureSession(client),
+    onSuccess: async (setup, _body, isCurrent) => {
       await client.cancelQueries({ queryKey: detailKey(id), exact: true });
+      if (!isCurrent?.()) return;
       client.setQueryData(detailKey(id), setup);
       await Promise.all([
         client.invalidateQueries({ queryKey: mineKey, exact: true }),
@@ -104,7 +112,8 @@ export function useDeleteSetup(id: string) {
   return useMutation({
     mutationFn: () => withSession(client, () => deleteSetup(id)),
     retry: false,
-    onSuccess: async () => {
+    onMutate: () => captureSession(client),
+    onSuccess: async (_data, _body, isCurrent) => {
       const ownerId =
         client.getQueryData<components["schemas"]["Setup"]>(detailKey(id))
           ?.owner_id ??
@@ -112,6 +121,7 @@ export function useDeleteSetup(id: string) {
           currentUserKey,
         )?.id;
       await client.cancelQueries({ queryKey: detailKey(id), exact: true });
+      if (!isCurrent?.()) return;
       client.removeQueries({ queryKey: detailKey(id), exact: true });
       client.setQueryData<components["schemas"]["Setup"][]>(mineKey, (old) =>
         old?.filter((setup) => setup.id !== id),
