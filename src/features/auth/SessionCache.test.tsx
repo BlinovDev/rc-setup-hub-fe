@@ -16,6 +16,7 @@ import {
   usePatchSetup,
   withSession,
 } from "../setups/queries";
+import { useUpdateNickname } from "../profile/queries";
 import { SetupError } from "../setups/api";
 import { AuthGate } from "./AuthGate";
 import { currentUserKey } from "./queries";
@@ -184,3 +185,49 @@ it("rejects old completions even after signing back into the same account", asyn
   expect(await outcome).toBeInstanceOf(Error);
   expect(client.getQueryData(currentUserKey)).toEqual(user);
 });
+
+it.each([200, 401])(
+  "ignores a late nickname %s after the viewer changes",
+  async (status) => {
+    let finish!: () => void;
+    let started!: () => void;
+    const pending = new Promise<void>((resolve) => {
+      started = resolve;
+    });
+    server.use(
+      http.patch(`${apiUrl}/api/v1/me`, async () => {
+        started();
+        await new Promise<void>((resolve) => {
+          finish = resolve;
+        });
+        return HttpResponse.json(
+          status === 200
+            ? { ...user, nickname: "Old session update" }
+            : { error: "Expired" },
+          { status },
+        );
+      }),
+    );
+    let save!: () => Promise<unknown>;
+    function Settings() {
+      const update = useUpdateNickname();
+      save = () => update.mutateAsync({ nickname: "Old session update" });
+      return null;
+    }
+    const client = show(() => <Settings />);
+    let outcome!: Promise<unknown>;
+    act(() => {
+      outcome = save().catch((error) => error);
+    });
+    await pending;
+    act(() => {
+      client.setQueryData(currentUserKey, other);
+    });
+    finish();
+    await act(async () => {
+      await outcome;
+    });
+    expect(client.getQueryData(currentUserKey)).toEqual(other);
+    expect(client.getQueryData(["users", "public", user.id])).toBeUndefined();
+  },
+);
