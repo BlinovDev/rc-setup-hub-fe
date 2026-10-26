@@ -6,6 +6,7 @@ import { http, HttpResponse } from "msw";
 import { apiUrl } from "../../api/config";
 import { routes } from "../../app/router";
 import { server } from "../../test/server";
+import { currentUserKey } from "../auth/queries";
 import { testUser } from "./testFixtures";
 
 const clients: QueryClient[] = [];
@@ -19,6 +20,8 @@ export function renderSetupRoute(path: string) {
     http.get(`${apiUrl}/api/v1/me`, () => HttpResponse.json(testUser)),
   );
   const client = new QueryClient();
+  // Seed protected fixtures only after establishing their owning viewer.
+  client.setQueryData(currentUserKey, testUser);
   clients.push(client);
   const router = createMemoryRouter(routes, { initialEntries: [path] });
   const view = render(
