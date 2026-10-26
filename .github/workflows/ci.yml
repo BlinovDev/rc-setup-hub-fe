@@ -13,6 +13,18 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  docs-and-skills:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify documentation, skills and provenance
+        run: |
+          python3 scripts/verify-docs.py
+          python3 -m unittest discover -s scripts -p 'test_docs.py' -v
+          python3 scripts/verify-engineering-skills.py
+          python3 -m unittest discover -s scripts -p 'test_engineering_skills.py' -v
+          git diff --check
+
   test:
     runs-on: ubuntu-latest
     steps:
