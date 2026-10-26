@@ -28,18 +28,17 @@ No sibling checkout, earlier chat or backend source access is required to find r
    merge or production approval. Shared staging is explicit and must not be overwritten
    automatically; [deployment](deployment.md) points to the sole backend coordinator.
 
-## Docs by exception
+## Documentation ownership
 
-Update one canonical doc only for an enduring behavior/rule, public API contract,
-architecture decision, operational procedure or developer command change. Ordinary
-UI polish, fixes or refactors restoring unchanged rules may have **zero evergreen-doc
-changes**; explain that in the PR. Preserve tests for behavior changes regardless.
+The shared [sources of truth and docs-by-exception policy](https://github.com/BlinovDev/rc-setup-hub/blob/main/AI/workflow.md#sources-of-truth)
+owns when documentation changes are needed and where task evidence belongs.
+Ordinary fixes/refactors with unchanged enduring rules may have **zero evergreen-doc
+changes**; explain that in the PR. Edit the canonical owner and link from consumers.
 
-Use current code/tests, package scripts and machine-readable contracts for facts;
-accepted decisions for intent; Issues for scoped requirements; PRs for root cause,
-implementation history, test/QA evidence and SHA pairs. Reconcile disagreements
-instead of guessing. Edit the owning section, link rather than duplicate, and do
-not append phase diaries/test counts/pending status. No arbitrary Markdown line cap.
+[AGENTS](../AGENTS.md) routes to local canonical owners; [README](../README.md)
+owns setup commands. Accepted [decisions](decisions.md) explain intent, not a
+parallel procedure. Engineering skill roles/provenance/maintenance live in
+[engineering skills](engineering-skills.md), not in implementation guides.
 Historical [plans](archive/README.md) are traceability only, not instructions/backlog.
 
 Project Issue intake uses the [frontend setup](project-intake.md); ChatGPT Inbox
