@@ -24,6 +24,7 @@ export function useLogout() {
     retry: false,
     onMutate: () => captureSession(queryClient),
     onSuccess: async (_data, _body, isCurrent) => {
+      if (!isCurrent?.()) return;
       // Prevent an older in-flight /me response from restoring logged-out UI.
       await queryClient.cancelQueries({
         queryKey: currentUserKey,

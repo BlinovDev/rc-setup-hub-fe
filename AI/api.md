@@ -36,7 +36,8 @@ failures offer retry, not logout. Logout 204 cancels older /me before clearing i
 failed logout retains identity. AuthGate cancels/removes setup, user and friendship
 queries before a changed viewer renders; catalog/unrelated caches survive. Request
 and mutation completions from an earlier session cannot restore protected data or
-expire a newer session, including sign-out/sign-in to the same account. Catalog brands/models have five-minute freshness,
+expire a newer session, including sign-out/sign-in to the same account.
+Catalog brands/models have five-minute freshness,
 no polling/retry; models query only for a real brand. A model-list 404 is unavailable,
 not an empty success. Canonical key factories and actual timing are in feature code.
 
