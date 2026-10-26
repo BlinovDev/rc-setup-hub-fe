@@ -1490,8 +1490,9 @@ try {
       exact: true,
     });
     await typeSelect.focus();
-    await page.keyboard.press("End");
-    await page.keyboard.press("Enter");
+    // Native typeahead selects Spool without Enter submitting the form on macOS.
+    await page.keyboard.press("s");
+    await page.keyboard.press("Tab");
     assert.equal(await typeSelect.inputValue(), "spool");
     await (await formButton({ name: "Save setup", exact: true })).click();
     await savedAndReopen();
@@ -2280,6 +2281,8 @@ try {
     console.log(
       `PASS ${width}x${height} Edit Sections vertical long/zero/partial previews, deletion hierarchy, sticky chevron/sheet focus, no bulk-clear controls, single-trigger disclosure/keyboard, validation/no-exit, successful replace/detail/Back`,
     );
+    // Finish media reads before draining routes and closing the context.
+    await page.waitForLoadState("networkidle");
     await page.unrouteAll({ behavior: "wait" });
     await context.close();
   }
