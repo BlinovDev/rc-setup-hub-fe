@@ -1,11 +1,12 @@
 import { SocialLinks } from "../../shared/social/SocialLinks";
-import { Fragment, type ReactNode } from "react";
+import { Fragment, useLayoutEffect, type ReactNode } from "react";
 import { NavLink } from "react-router";
 import type { components } from "../../api/generated/schema";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Button } from "../../shared/components/Button";
 import { InlineNotice, LoadingState } from "../../shared/components/Feedback";
 import { currentUserOptions } from "./queries";
+import { watchSessionCache } from "./sessionCache";
 import { LoginPage } from "./LoginPage";
 import { AuthenticatedShell } from "./AuthenticatedShell";
 export function AuthGate({
@@ -13,6 +14,8 @@ export function AuthGate({
 }: {
   children?: (user: components["schemas"]["User"]) => ReactNode;
 }) {
+  const client = useQueryClient();
+  useLayoutEffect(() => watchSessionCache(client), [client]);
   const session = useQuery(currentUserOptions);
   const authenticated = session.isSuccess && session.data !== null;
   return (
