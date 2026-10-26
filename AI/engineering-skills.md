@@ -46,6 +46,13 @@ of application code. Local scripts/docs are maintained here with the foundation.
 | [pstack](https://github.com/backnotprop/pstack/tree/6f131f137de64fdaf928278c0fd9ecec520ccbee), `6f131f137de64fdaf928278c0fd9ecec520ccbee` | Architect ownership/information hiding; regression red/green; blast-radius safety facts; interrogate evidence and severity methodology | No arena, companion-skill dependency, model table, tool-specific Task calls, background orchestration, scaffold commits or automatic implementation after analysis. Expensive required integration tests cannot be waived. |
 | [Cursor team kit Thermo-Nuclear](https://github.com/cursor/plugins/blob/d457567332aa6989e753ea289f30ea2bfbc80bc0/cursor-team-kit/skills/thermo-nuclear-code-quality-review/SKILL.md), `d457567332aa6989e753ea289f30ea2bfbc80bc0` | Search for structural simplification, canonical ownership, type/boundary cleanliness and unnecessary complexity | Read-only architecture report. A 1,000-line threshold prompts cohesion analysis, not a mechanical blocker. No permission to restructure the codebase. No Cursor-only `disable-model-invocation` or approval authority. |
 
+Current upstream maintenance lives in [Thermos](https://github.com/cursor/plugins/tree/main/thermos),
+including correctness and code-quality rubrics. The table and source manifest retain
+the exact historical inputs used here; a moved upstream directory does not justify
+rewriting their hashes or license provenance. Compare current rubrics selectively
+before any separately scoped adaptation. Keep the six local skills rather than
+adding duplicate correctness, writing or orchestration skills.
+
 The architecture skill does not prescribe a new architecture or import upstream
 preferences that conflict with accepted project contracts. The regression skill
 reports missing prerequisites instead of treating an environment failure as a
@@ -70,6 +77,30 @@ changed notices and escaping paths. This proves packaging, **not** agent discove
 invocation, policy enforcement or review quality. It does not claim to validate all
 possible Agent Skills syntax. License hashes are preservation checks, not a legal
 or upstream authenticity certification; maintainers must inspect pinned inputs.
+
+### Local Codex CLI discovery and invocation
+
+Run from the repository root. Record `codex --version`, `git rev-parse HEAD` and
+`git status --short` before/after. Use a fresh CLI process, not this conversation's
+catalog or a directory listing:
+
+```sh
+codex exec --ephemeral --sandbox read-only --json 'Before reading files or scanning directories, list the six rc-* skills in your supplied catalog with names, descriptions and paths. If absent, report NOT DISCOVERED and stop. Do not edit files, use remote tools or spawn agents.'
+```
+
+Check that every path belongs to this repository's `.agents/skills/`, then run each
+explicit `$rc-*` prompt from the table below in a separate fresh process with the
+same flags. Supply the actual task diff/base/head for the review examples.
+Inspect JSONL tool events for the selected SKILL.md read and the requested artifact;
+a claimed invocation without that read is not verified. Preserve transcripts outside
+the repository and link evidence in the PR. Do not write runtime results into this guide.
+
+Discovery, explicit loading, behavioral correctness and implicit selection are distinct
+results. A grouped read-and-role-summary smoke proves loading only. Record active
+user/global instructions and any config overrides; `--ephemeral` does not isolate
+installed global skills. Local CLI success does not establish Cloud discovery or
+review independence. A sandbox initialization/network failure is a missing prerequisite,
+not NOT DISCOVERED; use permitted environment access or report NOT RUN.
 
 ### Fresh Codex Cloud discovery and invocation smoke
 
@@ -102,8 +133,8 @@ Cloud task URL/transcript and actual tool results in the PR.
 | `Use $rc-architect. Analyze ownership between transport, domain/server state and persistence for setup photos. Do not implement.` | Loads architecture skill; actual file evidence, existing boundaries, bounded design analysis; no scaffolds |
 | `Use $rc-regression. Give a test plan only for empty numeric input versus explicit zero; report missing prerequisites. Do not edit or run a fix.` | Loads regression skill; behavior-focused red/green plan; does not claim it ran or waive mandatory checks |
 | `Use $rc-blast-radius. Analyze the current API contract consumers and the safety assumption behind changing a nullable setup value. No changes.` | Loads blast-radius skill; downstream boundaries and evidence levels; unexecuted assumptions explicitly unproven |
-| `Use $rc-review. Review the foundation PR diff independently; report findings only, no fixes or remote comments.` | Loads review skill; confirms base/head, inspects connected context, grounded findings or explicit none, no edits/approval |
-| `Use $rc-thermo-review. Audit architecture quality of the foundation PR diff. Report only; do not refactor.` | Loads strict architecture skill; supported complexity/boundary findings, optional redesign separate; no automatic line-count rejection |
+| `Use $rc-review. Review the named task diff independently, first establishing base/head; report findings only, no fixes or remote comments.` | Loads review skill; confirms base/head, inspects connected context, grounded findings or explicit none, no edits/approval |
+| `Use $rc-thermo-review. Audit architecture quality of the named task diff, first establishing base/head. Report only; do not refactor.` | Loads strict architecture skill; supported complexity/boundary findings, optional redesign separate; no automatic line-count rejection |
 
 For the numeric examples, frontend examines its committed contract and client
 serialization; backend examines its own typed parsing/persistence. No test prompt
