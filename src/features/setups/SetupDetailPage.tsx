@@ -1,3 +1,4 @@
+import { SignInButton } from "../auth/SignInButton";
 import { Gallery } from "./photos/Gallery";
 import { VisibilityBadge } from "../../shared/components/VisibilityBadge";
 import { InlineNotice, LoadingState } from "../../shared/components/Feedback";
@@ -30,7 +31,7 @@ function Owner({ id }: { id: string }) {
 export function SetupDetailPage({
   user,
 }: {
-  user: components["schemas"]["User"];
+  user: components["schemas"]["User"] | null;
 }) {
   const { setupId = "" } = useParams();
   const valid = isUuid(setupId);
@@ -40,6 +41,7 @@ export function SetupDetailPage({
   >("idle");
   if (
     !valid ||
+    (!user && query.data && query.data.visibility !== "public") ||
     (query.error instanceof SetupError &&
       [400, 404].includes(query.error.status))
   )
@@ -78,13 +80,18 @@ export function SetupDetailPage({
           <p className="whitespace-pre-wrap">{setup.notes}</p>
         </section>
       )}
-      {setup.owner_id === user.id && (
+      {setup.owner_id === user?.id && (
         <Link
           className="inline-block underline"
           to={`/my/setups/${setup.id}/edit`}
         >
           Edit setup
         </Link>
+      )}
+      {!user && (
+        <p>
+          <SignInButton>Sign in to create your own setup</SignInButton>
+        </p>
       )}
       <div>
         <Button

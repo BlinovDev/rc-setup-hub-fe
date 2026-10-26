@@ -14,7 +14,7 @@ export function usePhotoMedia(
     queryKey: [
       ...detailKey(photo?.setup_id ?? "none"),
       "media",
-      session.data?.id,
+      session.data?.id ?? "guest",
       photo?.id,
       thumbnail,
       thumbnail ? photo?.thumbnail_revision : "full",
@@ -23,7 +23,7 @@ export function usePhotoMedia(
       withSession(client, () =>
         getPhotoImage(photo!.setup_id, photo!.id, thumbnail, signal),
       ),
-    enabled: !!photo && !!session.data && enabled,
+    enabled: !!photo && session.isSuccess && enabled,
     retry: false,
     staleTime: 0,
     gcTime: 0,

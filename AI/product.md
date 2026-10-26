@@ -7,8 +7,9 @@ route/interaction details in [UI](ui.md). Use [docs by exception](workflow.md).
 
 ## Access and forms
 
-- All discovery/detail/profile/owned routes require the backend session. Backend
-  authorization/visibility is authoritative; hidden controls provide UX, not security.
+- Explore `/`, public setup detail/gallery and safe public profiles are readable by
+  guests. `/me` 401 is an expected guest state; protected routes/actions require sign-in.
+  Backend authorization/visibility remains authoritative; controls provide UX only.
 - My setups title/cover open read-only shared detail. Owners have a separate Edit
   action; permitted non-owners have no mutation controls and cannot use the editor.
 - Active chassis selection includes synthetic Custom/null; preserve an unchanged

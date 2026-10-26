@@ -111,7 +111,7 @@ it("normalizes the PATCH body and updates settings, shell and affected public id
   expect(client.getQueryData(otherKey)).toEqual({ nickname: "Other driver" });
   expect(client.getQueryState(otherKey)?.isInvalidated).toBe(false);
   expect(client.getQueryData(["unrelated"])).toBe("keep");
-  await userEvent.setup().click(screen.getByRole("link", { name: "Home" }));
+  await userEvent.setup().click(screen.getByRole("link", { name: "Explore" }));
   expect(screen.getByText("New Driver")).toBeInTheDocument();
   expect(
     screen.queryByRole("textbox", { name: "Nickname" }),

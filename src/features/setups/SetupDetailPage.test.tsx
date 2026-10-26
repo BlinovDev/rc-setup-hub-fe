@@ -190,7 +190,7 @@ it.each(["detail", "owner"])(
       ),
     );
     renderSetupRoute(path);
-    await screen.findByRole("button", { name: "Sign in with Google" });
+    await screen.findByRole("button", { name: "Sign in" });
     expect(screen.queryByText(testSetup.title)).not.toBeInTheDocument();
   },
 );

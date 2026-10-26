@@ -27,6 +27,9 @@ import {
 
 function mockProfile(user: components["schemas"]["PublicProfile"] = alice) {
   server.use(
+    http.get(`${apiUrl}/api/v1/users/${user.id}/public-setups`, () =>
+      HttpResponse.json({ items: [], next_cursor: null }),
+    ),
     http.get(`${apiUrl}/api/v1/users/${user.id}`, () =>
       HttpResponse.json(user),
     ),
@@ -39,7 +42,7 @@ async function open(surface: "profile" | "search") {
   mockProfile();
   server.use(http.get(searchUrl, () => HttpResponse.json([alice])));
   const view = renderFriendsRoute(
-    surface === "profile" ? `/users/${alice.id}` : "/friends",
+    surface === "profile" ? `/users/${alice.id}?view=visible` : "/friends",
   );
   if (surface === "search") {
     fireEvent.change(await screen.findByRole("textbox", { name: "Nickname" }), {
@@ -94,7 +97,7 @@ it.each(["profile", "search"] as const)(
     server.use(http.get(searchUrl, () => HttpResponse.json([self])));
     mockProfile(self);
     renderFriendsRoute(
-      surface === "profile" ? `/users/${self.id}` : "/friends",
+      surface === "profile" ? `/users/${self.id}?view=visible` : "/friends",
     );
     if (surface === "search") {
       fireEvent.change(await screen.findByRole("textbox"), {
@@ -200,7 +203,7 @@ it.each(["profile", "search"] as const)(
     expect(posts).toBe(1);
     if (surface === "search")
       await act(async () => {
-        await router.navigate(`/users/${alice.id}`);
+        await router.navigate(`/users/${alice.id}?view=visible`);
       });
     await screen.findByText("Friends build");
     expect(client.getQueryData(userSetupsKey(alice.id))).toEqual(
@@ -332,10 +335,10 @@ it.each(["list", "send", "accept"] as const)(
           name: endpoint === "send" ? "Add friend" : "Accept friendship",
         }),
       );
-    await screen.findByRole("button", { name: "Sign in with Google" });
+    await screen.findByRole("button", { name: "Sign in" });
     await waitFor(() =>
       expect(
-        screen.queryByRole("heading", { name: alice.nickname }),
+        screen.queryByRole("heading", { name: "Visible setups" }),
       ).not.toBeInTheDocument(),
     );
   },

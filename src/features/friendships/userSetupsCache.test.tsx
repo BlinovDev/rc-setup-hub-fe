@@ -91,7 +91,7 @@ it.each([204, 404])(
     expect(client.getQueryData(userSetupsKey(alice.id))).toBeUndefined();
     expect(client.getQueryData(userSetupsKey(bob.id))).toEqual([publicSetup]);
     expect(
-      screen.queryByRole("button", { name: "Sign in with Google" }),
+      screen.queryByRole("button", { name: "Sign in" }),
     ).not.toBeInTheDocument();
   },
 );
@@ -180,7 +180,7 @@ it("removal cancels in-flight user list and late friends-only data cannot return
     }),
   );
   await act(async () => {
-    await router.navigate(`/users/${alice.id}`);
+    await router.navigate(`/users/${alice.id}?view=visible`);
   });
   await screen.findByText("Public build");
   expect(screen.queryByText(testSetup.title)).not.toBeInTheDocument();

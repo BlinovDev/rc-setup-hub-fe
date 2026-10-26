@@ -22,6 +22,10 @@ function renderRoute(path: string) {
 describe("application foundation", () => {
   beforeEach(() => {
     server.use(
+      http.get(`${apiUrl}/api/v1/chassis/brands`, () => HttpResponse.json([])),
+      http.get(`${apiUrl}/api/v1/setups/search`, () =>
+        HttpResponse.json({ items: [], next_cursor: null }),
+      ),
       http.get(`${apiUrl}/api/v1/me`, () =>
         HttpResponse.json({ error: "No session" }, { status: 401 }),
       ),
@@ -34,14 +38,14 @@ describe("application foundation", () => {
       screen.getByRole("heading", { name: "RC Setup Hub" }),
     ).toBeInTheDocument();
     expect(
-      await screen.findByRole("button", { name: "Sign in with Google" }),
+      await screen.findByRole("button", { name: "Sign in" }),
     ).toBeInTheDocument();
   });
 
   it("provides a not-found route with working home navigation", async () => {
     renderRoute("/unknown");
     expect(
-      screen.getByRole("heading", { name: "Page not found" }),
+      await screen.findByRole("heading", { name: "Page not found" }),
     ).toBeInTheDocument();
     await userEvent
       .setup()
@@ -50,7 +54,7 @@ describe("application foundation", () => {
       screen.getByRole("heading", { name: "RC Setup Hub" }),
     ).toBeInTheDocument();
     expect(
-      await screen.findByRole("button", { name: "Sign in with Google" }),
+      await screen.findByRole("button", { name: "Sign in" }),
     ).toBeInTheDocument();
   });
 

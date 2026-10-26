@@ -34,7 +34,7 @@ afterEach(() => {
   vi.restoreAllMocks();
   vi.unstubAllGlobals();
 });
-it.each(["/", "/my/setups", `/users/${testUser.id}`])(
+it.each(["/", "/my/setups", `/users/${testUser.id}?view=visible`])(
   "shows returned cover and zero-photo placeholder on %s without per-card gallery/detail lookups",
   async (path) => {
     mockActiveCatalog();
@@ -127,12 +127,12 @@ it("list thumbnail 401 removes protected list UI", async () => {
     ),
   );
   renderSetupRoute("/my/setups");
-  await screen.findByRole("button", { name: "Sign in with Google" });
+  await screen.findByRole("button", { name: "Sign in" });
   await waitFor(() =>
     expect(screen.queryByText(testSetup.title)).not.toBeInTheDocument(),
   );
 });
-it.each(["/", "/my/setups", `/users/${testUser.id}`])(
+it.each(["/", "/my/setups", `/users/${testUser.id}?view=visible`])(
   "refreshes same-photo revisions and recovers a broken old thumbnail on %s without extra metadata reads",
   async (path) => {
     mockActiveCatalog();

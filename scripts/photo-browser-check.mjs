@@ -1187,7 +1187,11 @@ try {
           path: `artifacts/photo-qa/differential-edit-${width}x${height}.png`,
           fullPage: true,
         });
-        for (const destination of ["/", "/my/setups", `/users/${user.id}`]) {
+        for (const destination of [
+          "/",
+          "/my/setups",
+          `/users/${user.id}?view=visible`,
+        ]) {
           await page.goto("http://127.0.0.1:5173" + destination);
           await page.getByAltText(`Cover of ${setup.title}`).waitFor();
           const frame = await page
@@ -1440,7 +1444,11 @@ try {
         }
         // Cover projections need no gallery metadata calls; error and denied states reserve the same square slot.
         setup = { ...setup, cover_photo: photos[1] };
-        for (const destination of ["/", "/my/setups", `/users/${user.id}`]) {
+        for (const destination of [
+          "/",
+          "/my/setups",
+          `/users/${user.id}?view=visible`,
+        ]) {
           const metadataBefore = metadataReads;
           await page.goto("http://127.0.0.1:5173" + destination);
           const coverImage = page.getByAltText(`Cover of ${setup.title}`);
