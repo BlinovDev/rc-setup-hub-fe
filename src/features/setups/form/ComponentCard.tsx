@@ -107,6 +107,19 @@ export function ComponentCard({
     setMounted(true);
     presentation.setOpen(id, true);
   };
+  const close = () => {
+    setMounted(true);
+    presentation.setOpen(id, false);
+    requestAnimationFrame(() => opener.current?.focus());
+  };
+  const done = () => {
+    setMounted(true);
+    if (presentation.validate(spec.paths)) close();
+  };
+  const requestRemove = () => {
+    if (configured) setConfirm(true);
+    else clear();
+  };
   const clear = () => {
     const defaults = setupToForm();
     for (const path of spec.paths) {
@@ -218,10 +231,7 @@ export function ComponentCard({
           ref={removalTrigger}
           aria-label={`Remove ${spec.label}`}
           title={`Remove ${spec.label}`}
-          onClick={() => {
-            if (configured) setConfirm(true);
-            else clear();
-          }}
+          onClick={requestRemove}
         >
           <svg
             aria-hidden="true"
@@ -245,26 +255,10 @@ export function ComponentCard({
             saves all sections.
           </p>
           <div className="component-editor-actions">
-            <Button
-              type="button"
-              onClick={() => {
-                setMounted(true);
-                presentation.setOpen(id, false);
-                requestAnimationFrame(() => opener.current?.focus());
-              }}
-            >
+            <Button type="button" onClick={close}>
               Close {spec.label} editor
             </Button>
-            <Button
-              type="button"
-              onClick={() => {
-                setMounted(true);
-                if (presentation.validate(spec.paths)) {
-                  presentation.setOpen(id, false);
-                  requestAnimationFrame(() => opener.current?.focus());
-                }
-              }}
-            >
+            <Button type="button" onClick={done}>
               Done {spec.label}
             </Button>
           </div>
@@ -297,27 +291,14 @@ export function ComponentCard({
       </div>
       {!expanded && (
         <div className="component-summary">
-          {configured ? (
-            setup ? (
-              <dl className="component-summary-rows">
-                {summary.map((row, index) => (
-                  <div key={index}>
-                    <dt>{row.label}: </dt>
-                    <dd title={row.value}>{row.value}</dd>
-                  </div>
-                ))}
-              </dl>
-            ) : (
-              summary
+          {configured
+            ? summary
                 .map(
                   (row) =>
                     `${row.label}: ${row.value.length > 120 ? row.value.slice(0, 120) + "…" : row.value}`,
                 )
                 .join(" · ")
-            )
-          ) : (
-            "Not added"
-          )}
+            : "Not added"}
         </div>
       )}
       <div className="component-actions">
@@ -332,13 +313,9 @@ export function ComponentCard({
         {(configured || expanded || mounted) && (
           <Button
             type="button"
-            variant={setup ? "secondary" : "danger"}
-            className={setup ? "subdued-destructive" : undefined}
+            variant="danger"
             ref={removalTrigger}
-            onClick={() => {
-              if (configured) setConfirm(true);
-              else clear();
-            }}
+            onClick={requestRemove}
           >
             Remove {spec.label}
           </Button>
@@ -348,16 +325,7 @@ export function ComponentCard({
       <div hidden={!expanded} className="component-editor">
         {(expanded || mounted) && <div key={generation}>{children}</div>}
         <p>Done closes this editor. Save setup saves your changes.</p>
-        <Button
-          type="button"
-          onClick={() => {
-            setMounted(true);
-            if (presentation.validate(spec.paths)) {
-              presentation.setOpen(id, false);
-              requestAnimationFrame(() => opener.current?.focus());
-            }
-          }}
-        >
+        <Button type="button" onClick={done}>
           Done {spec.label}
         </Button>
       </div>
