@@ -152,6 +152,12 @@ space in middle, canonical social icons then Sign out at bottom. Focus Close on 
 keep outside navigation inert; desktop resize dismisses; scroll/safe areas remain usable.
 At desktop retain compact header identity/Sign out and add the social footer.
 
+Help & Feedback is a quiet desktop-footer action and a mobile account-menu entry;
+guests have the same action in the mobile header and desktop footer without signing
+in. Its compact native dialog shows selectable support email, mailto, Close/Escape,
+backdrop dismissal and contained/restored focus. Feature copy is centralized under
+src/features/help for later translation; no response-time or account-creation promise.
+
 Canonical URLs live in src/shared/social/profiles.ts; links have accessible names,
 new-tab opener isolation and no tracking parameters. Active nav has current-page
 semantics plus underline/border. Logout preserves pending/error/retry behavior.

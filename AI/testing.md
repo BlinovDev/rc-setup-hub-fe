@@ -39,9 +39,14 @@ Photo/responsive/interaction changes also require the existing photo-browser gat
 ```sh
 npx playwright install --with-deps chromium
 npm run test:photos:browser
+node scripts/help-browser-check.mjs
 ```
 
-The script starts local Vite and runs independent `lifecycle` and `compact-edit`
+The Help & Feedback check covers guest/member shell entry points, native modal
+keyboard/focus/backdrop behavior, selectable email/mailto and six viewport layouts;
+it uses mocked HTTP and writes help-prefixed screenshots to the same CI artifact.
+
+The photo script starts local Vite and runs independent `lifecycle` and `compact-edit`
 scenarios, each with a fresh browser context and explicit backend fixture. Failures
 are named by scenario/viewport and collected so later scenarios still run. To
 reproduce one suite, use `PHOTO_BROWSER_SCENARIO=compact-edit npm run test:photos:browser`

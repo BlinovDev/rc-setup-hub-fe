@@ -1,3 +1,4 @@
+import { HelpFeedback } from "../help/HelpFeedback";
 import { SocialLinks } from "../../shared/social/SocialLinks";
 import { Fragment, useLayoutEffect, type ReactNode } from "react";
 import { NavLink } from "react-router";
@@ -38,6 +39,11 @@ export function AuthGate({
             <AuthenticatedShell user={session.data} />
           </>
         )}
+        {!authenticated && (
+          <div className="guest-help">
+            <HelpFeedback />
+          </div>
+        )}
       </header>
       <main id="page-content" tabIndex={-1} className="page-content">
         {session.isPending ? (
@@ -59,11 +65,10 @@ export function AuthGate({
           <Fragment key={session.data.id}>{children?.(session.data)}</Fragment>
         )}
       </main>
-      {authenticated && (
-        <footer className="desktop-footer">
-          <SocialLinks />
-        </footer>
-      )}
+      <footer className="desktop-footer">
+        {authenticated && <SocialLinks />}
+        <HelpFeedback />
+      </footer>
     </div>
   );
 }

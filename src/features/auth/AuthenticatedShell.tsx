@@ -1,3 +1,4 @@
+import { HelpFeedback } from "../help/HelpFeedback";
 import { useCallback, useId, useRef, useState } from "react";
 import { NavigationDrawer } from "../../shared/components/NavigationDrawer";
 import { SocialLinks } from "../../shared/social/SocialLinks";
@@ -101,6 +102,7 @@ export function AuthenticatedShell({
         footer={
           <>
             <SocialLinks />
+            <HelpFeedback />
             {signOutControl}
           </>
         }

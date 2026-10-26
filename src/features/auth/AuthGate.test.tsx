@@ -108,7 +108,16 @@ describe("authentication foundation", () => {
     expect(screen.getByRole("status")).toHaveTextContent(
       "Checking your session…",
     );
-    expect(screen.queryByRole("button")).not.toBeInTheDocument();
+    // Public help stays available while session identity is unresolved.
+    expect(
+      screen.getAllByRole("button", { name: "Help & Feedback" }),
+    ).toHaveLength(2);
+    expect(
+      screen.queryByRole("button", { name: "Sign in with Google" }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "Sign out" }),
+    ).not.toBeInTheDocument();
     await screen.findByText(user.nickname);
     expect(screen.queryByRole("status")).not.toBeInTheDocument();
   });
