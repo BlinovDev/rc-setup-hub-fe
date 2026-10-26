@@ -257,11 +257,17 @@ export function SetupForm({
                       <Button
                         type="button"
                         onClick={() => {
-                          form.setValue("changeChassis", !changeChassis);
-                          form.setValue("selection", {
-                            brandId: null,
-                            modelId: null,
+                          form.setValue("changeChassis", !changeChassis, {
+                            shouldDirty: true,
                           });
+                          form.setValue(
+                            "selection",
+                            {
+                              brandId: null,
+                              modelId: null,
+                            },
+                            { shouldDirty: true },
+                          );
                           form.clearErrors("selection");
                         }}
                       >

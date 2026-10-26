@@ -176,3 +176,45 @@ it("confirmed cross-document navigation resets the field and photo-queue owner",
   window.dispatchEvent(event);
   expect(event.defaultPrevented).toBe(false);
 });
+
+it("guards a chassis-only change to Custom and restores the clean baseline on Cancel", async () => {
+  server.use(
+    http.get(`${apiUrl}/api/v1/setups/${testSetup.id}`, () =>
+      HttpResponse.json(testSetup),
+    ),
+    http.get(`${apiUrl}/api/v1/setups/${testSetup.id}/photos`, () =>
+      HttpResponse.json([]),
+    ),
+    http.get(`${apiUrl}/api/v1/chassis/brands`, () => HttpResponse.json([])),
+    http.get(`${apiUrl}/api/v1/me/setups`, () => HttpResponse.json([])),
+  );
+  renderSetupRoute(`/my/setups/${testSetup.id}/edit`);
+  const user = userEvent.setup();
+  await user.click(
+    await screen.findByRole("button", { name: "Change chassis" }),
+  );
+  expect(screen.getByLabelText("Brand")).toHaveValue("");
+  const unload = new Event("beforeunload", { cancelable: true });
+  window.dispatchEvent(unload);
+  expect(unload.defaultPrevented).toBe(true);
+  await user.click(screen.getByRole("link", { name: "Back to my setups" }));
+  await user.click(await screen.findByRole("button", { name: "Keep editing" }));
+  expect(screen.getByLabelText("Brand")).toHaveValue("");
+  await user.click(
+    screen.getByRole("button", { name: "Cancel chassis change" }),
+  );
+  const clean = new Event("beforeunload", { cancelable: true });
+  window.dispatchEvent(clean);
+  expect(clean.defaultPrevented).toBe(false);
+  fireEvent.change(screen.getByLabelText("Title"), {
+    target: { value: "Other draft" },
+  });
+  await user.click(screen.getByRole("button", { name: "Change chassis" }));
+  await user.click(
+    screen.getByRole("button", { name: "Cancel chassis change" }),
+  );
+  const dirty = new Event("beforeunload", { cancelable: true });
+  window.dispatchEvent(dirty);
+  expect(dirty.defaultPrevented).toBe(true);
+  expect(screen.getByLabelText("Title")).toHaveValue("Other draft");
+});
