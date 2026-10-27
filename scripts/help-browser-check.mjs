@@ -58,7 +58,11 @@ try {
           page.setDefaultTimeout(15000);
           const errors = [],
             unexpected = [];
-          let oauth = 0;
+          let oauth = 0,
+            authenticated = signedIn,
+            protectedReads = 0,
+            logoutCount = 0;
+          const privateTitle = "Private navigation setup";
           page.on("pageerror", (error) => errors.push(error.message));
           await page.route("http://127.0.0.1:8080/**", async (route) => {
             const request = route.request();
@@ -69,16 +73,19 @@ try {
             };
             if (request.method() === "GET" && path === "/auth/google") {
               oauth++;
+              authenticated = true;
+              // WebKit route fulfillment cannot synthesize an HTTP redirect.
+              // Model the fixed APP_URL return without a real OAuth provider.
               await route.fulfill({
                 headers,
                 contentType: "text/html",
-                body: "<h1>Backend sign-in boundary</h1>",
+                body: `<meta http-equiv="refresh" content="0;url=${origin}/">`,
               });
             } else if (request.method() === "GET" && path === "/api/v1/me") {
               await route.fulfill({
-                status: signedIn ? 200 : 401,
+                status: authenticated ? 200 : 401,
                 headers,
-                json: signedIn
+                json: authenticated
                   ? {
                       id: "c61393b6-daa0-4eb8-923c-57aedbb46a46",
                       nickname: "Driver",
@@ -102,11 +109,59 @@ try {
                 json: { items: [], next_cursor: null },
               });
             } else if (
-              signedIn &&
               request.method() === "GET" &&
               path === "/api/v1/me/setups"
             ) {
-              await route.fulfill({ headers, json: [] });
+              protectedReads++;
+              assert(authenticated, "guest must not request private setups");
+              await route.fulfill({
+                headers,
+                json: [
+                  {
+                    id: "c61393b6-daa0-4eb8-923c-57aedbb46a47",
+                    owner_id: "c61393b6-daa0-4eb8-923c-57aedbb46a46",
+                    title: privateTitle,
+                    visibility: "private",
+                    schema_version: 1,
+                    chassis_model_id: null,
+                    chassis: null,
+                    notes: null,
+                    data: {},
+                    cover_photo: null,
+                    running_gear_manufacturers: null,
+                    rear_differential_manufacturer: null,
+                    lower_arm_mount_manufacturers: null,
+                    front_steering_knuckle_manufacturer: null,
+                    created_at: "2026-10-12T12:00:00Z",
+                    updated_at: "2026-10-12T12:00:00Z",
+                  },
+                ],
+              });
+            } else if (
+              request.method() === "GET" &&
+              path === "/api/v1/friendships"
+            ) {
+              assert(authenticated, "guest must not request friendships");
+              await route.fulfill({
+                headers,
+                json: { incoming: [], outgoing: [], accepted: [] },
+              });
+            } else if (
+              request.method() === "POST" &&
+              path === "/api/v1/auth/logout"
+            ) {
+              authenticated = false;
+              logoutCount++;
+              await route.fulfill({ status: 204, headers });
+            } else if (request.method() === "OPTIONS") {
+              await route.fulfill({
+                status: 204,
+                headers: {
+                  ...headers,
+                  "access-control-allow-methods": "GET, POST, OPTIONS",
+                  "access-control-allow-headers": "content-type",
+                },
+              });
             } else {
               unexpected.push(`${request.method()} ${path}`);
               await route.abort();
@@ -115,9 +170,7 @@ try {
           await page.goto(`${origin}${signedIn ? "/my/setups" : "/"}`);
           await page
             .getByText(
-              signedIn
-                ? "No setups yet."
-                : "No public setups match these filters.",
+              signedIn ? privateTitle : "No public setups match these filters.",
               { exact: true },
             )
             .waitFor();
@@ -198,8 +251,8 @@ try {
             const actions = area.locator(":scope > a, :scope > button");
             assert.deepEqual(await actions.allTextContents(), [
               "Explore",
-              "Create setup",
-              "Help & Feedback",
+              "My setups",
+              signedIn ? "Friends" : "Help & Feedback",
             ]);
             const boxes = await actions.evaluateAll((elements) =>
               elements.map((el) => {
@@ -237,9 +290,9 @@ try {
             }
             assert.equal(
               await area
-                .getByRole("link", { name: "Create setup" })
+                .getByRole("link", { name: "My setups", exact: true })
                 .getAttribute("href"),
-              "/my/setups/new",
+              "/my/setups",
             );
             await area
               .getByRole("link", { name: "Explore", exact: true })
@@ -255,20 +308,22 @@ try {
                 .getAttribute("aria-current"),
               "page",
             );
-            await area.getByRole("link", { name: "Create setup" }).click();
+            await area
+              .getByRole("link", { name: "My setups", exact: true })
+              .click();
             await page
               .getByRole(signedIn ? "heading" : "button", {
-                name: signedIn ? "New setup" : "Sign in with Google",
+                name: signedIn ? "My setups" : "Sign in with Google",
                 exact: true,
               })
               .waitFor();
             assert.equal(
               await area
-                .getByRole("link", { name: "Create setup" })
+                .getByRole("link", { name: "My setups", exact: true })
                 .getAttribute("aria-current"),
               "page",
             );
-            if (!signedIn)
+            if (!signedIn) {
               assert.equal(
                 await page
                   .getByRole("button", { name: "Create setup", exact: true })
@@ -276,6 +331,29 @@ try {
                 0,
                 "guest cannot submit creation",
               );
+              assert.equal(protectedReads, 0);
+              assert.equal(
+                await page.getByText(privateTitle, { exact: true }).count(),
+                0,
+              );
+            } else {
+              await area
+                .getByRole("link", { name: "Friends", exact: true })
+                .click();
+              await page
+                .getByRole("heading", { name: "Friends", exact: true })
+                .waitFor();
+              assert.equal(
+                await area
+                  .getByRole("link", { name: "Friends", exact: true })
+                  .getAttribute("aria-current"),
+                "page",
+              );
+              await area
+                .getByRole("link", { name: "My setups", exact: true })
+                .click();
+              await page.getByText(privateTitle, { exact: true }).waitFor();
+            }
             await page.screenshot({
               path: `artifacts/photo-qa/nav-${engine}-${signedIn ? "member" : "guest"}-${width}x${height}.png`,
             });
@@ -340,18 +418,21 @@ try {
               name: "Account and navigation",
             });
             await menu.waitFor();
-            for (const name of ["My setups", "Friends", "Settings"])
-              assert(
-                await menu.getByRole("link", { name, exact: true }).isVisible(),
-              );
-            assert.equal(
-              await menu
-                .getByRole("button", { name: "Help & Feedback" })
-                .count(),
-              0,
+            assert.deepEqual(
+              await menu.locator(".account-nav a").allTextContents(),
+              ["Account settings"],
             );
-            await page.keyboard.press("Escape");
+            await menu
+              .getByRole("link", { name: "Account settings", exact: true })
+              .click();
             await menu.waitFor({ state: "hidden" });
+            await page
+              .getByRole("heading", { name: "Settings", exact: true })
+              .waitFor();
+            await page
+              .getByRole("button", { name: "Open account menu" })
+              .click();
+            area = menu;
           }
           const trigger = area.getByRole("button", {
             name: "Help & Feedback",
@@ -437,6 +518,19 @@ try {
           await page.mouse.click(2, 2);
           await panel.waitFor({ state: "hidden" });
           assert(await trigger.evaluate((el) => el === document.activeElement));
+          if (mobile && signedIn) {
+            assert(
+              await area.isVisible(),
+              "closing nested help keeps the account drawer open",
+            );
+            await page.keyboard.press("Escape");
+            await area.waitFor({ state: "hidden" });
+            assert(
+              await page
+                .getByRole("button", { name: "Open account menu" })
+                .evaluate((el) => el === document.activeElement),
+            );
+          }
           assert(
             await page.evaluate(
               () =>
@@ -446,21 +540,101 @@ try {
           assert.equal(
             oauth,
             0,
-            "opening protected creation never starts OAuth automatically",
+            "My setups guest gate never starts OAuth automatically",
           );
-          if (!signedIn && mobile) {
+          const mobileNav = page.getByRole("navigation", {
+            name: "Mobile navigation",
+            exact: true,
+          });
+          const assertNav = async (member) => {
+            if (!mobile) return;
+            assert.deepEqual(
+              await mobileNav
+                .locator(":scope > a, :scope > button")
+                .allTextContents(),
+              ["Explore", "My setups", member ? "Friends" : "Help & Feedback"],
+            );
+          };
+          const signOut = async () => {
+            if (mobile)
+              await page
+                .getByRole("button", { name: "Open account menu" })
+                .click();
             await page
-              .getByRole("button", { name: "Sign in", exact: true })
+              .getByRole("button", { name: "Sign out", exact: true })
               .click();
             await page
-              .getByRole("heading", { name: "Backend sign-in boundary" })
+              .getByRole("button", { name: "Sign in", exact: true })
               .waitFor();
-            assert.equal(oauth, 1);
-          }
+            await assertNav(false);
+            assert.equal(
+              await page.getByText(privateTitle, { exact: true }).count(),
+              0,
+            );
+            assert.equal(await page.getByRole("dialog").count(), 0);
+          };
+          if (signedIn) await signOut();
+          const readsBeforeGuest = protectedReads;
+          await page.goto(origin + "/my/setups");
+          await page
+            .getByRole("button", { name: "Sign in with Google" })
+            .waitFor();
+          assert.equal(
+            protectedReads,
+            readsBeforeGuest,
+            "guest gate does not query private lists",
+          );
+          await assertNav(false);
+          await page
+            .getByRole("button", { name: "Sign in with Google" })
+            .click();
+          await page.waitForURL(origin + "/");
+          await page
+            .getByText("No public setups match these filters.", { exact: true })
+            .waitFor();
+          assert.equal(oauth, 1);
+          await assertNav(true);
+          const nav = mobile
+            ? mobileNav
+            : page.getByRole("navigation", { name: "Main", exact: true });
+          await nav
+            .getByRole("link", { name: "My setups", exact: true })
+            .click();
+          await page.getByText(privateTitle, { exact: true }).waitFor();
+          await nav.getByRole("link", { name: "Explore", exact: true }).click();
+          await page
+            .getByText("No public setups match these filters.", { exact: true })
+            .waitFor();
+          await page.goBack();
+          await page.getByText(privateTitle, { exact: true }).waitFor();
+          await signOut();
+          await page
+            .getByRole("button", { name: "Sign in with Google" })
+            .waitFor();
+          const readsAfterLogout = protectedReads;
+          await page.goForward();
+          await page
+            .getByText("No public setups match these filters.", { exact: true })
+            .waitFor();
+          await page.goBack();
+          await page
+            .getByRole("button", { name: "Sign in with Google" })
+            .waitFor();
+          await assertNav(false);
+          assert.equal(
+            protectedReads,
+            readsAfterLogout,
+            "history cannot restore protected requests after logout",
+          );
+          assert.equal(
+            await page.getByText(privateTitle, { exact: true }).count(),
+            0,
+          );
+          assert.equal(logoutCount, signedIn ? 2 : 1);
           assert.deepEqual(
             unexpected,
             [],
-            "help must not issue API requests or mutations",
+            "only the declared navigation/session fixture requests are allowed",
           );
           assert.deepEqual(errors, []);
           console.log(

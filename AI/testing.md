@@ -45,8 +45,10 @@ node scripts/help-browser-check.mjs
 
 The Help & Feedback check runs Chromium and WebKit with iPhone emulation below
 768px. It covers guest/member single-row header/three-action bottom navigation,
-320/375/390/430px and desktop/short landscape layouts, protected creation, account
-routes, native modal keyboard/focus/backdrop behavior and selectable email/mailto;
+320/375/390/430px and desktop/short landscape layouts, guest My setups sign-in
+without private requests, auth-dependent action order, login/logout/history cleanup,
+Account settings and nested Help drawer access, native modal keyboard/focus/backdrop
+behavior and selectable email/mailto;
 it uses mocked HTTP and writes help-prefixed screenshots to the same CI artifact.
 
 The photo script starts local Vite and runs independent `lifecycle` and `compact-edit`

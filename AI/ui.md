@@ -154,16 +154,22 @@ not only jsdom shims. Owner view navigation performs no setup/photo mutation.
 ## Responsive shell and social links
 
 Below 768px keep a single-row header: branding and Sign in for guests, existing
-avatar/account menu for members. One fixed bottom row contains exactly Explore,
-Create setup and Help & Feedback, in that order, for both states. Create setup opens
-the existing protected route; guests see the sign-in CTA before any creation form.
-The member drawer keeps My setups, Friends and Settings reachable, then canonical
-social icons and Sign out. Focus Close on open; keep outside navigation inert;
-desktop resize dismisses. Reserve safe-area padding below the bar and above fixed
-Save controls; viewport-fit=cover enables iOS insets. Desktop navigation, identity,
-Sign out and social footer remain unchanged.
+avatar/account menu for members. The fixed bottom row has exactly three actions:
+guests see Explore, My setups, Help & Feedback; members see Explore, My setups,
+Friends. My setups always links to /my/setups; guests see the existing explicit
+Google sign-in UI there, with no private list request, empty-list substitute or
+automatic OAuth redirect. Login/logout update navigation with the session boundary.
 
-Help & Feedback is the mobile bottom-bar action and a quiet desktop-footer action.
+The member drawer contains Account settings (the unchanged /settings route) and
+Help & Feedback, followed by canonical social icons and Sign out. Selecting Account
+settings closes the drawer. Focus Close on open; outside navigation stays inert;
+closing nested Help restores its trigger and leaves the drawer open. Desktop resize
+dismisses the drawer. Reserve safe-area padding below the bar and above fixed Save
+controls; viewport-fit=cover enables iOS insets, with branding below the top inset.
+Desktop navigation, identity, Sign out and social footer remain unchanged.
+
+Help & Feedback is the guest bottom-bar action, member drawer action and quiet
+desktop-footer action.
 Its compact native dialog shows selectable support email, mailto, Close/Escape,
 backdrop dismissal and contained/restored focus. Feature copy is centralized under
 src/features/help for later translation; no response-time or account-creation promise.

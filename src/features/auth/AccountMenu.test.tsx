@@ -101,7 +101,9 @@ it("focuses Close, supports explicit dismissal and native Escape cancellation, a
   });
   expect(close).toHaveFocus();
   await user.tab();
-  expect(within(dialog).getByRole("link", { name: "My setups" })).toHaveFocus();
+  expect(
+    within(dialog).getByRole("link", { name: "Account settings" }),
+  ).toHaveFocus();
   await user.click(close);
   expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
   expect(trigger).toHaveFocus();
@@ -161,8 +163,12 @@ it("closes on switching to desktop and removes its media listener", async () => 
 
 it("closes the account drawer when an account route is selected", async () => {
   const { user, dialog, trigger } = await openMenu();
-  await user.click(within(dialog).getByRole("link", { name: "My setups" }));
+  await user.click(
+    within(dialog).getByRole("link", { name: "Account settings" }),
+  );
   expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
   expect(trigger).toHaveAttribute("aria-expanded", "false");
-  expect(await screen.findByText("No setups yet.")).toBeInTheDocument();
+  expect(
+    await screen.findByRole("heading", { name: "Settings" }),
+  ).toBeInTheDocument();
 });

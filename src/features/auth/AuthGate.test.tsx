@@ -1,5 +1,5 @@
 import { MemoryRouter } from "react-router";
-import { act, render, screen, waitFor } from "@testing-library/react";
+import { act, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { delay, http, HttpResponse } from "msw";
@@ -335,4 +335,55 @@ describe("authentication foundation", () => {
     expect(currentUserOptions.retry).toBe(false);
     expect(currentUserOptions.staleTime).toBe(60_000);
   });
+});
+
+it("updates the mobile navigation across guest, refreshed login and logout without stale drawer state", async () => {
+  let signedIn = false;
+  server.use(
+    http.get(`${apiUrl}/api/v1/me`, () =>
+      signedIn
+        ? HttpResponse.json(user)
+        : new HttpResponse(null, { status: 401 }),
+    ),
+    http.post(`${apiUrl}/api/v1/auth/logout`, () => {
+      signedIn = false;
+      return new HttpResponse(null, { status: 204 });
+    }),
+  );
+  const { client } = renderAuth();
+  await expectLogin();
+  const nav = () =>
+    within(screen.getByRole("navigation", { name: "Mobile navigation" }));
+  expect(
+    nav()
+      .getAllByRole("link")
+      .map((link) => link.textContent),
+  ).toEqual(["Explore", "My setups"]);
+  signedIn = true;
+  await act(async () => {
+    await client.invalidateQueries({ queryKey: currentUserKey, exact: true });
+  });
+  await screen.findByRole("button", { name: "Open account menu" });
+  expect(
+    nav()
+      .getAllByRole("link")
+      .map((link) => link.textContent),
+  ).toEqual(["Explore", "My setups", "Friends"]);
+  expect(
+    nav().queryByRole("button", { name: "Help & Feedback" }),
+  ).not.toBeInTheDocument();
+  const events = userEvent.setup();
+  await events.click(screen.getByRole("button", { name: "Open account menu" }));
+  const menu = within(
+    screen.getByRole("dialog", { name: "Account and navigation" }),
+  );
+  expect(menu.getByRole("link", { name: "Account settings" })).toBeVisible();
+  await events.click(menu.getByRole("button", { name: "Sign out" }));
+  await expectLogin();
+  expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+  expect(
+    nav().queryByRole("link", { name: "Friends" }),
+  ).not.toBeInTheDocument();
+  expect(nav().getByRole("button", { name: "Help & Feedback" })).toBeVisible();
+  expect(client.getQueryData(currentUserKey)).toBeNull();
 });
