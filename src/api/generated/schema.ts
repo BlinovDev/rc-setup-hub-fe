@@ -348,6 +348,46 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/setups/visible": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Search all setups readable by the current viewer
+         * @description Comparison candidate selection, not Explore. Guests receive public only; signed-in viewers receive all owned setups plus all public setups and friends-visibility setups from accepted friends. Authorization is filtered in SQL before safe summary projections and pagination. No totals, technical data, notes, email or provider identity. Does not grant clone or mutation permissions. Same literal search, historical chassis filters, ordering, default 20/max 50 and keyset pagination as public search. Repeat filters when following next_cursor; access is rechecked on every request.
+         */
+        get: operations["searchVisibleSetups"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/setups/compare": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Read exactly two distinct visible setups atomically
+         * @description Exactly one left_id and one right_id are required; no extra query parameters. UUID-equivalent IDs must be distinct. Returns complete existing Setup objects in request order, including historical chassis/manufacturer projections, optional technical fields and notes. Explicit numeric zero is preserved; missing/null measurements remain unknown, never defaulted. Different chassis and custom chassis are allowed. Both current permissions are evaluated in one PostgreSQL statement snapshot. If either setup is missing or inaccessible, returns the same generic 404 with neither side, before decoding documents. Guests can compare public only; signed-in viewers may also read their own and accepted friends' friends-visibility setups. Read-only and transient, not a persistent comparison, diff calculation, clone or mutation capability. Media URLs retain their independent current-visibility checks. No-store; comparison responses are not SEO-indexable.
+         */
+        get: operations["compareSetups"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/openapi.yaml": {
         parameters: {
             query?: never;
@@ -885,6 +925,10 @@ export interface components {
             schema_version: number;
             owner: components["schemas"]["PublicProfile"];
             chassis: components["schemas"]["SetupSearchChassis"] | null;
+        };
+        SetupComparison: {
+            left: components["schemas"]["Setup"];
+            right: components["schemas"]["Setup"];
         };
         SetupSearchPage: {
             items: components["schemas"]["SetupSearchItem"][];
@@ -1581,6 +1625,69 @@ export interface operations {
                 };
             };
             400: components["responses"]["BadRequest"];
+            414: components["responses"]["PublicURITooLong"];
+            429: components["responses"]["PublicReadsBusy"];
+            500: components["responses"]["InternalError"];
+        };
+    };
+    searchVisibleSetups: {
+        parameters: {
+            query?: {
+                /** @description Trimmed literal case-insensitive substring of title OR owner nickname. Empty/omitted means no text filter; percent/underscore are literal. No null bytes. Never searches email, notes or technical data. */
+                q?: string;
+                /** @description Filter by historical parent brand. Valid nonexistent UUID yields zero results. */
+                brand_id?: string;
+                /** @description Filter by exact historical chassis model. Valid nonexistent UUID yields zero results. */
+                model_id?: string;
+                /** @description Maximum page size. */
+                limit?: number;
+                /** @description Opaque next-page cursor from the previous response. Invalid cursor returns 400. Repeat q/brand_id/model_id and desired limit on subsequent requests. */
+                cursor?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SetupSearchPage"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            414: components["responses"]["PublicURITooLong"];
+            429: components["responses"]["PublicReadsBusy"];
+            500: components["responses"]["InternalError"];
+        };
+    };
+    compareSetups: {
+        parameters: {
+            query: {
+                left_id: string;
+                right_id: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Both setups are currently readable, in left/right order. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SetupComparison"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            404: components["responses"]["NotFound"];
             414: components["responses"]["PublicURITooLong"];
             429: components["responses"]["PublicReadsBusy"];
             500: components["responses"]["InternalError"];
