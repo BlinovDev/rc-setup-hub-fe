@@ -83,6 +83,10 @@ it("dismisses only a backdrop click, not text or panel padding", async () => {
 
 it("is available to guests in the mobile header and desktop footer without signing in", async () => {
   server.use(
+    http.get(`${apiUrl}/api/v1/chassis/brands`, () => HttpResponse.json([])),
+    http.get(`${apiUrl}/api/v1/setups/search`, () =>
+      HttpResponse.json({ items: [], next_cursor: null }),
+    ),
     http.get(
       `${apiUrl}/api/v1/me`,
       () => new HttpResponse(null, { status: 401 }),
@@ -98,7 +102,13 @@ it("is available to guests in the mobile header and desktop footer without signi
       />
     </QueryClientProvider>,
   );
-  await screen.findByRole("button", { name: "Sign in with Google" });
+  await screen.findByRole("button", { name: "Sign in" });
+  await screen.findByText("No public setups match these filters.");
+  expect(
+    within(
+      screen.getByRole("navigation", { name: "Public navigation" }),
+    ).getByRole("link", { name: "Explore" }),
+  ).toBeInTheDocument();
   const user = userEvent.setup();
   for (const area of [
     screen.getByRole("banner"),

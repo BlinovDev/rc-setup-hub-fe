@@ -166,11 +166,20 @@
     transform: translateY(0);
   }
   .guest-shell {
-    max-width: 30rem;
-    margin-top: 5vh;
+    max-width: 72rem;
   }
   .guest-shell .app-header {
-    justify-content: center;
+    justify-content: space-between;
+  }
+  .guest-nav {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+  }
+  .guest-nav a {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
   }
   .login-panel {
     display: grid;

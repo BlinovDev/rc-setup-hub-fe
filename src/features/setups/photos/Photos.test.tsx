@@ -547,7 +547,7 @@ it("media 401 expires the session; inaccessible media does not pretend to be a z
   await userEvent
     .setup()
     .click(setupButton({ name: "Enlarge photo 1 (cover)" }));
-  await screen.findByRole("button", { name: "Sign in with Google" });
+  await screen.findByRole("button", { name: "Sign in" });
 });
 it("revokes object URLs and gallery state after access is lost", async () => {
   let allowed = true;

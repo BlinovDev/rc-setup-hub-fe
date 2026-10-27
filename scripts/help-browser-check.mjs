@@ -73,6 +73,21 @@ try {
                 : {},
             });
           } else if (
+            !signedIn &&
+            request.method() === "GET" &&
+            path === "/api/v1/chassis/brands"
+          ) {
+            await route.fulfill({ headers, json: [] });
+          } else if (
+            !signedIn &&
+            request.method() === "GET" &&
+            path === "/api/v1/setups/search"
+          ) {
+            await route.fulfill({
+              headers,
+              json: { items: [], next_cursor: null },
+            });
+          } else if (
             signedIn &&
             request.method() === "GET" &&
             path === "/api/v1/me/setups"
@@ -88,7 +103,7 @@ try {
           .getByText(
             signedIn
               ? "No setups yet."
-              : "Manage and share your RC drift setups.",
+              : "No public setups match these filters.",
             { exact: true },
           )
           .waitFor();

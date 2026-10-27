@@ -57,11 +57,14 @@ jobs:
       - run: npm ci
       - run: npx playwright install --with-deps chromium
       - run: npm run test:photos:browser
+      - run: npm run test:public:browser
       - run: node scripts/help-browser-check.mjs
       - name: Upload photo QA screenshots
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: photo-qa-screenshots
-          path: artifacts/photo-qa/
+          path: |
+            artifacts/photo-qa/
+            artifacts/public-qa/
           if-no-files-found: ignore

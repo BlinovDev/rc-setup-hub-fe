@@ -17,15 +17,19 @@ import { UserProfilePage } from "../features/users/UserProfilePage";
 export const routes: RouteObject[] = [
   {
     path: "/",
-    element: <AuthGate>{() => <DiscoveryPage />}</AuthGate>,
+    element: <AuthGate publicPage>{() => <DiscoveryPage />}</AuthGate>,
   },
   {
     path: "/setups/:setupId",
-    element: <AuthGate>{(user) => <SetupDetailPage user={user} />}</AuthGate>,
+    element: (
+      <AuthGate publicPage>
+        {(user) => <SetupDetailPage user={user} />}
+      </AuthGate>
+    ),
   },
   {
     path: "/users/:userId",
-    element: <AuthGate>{() => <UserProfilePage />}</AuthGate>,
+    element: <AuthGate publicPage>{() => <UserProfilePage />}</AuthGate>,
   },
   {
     path: "/friends",
@@ -50,12 +54,16 @@ export const routes: RouteObject[] = [
   {
     path: "*",
     element: (
-      <main className="mx-auto max-w-3xl px-6 py-12">
-        <h1 className="text-3xl font-semibold">Page not found</h1>
-        <Link className="mt-4 inline-block underline" to="/">
-          Return home
-        </Link>
-      </main>
+      <AuthGate publicPage>
+        {() => (
+          <section className="mx-auto max-w-3xl px-6 py-12">
+            <h1 className="text-3xl font-semibold">Page not found</h1>
+            <Link className="mt-4 inline-block underline" to="/">
+              Return home
+            </Link>
+          </section>
+        )}
+      </AuthGate>
     ),
   },
 ];

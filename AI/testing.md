@@ -39,6 +39,7 @@ Photo/responsive/interaction changes also require the existing photo-browser gat
 ```sh
 npx playwright install --with-deps chromium
 npm run test:photos:browser
+npm run test:public:browser
 node scripts/help-browser-check.mjs
 ```
 
@@ -61,6 +62,14 @@ and no per-card metadata N+1. Shape provenance is in
 Mock thumbnail resampling uses canvas with 64/255 interior-color tolerance; tiny
 fixtures check geometry. Keep mock generation in a separate non-navigating renderer,
 and drain route handlers before closing contexts. Do not weaken gates to avoid tooling.
+
+The public browser gate uses separate guest/authenticated HTTP fixtures at the same
+six viewports. It verifies Explore filters/pagination/error/empty, public profiles,
+public detail/gallery/keyboard, protected CTAs, login/logout/private blob cleanup,
+history and no overflow. It checks rendered metadata **and raw static HTML**;
+mocked OAuth/cookies are not a real Google login or proof of crawler indexing.
+Screenshots are CI artifacts under artifacts/public-qa. All three browser commands are
+required; the photo gate continues to exercise authenticated visible-to-you lists.
 
 ## Mandatory regressions
 

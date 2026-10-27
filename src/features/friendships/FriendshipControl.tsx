@@ -1,3 +1,4 @@
+import { SignInButton } from "../auth/SignInButton";
 import { useState } from "react";
 import { useIsMutating, useQuery } from "@tanstack/react-query";
 import type { components } from "../../api/generated/schema";
@@ -54,7 +55,11 @@ export function ProfileFriendshipControl({ userId }: { userId: string }) {
   const self = me.data?.id === userId;
   const friendships = useFriendships(!!me.data && !self);
   const [feedback, setFeedback] = useState("");
-  if (!me.data || self) return null;
+  if (!me.data)
+    return me.isSuccess ? (
+      <SignInButton>Sign in to add friends</SignInButton>
+    ) : null;
+  if (self) return null;
   return (
     <div className="relationship-control">
       {friendships.isPending ? (

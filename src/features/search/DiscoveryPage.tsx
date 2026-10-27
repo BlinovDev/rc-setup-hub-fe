@@ -1,3 +1,6 @@
+import { SignInButton } from "../auth/SignInButton";
+import { Link } from "react-router";
+import { currentUserOptions } from "../auth/queries";
 import { InlineNotice, LoadingState } from "../../shared/components/Feedback";
 import { Button } from "../../shared/components/Button";
 import { useEffect, useState } from "react";
@@ -12,6 +15,7 @@ import { useSetupSearch } from "./queries";
 import { SetupSearchCard } from "./SetupSearchCard";
 
 export function DiscoveryPage() {
+  const session = useQuery(currentUserOptions);
   const [params, setParams] = useSearchParams();
   const { filters, valid } = readFilters(params);
   const client = useQueryClient();
@@ -35,7 +39,7 @@ export function DiscoveryPage() {
   if (!valid)
     return (
       <section className="space-y-4">
-        <h2>Public setups</h2>
+        <h2>Explore</h2>
         <InlineNotice tone="error">
           Invalid search filters. Use a valid UUID and search text of at most
           100 characters without null characters.
@@ -46,7 +50,18 @@ export function DiscoveryPage() {
   const items = search.data?.pages.flatMap((page) => page.items) ?? [];
   return (
     <section className="space-y-4">
-      <h2 className="text-2xl font-semibold">Public setups</h2>
+      <h2 className="text-2xl font-semibold">Explore</h2>
+      <p>Explore RC drift setups shared by the community.</p>
+      {session.data ? (
+        <Link
+          className="inline-flex min-h-11 items-center underline"
+          to="/my/setups/new"
+        >
+          Create a setup
+        </Link>
+      ) : (
+        <SignInButton>Sign in to share a setup</SignInButton>
+      )}
       <SearchForm
         key={filters.q}
         initialText={filters.q}

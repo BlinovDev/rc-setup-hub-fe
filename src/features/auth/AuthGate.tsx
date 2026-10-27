@@ -1,24 +1,54 @@
 import { HelpFeedback } from "../help/HelpFeedback";
+import { flushSync } from "react-dom";
 import { SocialLinks } from "../../shared/social/SocialLinks";
-import { Fragment, useLayoutEffect, type ReactNode } from "react";
+import { Fragment, useState, useLayoutEffect, type ReactNode } from "react";
 import { NavLink } from "react-router";
 import type { components } from "../../api/generated/schema";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Button } from "../../shared/components/Button";
 import { InlineNotice, LoadingState } from "../../shared/components/Feedback";
-import { currentUserOptions } from "./queries";
+import { currentUserKey, currentUserOptions } from "./queries";
 import { watchSessionCache } from "./sessionCache";
 import { LoginPage } from "./LoginPage";
+import { RouteMetadata } from "../../app/RouteMetadata";
+import { SignInButton } from "./SignInButton";
 import { AuthenticatedShell } from "./AuthenticatedShell";
-export function AuthGate({
-  children,
-}: {
-  children?: (user: components["schemas"]["User"]) => ReactNode;
-}) {
+type User = components["schemas"]["User"];
+type Props =
+  | { publicPage: true; children: (user: User | null) => ReactNode }
+  | { publicPage?: false; children?: (user: User) => ReactNode };
+
+export function AuthGate(props: Props) {
   const client = useQueryClient();
+  const [suspended, setSuspended] = useState(false);
   useLayoutEffect(() => watchSessionCache(client), [client]);
+  useLayoutEffect(() => {
+    // A restored document can otherwise retain a different tab's old identity.
+    // Sanitize the BFCache snapshot before freezing, then resolve cookies anew.
+    const hide = (event: PageTransitionEvent) => {
+      if (!event.persisted) return;
+      void client.cancelQueries({ queryKey: currentUserKey, exact: true });
+      flushSync(() => {
+        setSuspended(true);
+        client.setQueryData(currentUserKey, null);
+      });
+    };
+    const show = (event: PageTransitionEvent) => {
+      if (event.persisted)
+        void client
+          .resetQueries({ queryKey: currentUserKey, exact: true })
+          .finally(() => setSuspended(false));
+    };
+    window.addEventListener("pagehide", hide);
+    window.addEventListener("pageshow", show);
+    return () => {
+      window.removeEventListener("pagehide", hide);
+      window.removeEventListener("pageshow", show);
+    };
+  }, [client]);
   const session = useQuery(currentUserOptions);
-  const authenticated = session.isSuccess && session.data !== null;
+  const authenticated =
+    !suspended && session.isSuccess && session.data !== null;
   return (
     <div className={authenticated ? "app-shell" : "app-shell guest-shell"}>
       <a href="#page-content" className="skip-link">
@@ -26,11 +56,11 @@ export function AuthGate({
       </a>
       <header className="app-header">
         <h1 className="app-title">RC Setup Hub</h1>
-        {session.isSuccess && session.data !== null && (
+        {!suspended && session.isSuccess && session.data !== null && (
           <>
             <nav className="primary-nav" aria-label="Main">
               <NavLink to="/" end>
-                Home
+                Explore
               </NavLink>
               <NavLink to="/my/setups">My setups</NavLink>
               <NavLink to="/friends">Friends</NavLink>
@@ -44,9 +74,23 @@ export function AuthGate({
             <HelpFeedback />
           </div>
         )}
+        {!suspended && session.isSuccess && session.data === null && (
+          <>
+            <nav className="guest-nav" aria-label="Public navigation">
+              <NavLink to="/" end>
+                Explore
+              </NavLink>
+              <NavLink to="/my/setups/new">Create setup</NavLink>
+            </nav>
+            <SignInButton />
+          </>
+        )}
       </header>
+      {(suspended || session.isPending || session.isError) && (
+        <RouteMetadata unresolved />
+      )}
       <main id="page-content" tabIndex={-1} className="page-content">
-        {session.isPending ? (
+        {suspended || session.isPending ? (
           <LoadingState>Checking your session…</LoadingState>
         ) : session.isError ? (
           <InlineNotice tone="error">
@@ -59,10 +103,17 @@ export function AuthGate({
               {session.isFetching ? "Checking…" : "Retry"}
             </Button>
           </InlineNotice>
-        ) : session.data === null ? (
-          <LoginPage />
         ) : (
-          <Fragment key={session.data.id}>{children?.(session.data)}</Fragment>
+          <Fragment key={session.data?.id ?? "guest"}>
+            <RouteMetadata />
+            {session.data ? (
+              props.children?.(session.data)
+            ) : props.publicPage ? (
+              props.children(null)
+            ) : (
+              <LoginPage />
+            )}
+          </Fragment>
         )}
       </main>
       <footer className="desktop-footer">

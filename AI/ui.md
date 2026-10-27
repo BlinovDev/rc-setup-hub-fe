@@ -8,14 +8,13 @@ owns enduring client behavior; [API](api.md) owns transport/caches, not this rou
 
 | Route | Interaction |
 | --- | --- |
-| /login | Google browser-navigation CTA; authenticated users enter app |
-| / | Authenticated public discovery: explicit text search, URL filters, newest-first cursor load-more |
+| / | Public Explore for guests and signed-in users: explicit text search, URL filters, newest-first cursor load-more |
 | /setups/:setupId | Stable read-only technical detail/gallery/share; owner-only separate Edit link |
 | /my/setups | Own list: sibling title/cover view links, separate Edit/Delete, create CTA and visibility |
 | /my/setups/new | Save setup once, then optional photo uploads |
 | /my/setups/:setupId/edit | Owner editor, generic unavailable for foreign/unsupported setup |
 | /friends | Find people, Incoming Accept/Reject, Outgoing Cancel, accepted Remove with confirmation |
-| /users/:userId | Safe nickname/avatar, loaded friendship action, backend-returned visible setups |
+| /users/:userId | Safe nickname/avatar and paginated public setups; signed-in users can explicitly select Setups visible to you |
 | /settings | Nickname editing, current-user email read-only, optional avatar, shell logout |
 
 Discovery clears model when brand changes. All brands/models differ from Custom
@@ -24,6 +23,14 @@ load-more retains cards with independent retry. Detail shows historical chassis 
 present technical values including zero; missing/private/friendship-denied look alike.
 Copy link has success feedback or selectable fallback. Profile/list/friendship load/
 error states remain independent; no hidden counts or email/provider identity.
+
+Guests have a global header Sign in action and explicit CTAs at protected routes,
+setup creation and friendship actions. No automatic OAuth navigation. Public pages
+wait for session resolution; 401 is guest, other session failures offer retry.
+Viewer changes remount content/metadata and discard old queues/dialogs/blob URLs.
+Guest profile URLs ignore the authenticated `view=visible` mode; public is always
+the default. Visible-to-you lists remain an explicit authenticated mode, never
+mixed into public discovery or public profile results.
 
 ## Forms and numeric interaction
 

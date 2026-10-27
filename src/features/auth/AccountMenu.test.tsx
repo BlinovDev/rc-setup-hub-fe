@@ -88,7 +88,7 @@ it("shows identity, canonical safe icon links and sign out without moving bottom
     within(dialog).queryByRole("navigation", { name: "Main" }),
   ).not.toBeInTheDocument();
   const nav = screen.getByRole("navigation", { name: "Main" });
-  for (const name of ["Home", "My setups", "Friends", "Settings"])
+  for (const name of ["Explore", "My setups", "Friends", "Settings"])
     expect(within(nav).getByRole("link", { name })).toBeInTheDocument();
 });
 

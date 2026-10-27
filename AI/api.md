@@ -31,15 +31,34 @@ Read public/friends/private values only as returned; never implement a client gr
 matrix, hidden-count inference or merge mine/friends results into public discovery.
 
 Current-user key is [auth,me], one-minute freshness, no polling/automatic retries,
-with stale focus/reconnection refresh. 401 clears user/protected UI; non-401/network
+with stale focus/reconnection refresh. 401 clears protected state and resolves a
+guest on public routes (protected routes show sign-in); non-401/network
 failures offer retry, not logout. Logout 204 cancels older /me before clearing it;
 failed logout retains identity. AuthGate cancels/removes setup, user and friendship
 queries before a changed viewer renders; catalog/unrelated caches survive. Request
 and mutation completions from an earlier session cannot restore protected data or
-expire a newer session, including sign-out/sign-in to the same account.
+expire a newer session, including sign-out/sign-in to the same account. Persisted
+pagehide sanitizes the BFCache snapshot; persisted pageshow resets /me and resolves
+current cookies before showing protected content again.
 Catalog brands/models have five-minute freshness,
 no polling/retry; models query only for a real brand. A model-list 404 is unavailable,
 not an empty success. Canonical key factories and actual timing are in feature code.
+
+## Anonymous reads
+
+The committed backend contract explicitly permits guest GET search, detail, safe
+profile/public-setups, active catalog and currently public photos. All requests
+still include credentials; media retains no-store and revocable object URLs.
+Gallery/media enable after successful session resolution, including a null guest,
+with guest/viewer identities in keys. Protected reads/writes retain authentication.
+401 on a read clears an existing identity; requests begun under a previous viewer
+cannot populate the next viewer's cache. A guest never renders a non-public detail.
+429/414 and unknown errors use safe retry feedback, never server details; no automatic
+mutation or overload retry. Backend owns the allowlist and current access decision.
+
+OAuth returns to configured APP_URL. The client does not append a return URL or
+persist tokens/destinations; protected deep links remain bookmarkable, but automatic
+return to the original route after OAuth is not supported by this fixed callback.
 
 ## Forms and reads
 
@@ -59,15 +78,17 @@ not an empty success. Canonical key factories and actual timing are in feature c
   unsupported/empty technical data is explicit. Resolve owner via safe public profile
   independently; non-401 owner errors must not hide a readable setup. Share frontend
   detail URL without query; clipboard failure offers a selectable URL.
-- Public profile succeeds before loading its visible setups; empty array is not missing
-  profile. Profile/list errors retry independently. Render returned values only, no
-  visibility filtering, N+1 detail calls or automatic detail-cache seeding.
+- Safe profile succeeds before GET /users/{user_id}/public-setups (paginated
+  SetupSearchPage, limit 20, opaque cursor). This endpoint is public-only for all
+  viewers. Empty page is not a missing profile. Signed-in `view=visible` explicitly
+  uses the unchanged authenticated /users/{user_id}/setups array. Errors retry
+  independently; no hidden counts, N+1 detail calls or detail-cache seeding.
 
 ## Scoped cache and relationship rules
 
 Feature key factories own exact keys; no global invalidate-everything shortcut.
 Setup create/patch refresh mine, affected detail, search and the returned owner's
-visible list; delete uses cached detail/current user for owner and removes detail.
+visible/public lists; delete uses cached detail/current user for owner and removes detail.
 Profile nickname mutation updates current-user data; refresh affected visible public
 identity/search displays when applicable. Preserve unrelated owner/query caches.
 
