@@ -685,7 +685,7 @@ export interface components {
              * @example -1.5
              */
             toe_deg?: number | null;
-            /** @description Omitted/null/empty lists are omitted in responses. */
+            /** @description Omitted/null/empty lists are omitted in responses. Existing ordered named-link array for both axles; no stored defaults are injected. New UI standard names are upper_arm and lower_arm on either axle, plus steering_tie_rod on the front only. These are naming conventions, not an enum or a restriction on legacy/custom rear link names. Preserve existing names and order, including duplicate/legacy labels; do not rename or merge entries. Angles and lengths may coexist independently. */
             link_lengths?: components["schemas"]["LinkLength"][] | null;
             /** @description Optional top arm spacer totals, symmetric across left/right. */
             top_arm_spacing?: components["schemas"]["ArmSpacing"] | null;
@@ -717,10 +717,25 @@ export interface components {
             /** @description Finite nonnegative total behind the arm; omitted/null means unknown. */
             rear_mm?: number | null;
         };
+        /**
+         * @description Standard or custom named suspension link. Name is required; length is optional. A named entry with unknown length remains in the ordered array. Existing numeric lengths keep their precision and shape. Zero is invalid for a supplied length; do not coerce missing/empty input to zero. No new discriminator, separate arm/tie-rod fields or schema version is needed.
+         * @example {
+         *       "name": "upper_arm",
+         *       "length_mm": 42.5
+         *     }
+         * @example {
+         *       "name": "lower_arm"
+         *     }
+         * @example {
+         *       "name": "steering_tie_rod",
+         *       "length_mm": 16.2
+         *     }
+         */
         LinkLength: {
-            /** @description Trimmed non-empty name without null bytes. */
+            /** @description Trimmed non-empty free-text name without null bytes; not renamed or deduplicated. */
             name: string;
-            length_mm: number;
+            /** @description Optional finite positive millimetres. Omitted/null means unknown and is omitted on output. */
+            length_mm?: number | null;
         };
         Shocks: {
             front?: components["schemas"]["Shock"] | null;
