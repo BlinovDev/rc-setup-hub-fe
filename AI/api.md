@@ -70,6 +70,10 @@ return to the original route after OAuth is not supported by this fixed callback
   fields/parents prune; optional zero remains zero. Unsupported schemas are not editable.
 - Suspension parsers preserve dot/comma precision/signed angles versus positive links;
   optional arm-spacing totals are finite nonnegative, zero/partial unknown permitted.
+  A named link may omit length_mm (or read null); preserve its name/order and all
+  duplicate/custom entries. Supplied new lengths must be finite and positive;
+  existing read-only numeric zero remains specified. Standard names upper_arm,
+  lower_arm and front steering_tie_rod are conventions, not an enum or migration.
   No rounding/defaults. Backend/OpenAPI remain authoritative for constraints.
 - Discovery uses search only, URL q/brand_id/model_id, fixed limit 20, opaque per-page
   cursor and repeated filters. Invalid filters avoid requests. Cards use historical

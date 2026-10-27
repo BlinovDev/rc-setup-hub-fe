@@ -23,6 +23,7 @@ export function AddComponent({ section }: { section: SectionId }) {
     (spec) =>
       spec.section === section &&
       spec.id !== "notes" &&
+      !spec.id.endsWith("-links") &&
       !presentation.added[spec.id] &&
       !spec.paths.some((path) => hasValue(valueAt(values, path))),
   );

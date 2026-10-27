@@ -205,6 +205,9 @@ it("renders a malformed missing link measurement as missing rather than text or 
   const b = setup({
     suspension: { front: { link_lengths: [{ name: "Upper", length_mm: 25 }] } },
   });
-  expect(row(a, b, "Upper (mm)")).toMatchObject({ left: null, right: "25" });
+  expect(row(a, b, "Upper arm (mm)")).toMatchObject({
+    left: null,
+    right: "25",
+  });
   expect(flat(a, b, true)).toEqual([]);
 });

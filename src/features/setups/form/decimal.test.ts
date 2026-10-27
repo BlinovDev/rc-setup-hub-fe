@@ -87,7 +87,7 @@ describe("suspension decimal parsing", () => {
         });
       },
     );
-    it.each(["", "  ", "0", "0,0", "-0,25", "16,2.3", "Infinity", "1e999"])(
+    it.each(["0", "0,0", "-0,25", "16,2.3", "Infinity", "1e999"])(
       `rejects invalid ${side} link lengths: %s`,
       (input) => {
         const values = setupToForm();

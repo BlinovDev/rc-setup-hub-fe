@@ -54,7 +54,7 @@ export function setupToForm(setup?: Schemas["Setup"]): SetupFormValues {
     toe_deg: numberInput(value?.toe_deg),
     link_lengths: (value?.link_lengths ?? []).map((link) => ({
       name: link.name,
-      length_mm: String(link.length_mm),
+      length_mm: numberInput(link.length_mm),
     })),
   });
   const shock = (
@@ -145,9 +145,12 @@ export function serializeData(values: SetupFormValues): Schemas["SetupDataV1"] {
     if (value.link_lengths.length)
       result.link_lengths = value.link_lengths.map((link) => {
         const length = parseSuspensionNumber(link.length_mm);
-        if (length === undefined || length <= 0)
+        if (length !== undefined && length <= 0)
           throw new Error("Enter a finite length greater than zero.");
-        return { name: link.name.trim(), length_mm: length };
+        return {
+          name: link.name.trim(),
+          ...(length === undefined ? {} : { length_mm: length }),
+        };
       });
     return Object.keys(result).length ? result : undefined;
   }

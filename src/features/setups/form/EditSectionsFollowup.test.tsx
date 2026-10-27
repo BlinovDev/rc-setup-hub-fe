@@ -96,18 +96,16 @@ it("manual field edits and confirmed component removal retain unrelated values a
   await user.clear(screen.getByLabelText("Front camber (degrees)"));
   await user.click(screen.getByRole("button", { name: "Save setup" }));
   select("Front");
+  await user.click(screen.getByRole("tab", { name: "Link lengths" }));
+  await user.click(screen.getByRole("button", { name: "Remove front link 1" }));
   await user.click(
-    screen.getByRole("button", { name: "Remove Front link lengths" }),
-  );
-  await user.click(
-    screen.getByRole("button", { name: "Confirm remove Front link lengths" }),
+    screen.getByRole("button", { name: "Confirm remove front link 1" }),
   );
   expect(screen.getByLabelText("Front camber (degrees)")).toHaveValue("");
   expect(
     screen.getByRole("region", { name: "Front steering knuckle" }),
   ).toHaveTextContent("Knuckle");
-  await user.click(screen.getByRole("button", { name: "Add component" }));
-  await user.click(screen.getByRole("button", { name: "Front link lengths" }));
+
   expect(screen.queryByLabelText("Front link 1 name")).not.toBeInTheDocument();
   await user.click(screen.getByRole("button", { name: "Add front link" }));
   expect(screen.getByLabelText("Front link 1 name")).toHaveValue("");

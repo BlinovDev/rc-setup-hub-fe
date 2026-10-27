@@ -1,9 +1,15 @@
+import {
+  standardLinks,
+  standardLinkIndices,
+  linkLabel,
+} from "./suspensionLinks";
 import { differentialLabels, manufacturerLabel } from "./differential";
 import type { components } from "../../api/generated/schema";
 export type TechnicalValue = [
   label: string,
   value: string | number | null | undefined,
   identity?: string | undefined,
+  showMissing?: boolean | undefined,
 ];
 export type TechnicalSection = { title: string; values: TechnicalValue[] };
 export type TechnicalProps = {
@@ -38,13 +44,28 @@ export function technicalSections({
         ["Camber (deg)", suspension?.camber_deg],
         ["Caster (deg)", suspension?.caster_deg],
         ["Toe (deg)", suspension?.toe_deg],
-        ...(suspension?.link_lengths?.map(
-          (link) =>
-            [
-              link.name,
-              link.length_mm == null ? undefined : `${link.length_mm} mm`,
-            ] as TechnicalValue,
-        ) ?? []),
+        ...(() => {
+          const links = suspension?.link_lengths ?? [];
+          const indices = standardLinkIndices(links, axle),
+            used = new Set(indices.values());
+          const value = (name: string, index?: number): TechnicalValue => {
+            const link = index === undefined ? undefined : links[index];
+            return [
+              name,
+              link?.length_mm == null ? undefined : `${link.length_mm} mm`,
+              undefined,
+              !!link && link.length_mm == null,
+            ];
+          };
+          return [
+            ...standardLinks(axle).map((standard) =>
+              value(standard.label, indices.get(standard.name)),
+            ),
+            ...links.flatMap((link, index) =>
+              used.has(index) ? [] : [value(linkLabel(link.name, axle), index)],
+            ),
+          ];
+        })(),
       ],
     });
     const gear = data.running_gear?.[axle];

@@ -60,6 +60,7 @@ jobs:
       - run: npm run test:public:browser
       - run: node scripts/help-browser-check.mjs
       - run: npm run test:compare:browser
+      - run: npm run test:links:browser
       - name: Upload photo QA screenshots
         if: always()
         uses: actions/upload-artifact@v4
@@ -69,4 +70,5 @@ jobs:
             artifacts/photo-qa/
             artifacts/public-qa/
             artifacts/compare-qa/
+            artifacts/links-qa/
           if-no-files-found: ignore

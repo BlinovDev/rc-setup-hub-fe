@@ -103,7 +103,7 @@ const axle = z.object({
         length_mm: z
           .string()
           .refine(
-            (value) => validNumber(value, true, true, parseSuspensionNumber),
+            (value) => validNumber(value, true, false, parseSuspensionNumber),
             "Enter a finite length greater than zero.",
           ),
       }),

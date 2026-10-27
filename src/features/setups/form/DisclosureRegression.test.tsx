@@ -146,8 +146,8 @@ it("saving retains presentation state while resetting dirty baseline and preserv
   select("Front");
   await userEvent
     .setup()
-    .click(screen.getByRole("button", { name: "Edit Front link lengths" }));
-  const field = screen.getByLabelText("Front link 1 length (mm)");
+    .click(screen.getByRole("tab", { name: "Link lengths" }));
+  const field = screen.getByLabelText("Front Upper arm length (mm)");
   fireEvent.change(field, { target: { value: "25,123456789" } });
   select("General");
   await userEvent
@@ -166,7 +166,7 @@ it("saving retains presentation state while resetting dirty baseline and preserv
     },
   });
   select("Front");
-  expect(screen.getByLabelText("Front link 1 length (mm)")).toHaveValue(
+  expect(screen.getByLabelText("Front Upper arm length (mm)")).toHaveValue(
     "25,123456789",
   );
   expect(screen.queryByText("Unsaved changes")).not.toBeInTheDocument();
@@ -194,8 +194,7 @@ it("link removal confirmation stays with its stable row when an earlier empty ro
   });
   select("Front");
   const user = userEvent.setup();
-  await user.click(screen.getByRole("button", { name: "Add component" }));
-  await user.click(screen.getByRole("button", { name: "Front link lengths" }));
+  await user.click(screen.getByRole("tab", { name: "Link lengths" }));
   for (let i = 0; i < 3; i++)
     await user.click(screen.getByRole("button", { name: "Add front link" }));
   fireEvent.change(screen.getByLabelText("Front link 2 name"), {

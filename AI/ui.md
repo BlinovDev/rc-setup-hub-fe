@@ -223,7 +223,8 @@ Selection summaries are never seeded into detail or treated as authorization.
 Use the shared technical section inventory for aligned parameter/first/second table
 rows, including notes, historical chassis/manufacturers and every optional field.
 Default missing/null/empty values display **Not specified**; explicit zero and numeric
-precision survive. Named link lengths match by trimmed/collapsed/case-folded name,
+precision survive. Standard suspension links align canonical names and recognized
+legacy labels; other named link lengths match by trimmed/collapsed/case-folded name,
 not array index; duplicate names pair in sorted-value order because they have no IDs.
 Trim text boundaries/normalize Unicode and line endings; do not round measurements.
 Catalog manufacturer equality uses identity even when the name is unavailable.
@@ -240,3 +241,19 @@ Recheck both permissions atomically on result loads/refresh/focus. Hide cached v
 while checking and after errors; unavailable never displays a partial side. Existing
 session/BFCache boundaries discard comparison UI, queries and selection dialogs on
 viewer changes. Comparison URLs/metadata remain non-indexable; IDs grant no access.
+
+## Suspension input views
+
+Front and Rear each have mutually exclusive Angles / Link lengths tabs. Keep both
+panels mounted in the same React Hook Form state; changing tabs or setup sections
+never clears data. Existing angle values select Angles initially (also when both
+views have values); otherwise existing links select Link lengths. New setups open
+Angles. Save validates both views, reveals the affected section/tab and focuses the
+invalid input, opening a saved-name disclosure if necessary.
+
+Link lengths presents optional Upper arm / Lower arm inputs on both axles and
+Steering tie rod on Front, plus custom links. Untouched standard placeholders do
+not create payload entries. Editing existing standard/legacy links preserves names,
+order and duplicates; rename/remove affects only that row and populated removal
+requires confirmation. Blank length on a named link means Not specified, not zero.
+Detail and Compare use the same inventory/labels, including unknown named links.

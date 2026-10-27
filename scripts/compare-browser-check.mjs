@@ -322,7 +322,7 @@ try {
           page.getByRole("region", { name: "Front suspension", exact: true });
         const row = (name) =>
           front()
-            .getByRole("rowheader", { name: new RegExp(name) })
+            .getByRole("rowheader", { name: new RegExp(name, "i") })
             .locator("..");
         const search = async (q) => {
           await page
