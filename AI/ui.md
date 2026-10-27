@@ -153,11 +153,26 @@ not only jsdom shims. Owner view navigation performs no setup/photo mutation.
 
 ## Responsive shell and social links
 
-Below 768px keep fixed Home/My setups/Friends/Settings bottom navigation and account
-menu/avatar in header. The modal drawer puts avatar/nickname at top, future navigation
-space in middle, canonical social icons then Sign out at bottom. Focus Close on open;
-keep outside navigation inert; desktop resize dismisses; scroll/safe areas remain usable.
-At desktop retain compact header identity/Sign out and add the social footer.
+Below 768px keep a single-row header: branding and Sign in for guests, existing
+avatar/account menu for members. The fixed bottom row has exactly three actions:
+guests see Explore, My setups, Help & Feedback; members see Explore, My setups,
+Friends. My setups always links to /my/setups; guests see the existing explicit
+Google sign-in UI there, with no private list request, empty-list substitute or
+automatic OAuth redirect. Login/logout update navigation with the session boundary.
+
+The member drawer contains Account settings (the unchanged /settings route) and
+Help & Feedback, followed by canonical social icons and Sign out. Selecting Account
+settings closes the drawer. Focus Close on open; outside navigation stays inert;
+closing nested Help restores its trigger and leaves the drawer open. Desktop resize
+dismisses the drawer. Reserve safe-area padding below the bar and above fixed Save
+controls; viewport-fit=cover enables iOS insets, with branding below the top inset.
+Desktop navigation, identity, Sign out and social footer remain unchanged.
+
+Help & Feedback is the guest bottom-bar action, member drawer action and quiet
+desktop-footer action.
+Its compact native dialog shows selectable support email, mailto, Close/Escape,
+backdrop dismissal and contained/restored focus. Feature copy is centralized under
+src/features/help for later translation; no response-time or account-creation promise.
 
 Canonical URLs live in src/shared/social/profiles.ts; links have accessible names,
 new-tab opener isolation and no tracking parameters. Active nav has current-page

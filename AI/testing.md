@@ -37,12 +37,21 @@ Existing PR CI still runs regardless of a documentation-only local check selecti
 Photo/responsive/interaction changes also require the existing photo-browser gate:
 
 ```sh
-npx playwright install --with-deps chromium
+npx playwright install --with-deps chromium webkit
 npm run test:photos:browser
 npm run test:public:browser
+node scripts/help-browser-check.mjs
 ```
 
-The script starts local Vite and runs independent `lifecycle` and `compact-edit`
+The Help & Feedback check runs Chromium and WebKit with iPhone emulation below
+768px. It covers guest/member single-row header/three-action bottom navigation,
+320/375/390/430px and desktop/short landscape layouts, guest My setups sign-in
+without private requests, auth-dependent action order, login/logout/history cleanup,
+Account settings and nested Help drawer access, native modal keyboard/focus/backdrop
+behavior and selectable email/mailto;
+it uses mocked HTTP and writes help-prefixed screenshots to the same CI artifact.
+
+The photo script starts local Vite and runs independent `lifecycle` and `compact-edit`
 scenarios, each with a fresh browser context and explicit backend fixture. Failures
 are named by scenario/viewport and collected so later scenarios still run. To
 reproduce one suite, use `PHOTO_BROWSER_SCENARIO=compact-edit npm run test:photos:browser`
@@ -63,7 +72,7 @@ six viewports. It verifies Explore filters/pagination/error/empty, public profil
 public detail/gallery/keyboard, protected CTAs, login/logout/private blob cleanup,
 history and no overflow. It checks rendered metadata **and raw static HTML**;
 mocked OAuth/cookies are not a real Google login or proof of crawler indexing.
-Screenshots are CI artifacts under artifacts/public-qa. Both browser commands are
+Screenshots are CI artifacts under artifacts/public-qa. All three browser commands are
 required; the photo gate continues to exercise authenticated visible-to-you lists.
 
 ## Mandatory regressions

@@ -49,10 +49,11 @@ it("renders other participants directly in the correct buckets with safe profile
   );
   expect(outgoing.querySelector("img")).toBeNull();
   expect(screen.queryByText(/@example/)).not.toBeInTheDocument();
-  expect(screen.getByRole("link", { name: "Friends" })).toHaveAttribute(
-    "href",
-    "/friends",
-  );
+  expect(
+    within(screen.getByRole("navigation", { name: "Main" })).getByRole("link", {
+      name: "Friends",
+    }),
+  ).toHaveAttribute("href", "/friends");
   for (const user of [alice, bob, charlie])
     expect(screen.getByRole("link", { name: user.nickname })).toHaveAttribute(
       "href",

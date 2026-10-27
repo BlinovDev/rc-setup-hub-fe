@@ -1,3 +1,4 @@
+import { HelpFeedback } from "../help/HelpFeedback";
 import { flushSync } from "react-dom";
 import { SocialLinks } from "../../shared/social/SocialLinks";
 import { Fragment, useState, useLayoutEffect, type ReactNode } from "react";
@@ -57,7 +58,7 @@ export function AuthGate(props: Props) {
         <h1 className="app-title">RC Setup Hub</h1>
         {!suspended && session.isSuccess && session.data !== null && (
           <>
-            <nav className="primary-nav" aria-label="Main">
+            <nav className="primary-nav desktop-primary-nav" aria-label="Main">
               <NavLink to="/" end>
                 Explore
               </NavLink>
@@ -110,11 +111,24 @@ export function AuthGate(props: Props) {
           </Fragment>
         )}
       </main>
-      {authenticated && (
-        <footer className="desktop-footer">
-          <SocialLinks />
-        </footer>
-      )}
+      <nav
+        className="primary-nav mobile-bottom-nav"
+        aria-label="Mobile navigation"
+      >
+        <NavLink to="/" end>
+          Explore
+        </NavLink>
+        <NavLink to="/my/setups">My setups</NavLink>
+        {authenticated ? (
+          <NavLink to="/friends">Friends</NavLink>
+        ) : (
+          <HelpFeedback />
+        )}
+      </nav>
+      <footer className="desktop-footer">
+        {authenticated && <SocialLinks />}
+        <HelpFeedback />
+      </footer>
     </div>
   );
 }

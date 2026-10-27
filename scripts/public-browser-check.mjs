@@ -357,7 +357,10 @@ try {
       await page.getByRole("button", { name: "Sign in", exact: true }).click();
       await page.waitForURL(origin + "/");
       await page
-        .getByRole("navigation", { name: "Main", exact: true })
+        .getByRole("navigation", {
+          name: width < 768 ? "Mobile navigation" : "Main",
+          exact: true,
+        })
         .waitFor();
       assert.equal(oauth, 1);
       await page.goto(`${origin}/users/${ownerId}`);

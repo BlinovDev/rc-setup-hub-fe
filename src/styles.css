@@ -133,7 +133,7 @@
     left: 0;
     right: 0;
     display: grid;
-    grid-template-columns: repeat(4, minmax(0, 1fr));
+    grid-template-columns: repeat(3, minmax(0, 1fr));
     min-height: var(--mobile-nav-height);
     padding: 0.35rem 0.25rem calc(0.35rem + env(safe-area-inset-bottom));
     border-top: 1px solid #cbd5e1;
@@ -1141,5 +1141,105 @@
   .setup-edit-layout select {
     appearance: auto;
     background-image: none;
+  }
+}
+
+/* Help is a quiet shell action; native modal semantics match the account menu. */
+.help-trigger {
+  background: transparent;
+  border-color: transparent;
+  color: #475569;
+  font-weight: normal;
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
+}
+.desktop-footer > .help-trigger {
+  display: block;
+  margin-inline: auto;
+}
+.help-dialog {
+  width: min(28rem, calc(100vw - 2rem));
+  max-height: calc(100dvh - 2rem);
+  margin: auto;
+  padding: 1rem;
+  overflow-y: auto;
+  border: 1px solid #cbd5e1;
+  border-radius: 0.5rem;
+  background: white;
+  color: #17212b;
+}
+.help-dialog::backdrop {
+  background: rgb(23 33 43 / 45%);
+}
+.help-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+.help-email {
+  margin-block: 1rem;
+  overflow-wrap: anywhere;
+  user-select: text;
+}
+.help-email-action {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  text-decoration: underline;
+}
+
+/* The mobile bar shares the primary navigation's sizing and active treatment. */
+.mobile-bottom-nav > a,
+.mobile-bottom-nav > .help-trigger {
+  min-width: 0;
+  padding: 0.4rem 0.15rem;
+  font-size: 0.75rem;
+  white-space: nowrap;
+  border: 0;
+  border-bottom: 3px solid transparent;
+  border-radius: 0;
+  text-decoration: none;
+}
+.mobile-bottom-nav > a[aria-current="page"] {
+  border-bottom-color: #17212b;
+}
+.mobile-bottom-nav {
+  padding-left: max(0.25rem, env(safe-area-inset-left));
+  padding-right: max(0.25rem, env(safe-area-inset-right));
+}
+.account-nav {
+  display: grid;
+  gap: 0.5rem;
+}
+.account-nav a {
+  display: flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 0.5rem;
+}
+.account-nav a[aria-current="page"] {
+  font-weight: 750;
+  text-decoration: underline;
+}
+@media (max-width: 767px) {
+  .app-header {
+    flex-wrap: nowrap;
+    justify-content: space-between;
+    gap: 0.5rem;
+    padding-top: max(1rem, env(safe-area-inset-top));
+    padding-left: max(1rem, env(safe-area-inset-left));
+    padding-right: max(1rem, env(safe-area-inset-right));
+  }
+  .desktop-primary-nav,
+  .guest-nav {
+    display: none;
+  }
+}
+@media (min-width: 768px) {
+  .mobile-bottom-nav {
+    display: none;
   }
 }

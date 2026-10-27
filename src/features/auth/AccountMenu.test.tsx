@@ -79,7 +79,9 @@ it("shows identity, canonical safe icon links and sign out without moving bottom
       expect(link.querySelector("svg")).toHaveAttribute("aria-hidden", "true");
     }
   }
-  const links = within(dialog).getByRole("navigation");
+  const links = within(dialog).getByRole("navigation", {
+    name: "International Drift Hub social profiles",
+  });
   const signOut = within(dialog).getByRole("button", { name: "Sign out" });
   expect(
     links.compareDocumentPosition(signOut) & Node.DOCUMENT_POSITION_FOLLOWING,
@@ -99,7 +101,9 @@ it("focuses Close, supports explicit dismissal and native Escape cancellation, a
   });
   expect(close).toHaveFocus();
   await user.tab();
-  expect(within(dialog).getByRole("link", { name: /YouTube/ })).toHaveFocus();
+  expect(
+    within(dialog).getByRole("link", { name: "Account settings" }),
+  ).toHaveFocus();
   await user.click(close);
   expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
   expect(trigger).toHaveFocus();
@@ -155,4 +159,16 @@ it("closes on switching to desktop and removes its media listener", async () => 
     expect(trigger).toHaveAttribute("aria-expanded", "false"),
   );
   vi.unstubAllGlobals();
+});
+
+it("closes the account drawer when an account route is selected", async () => {
+  const { user, dialog, trigger } = await openMenu();
+  await user.click(
+    within(dialog).getByRole("link", { name: "Account settings" }),
+  );
+  expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+  expect(trigger).toHaveAttribute("aria-expanded", "false");
+  expect(
+    await screen.findByRole("heading", { name: "Settings" }),
+  ).toBeInTheDocument();
 });
