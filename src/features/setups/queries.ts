@@ -30,6 +30,7 @@ export async function refreshSetupLists(client: QueryClient, ownerId?: string) {
   await Promise.all([
     client.invalidateQueries({ queryKey: mineKey, exact: true }),
     client.invalidateQueries({ queryKey: ["setups", "search"] }),
+    client.invalidateQueries({ queryKey: ["setups", "compare"] }),
     ...(ownerId
       ? [
           client.invalidateQueries({

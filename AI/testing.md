@@ -41,6 +41,7 @@ npx playwright install --with-deps chromium webkit
 npm run test:photos:browser
 npm run test:public:browser
 node scripts/help-browser-check.mjs
+npm run test:compare:browser
 ```
 
 The Help & Feedback check runs Chromium and WebKit with iPhone emulation below
@@ -72,7 +73,7 @@ six viewports. It verifies Explore filters/pagination/error/empty, public profil
 public detail/gallery/keyboard, protected CTAs, login/logout/private blob cleanup,
 history and no overflow. It checks rendered metadata **and raw static HTML**;
 mocked OAuth/cookies are not a real Google login or proof of crawler indexing.
-Screenshots are CI artifacts under artifacts/public-qa. All three browser commands are
+Screenshots are CI artifacts under artifacts/public-qa. All four browser commands are
 required; the photo gate continues to exercise authenticated visible-to-you lists.
 
 ## Mandatory regressions
@@ -111,3 +112,12 @@ restore through the backend's host gates when relevant. No mock result is live Q
 
 Static packaging checks do not prove Codex discovery. Use [context smoke](context-smoke.md)
 and [engineering skills](engineering-skills.md) for fresh read-only procedures.
+
+The comparison browser gate runs Chromium and WebKit (iPhone emulation below 768px)
+at 320/375/390/430/768/1280px and short landscape. It covers desktop/hamburger/detail
+entry points, visibility-wide paginated selection, exactly two distinct sides,
+optional/array/zero/missing alignment, precision, only-differences/empty sections,
+keyboard horizontal scroll, error/retry/direct refresh, own/private/accepted-friend
+pairs, visibility revocation, late member responses after logout and history. HTTP
+fixtures model authorization; they do not establish real backend/OAuth/device QA.
+Screenshots are under artifacts/compare-qa in the existing browser CI artifact.

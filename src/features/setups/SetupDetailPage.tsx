@@ -60,6 +60,12 @@ export function SetupDetailPage({
     <article className="space-y-4">
       <h2 className="text-2xl font-semibold">{setup.title}</h2>
       <Owner id={setup.owner_id} />
+      <Link
+        className="inline-flex min-h-11 items-center underline"
+        to={`/compare?left_id=${setup.id}`}
+      >
+        Compare to
+      </Link>
       <p>{chassisLabel(setup)}</p>
       <VisibilityBadge value={setup.visibility} />
       <p>

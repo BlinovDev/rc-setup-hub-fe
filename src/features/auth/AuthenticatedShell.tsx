@@ -11,7 +11,7 @@ import { useLogout } from "./queries";
 export function AuthenticatedShell({
   user,
 }: {
-  user: components["schemas"]["User"];
+  user: components["schemas"]["User"] | null;
 }) {
   const signOut = useLogout();
   const [menuOpen, setMenuOpen] = useState(false);
@@ -20,16 +20,18 @@ export function AuthenticatedShell({
   const closeMenu = useCallback(() => setMenuOpen(false), []);
   const identity = (
     <div className="flex items-center gap-3">
-      {user.avatar_url && (
+      {user?.avatar_url && (
         <img
           className="h-8 w-8 shrink-0 rounded-full object-cover"
-          src={user.avatar_url}
+          src={user?.avatar_url}
           alt=""
           width={32}
           height={32}
         />
       )}
-      <p className="min-w-0 break-words text-sm">{user.nickname}</p>
+      <p className="min-w-0 break-words text-sm">
+        {user?.nickname ?? "Navigation"}
+      </p>
     </div>
   );
   const signOutControl = (
@@ -56,17 +58,19 @@ export function AuthenticatedShell({
   );
   return (
     <>
-      <section
-        className="session-control desktop-session"
-        aria-label="Your session"
-      >
-        {identity}
-        {signOutControl}
-      </section>
+      {user && (
+        <section
+          className="session-control desktop-session"
+          aria-label="Your session"
+        >
+          {identity}
+          {signOutControl}
+        </section>
+      )}
       <div className="mobile-session">
-        {user.avatar_url && (
+        {user?.avatar_url && (
           <img
-            src={user.avatar_url}
+            src={user?.avatar_url}
             alt=""
             width={32}
             height={32}
@@ -75,7 +79,7 @@ export function AuthenticatedShell({
         )}
         <Button
           ref={triggerRef}
-          aria-label="Open account menu"
+          aria-label={user ? "Open account menu" : "Open navigation menu"}
           aria-expanded={menuOpen}
           aria-controls={menuId}
           aria-haspopup="dialog"
@@ -101,18 +105,25 @@ export function AuthenticatedShell({
         triggerRef={triggerRef}
         identity={identity}
         footer={
-          <>
-            <SocialLinks />
-            {signOutControl}
-          </>
+          user ? (
+            <>
+              <SocialLinks />
+              {signOutControl}
+            </>
+          ) : null
         }
       >
         <nav className="account-nav" aria-label="Your account">
-          <NavLink to="/settings" onClick={closeMenu}>
-            Account settings
+          {user && (
+            <NavLink to="/settings" onClick={closeMenu}>
+              Account settings
+            </NavLink>
+          )}
+          <NavLink to="/compare" onClick={closeMenu}>
+            Compare
           </NavLink>
         </nav>
-        <HelpFeedback />
+        {user && <HelpFeedback />}
       </NavigationDrawer>
     </>
   );

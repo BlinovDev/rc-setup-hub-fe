@@ -1,3 +1,4 @@
+import { ComparePage } from "../features/compare/ComparePage";
 import { createBrowserRouter, Link, type RouteObject } from "react-router";
 import { AuthGate } from "../features/auth/AuthGate";
 
@@ -15,6 +16,14 @@ import { FriendsPage } from "../features/friendships/FriendsPage";
 import { UserProfilePage } from "../features/users/UserProfilePage";
 
 export const routes: RouteObject[] = [
+  {
+    path: "/compare",
+    element: (
+      <AuthGate publicPage>
+        {(user) => <ComparePage viewer={user?.id ?? "guest"} />}
+      </AuthGate>
+    ),
+  },
   {
     path: "/",
     element: <AuthGate publicPage>{() => <DiscoveryPage />}</AuthGate>,

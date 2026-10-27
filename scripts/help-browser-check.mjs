@@ -406,8 +406,8 @@ try {
             assert.deepEqual(
               await desktopNav.getByRole("link").allTextContents(),
               signedIn
-                ? ["Explore", "My setups", "Friends", "Settings"]
-                : ["Explore", "Create setup"],
+                ? ["Explore", "My setups", "Friends", "Settings", "Compare"]
+                : ["Explore", "Create setup", "Compare"],
             );
           }
           if (mobile && signedIn) {
@@ -420,7 +420,7 @@ try {
             await menu.waitFor();
             assert.deepEqual(
               await menu.locator(".account-nav a").allTextContents(),
-              ["Account settings"],
+              ["Account settings", "Compare"],
             );
             await menu
               .getByRole("link", { name: "Account settings", exact: true })
