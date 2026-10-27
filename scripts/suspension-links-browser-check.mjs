@@ -255,9 +255,11 @@ try {
         );
         assert.equal(bounds[0].y, bounds[1].y);
         assert(bounds.every((b) => b.h >= 44 && !b.overflow));
-        const savedName = page.getByText("Saved link name: upper_arm", {
-          exact: true,
-        });
+        const savedName = page
+          .locator("#setup-front")
+          .getByText("Saved link name: upper_arm", {
+            exact: true,
+          });
         assert((await savedName.boundingBox()).height >= 44);
         await savedName.focus();
         await page.keyboard.press("Enter");
