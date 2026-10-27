@@ -1229,6 +1229,7 @@
     flex-wrap: nowrap;
     justify-content: space-between;
     gap: 0.5rem;
+    padding-top: max(1rem, env(safe-area-inset-top));
     padding-left: max(1rem, env(safe-area-inset-left));
     padding-right: max(1rem, env(safe-area-inset-right));
   }

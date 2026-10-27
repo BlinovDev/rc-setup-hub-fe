@@ -164,7 +164,7 @@ try {
             if (engine === "chromium") {
               const cdp = await context.newCDPSession(page);
               await cdp.send("Emulation.setSafeAreaInsetsOverride", {
-                insets: { top: 0, bottom: 34, left: 0, right: 0 },
+                insets: { top: 47, bottom: 34, left: 0, right: 0 },
               });
               await page.waitForFunction(
                 () =>
@@ -173,6 +173,14 @@ try {
                       document.querySelector(".mobile-bottom-nav"),
                     ).paddingBottom,
                   ) >= 34,
+              );
+              assert(
+                (
+                  await header
+                    .getByRole("heading", { name: "RC Setup Hub" })
+                    .boundingBox()
+                ).y >= 47,
+                "branding stays below the simulated notch",
               );
               assert(
                 await area.evaluate((el) => {
