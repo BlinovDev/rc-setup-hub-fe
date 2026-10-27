@@ -16,6 +16,7 @@ owns enduring client behavior; [API](api.md) owns transport/caches, not this rou
 | /friends | Find people, Incoming Accept/Reject, Outgoing Cancel, accepted Remove with confirmation |
 | /users/:userId | Safe nickname/avatar and paginated public setups; signed-in users can explicitly select Setups visible to you |
 | /settings | Nickname editing, current-user email read-only, optional avatar, shell logout |
+| /compare | Select exactly two visible setups; optional left_id/right_id bookmarkable selection |
 
 Discovery clears model when brand changes. All brands/models differ from Custom
 setup selection; no Custom filter. Invalid URL filters offer Reset without requests;
@@ -160,6 +161,8 @@ Friends. My setups always links to /my/setups; guests see the existing explicit
 Google sign-in UI there, with no private list request, empty-list substitute or
 automatic OAuth redirect. Login/logout update navigation with the session boundary.
 
+Both guest and member hamburger drawers include Compare; it is also in desktop
+navigation. Guest branding/Sign in remain on one row beside the menu control.
 The member drawer contains Account settings (the unchanged /settings route) and
 Help & Feedback, followed by canonical social icons and Sign out. Selecting Account
 settings closes the drawer. Focus Close on open; outside navigation stays inert;
@@ -208,3 +211,32 @@ subsequent queue items. Pending writes suppress duplicates and delay dismissal u
 outcome; retry is explicit, 409 requires Reload crop/discard draft, 404 disables Apply.
 Revisions refresh thumbnails and joined covers; never destructively crop full photos.
 No captions, manual sorting, new permissions or original-image editing by assumption.
+
+## Read-only setup comparison
+
+Every accessible detail has Compare to, preselecting that setup and opening the
+second selector. Standalone Compare selects both sides; either can be replaced.
+The visible-setups search is server-filtered across the viewer's full readable scope,
+with explicit title/nickname search, pagination/retry and disabled self-selection.
+Selection summaries are never seeded into detail or treated as authorization.
+
+Use the shared technical section inventory for aligned parameter/first/second table
+rows, including notes, historical chassis/manufacturers and every optional field.
+Default missing/null/empty values display **Not specified**; explicit zero and numeric
+precision survive. Named link lengths match by trimmed/collapsed/case-folded name,
+not array index; duplicate names pair in sorted-value order because they have no IDs.
+Trim text boundaries/normalize Unicode and line endings; do not round measurements.
+Catalog manufacturer equality uses identity even when the name is unavailable.
+
+Only differences includes a row only when both values are specified and unequal.
+Hide sections with no remaining rows; if all are empty show **No comparable
+differences found.** Disabling the toggle restores sections and missing placeholders.
+Flag different/custom chassis prominently. Tables keep both setup columns, scoped
+headers and textual difference markers; focusable horizontal scrolling and sticky
+parameter labels keep values readable on narrow screens. Selection focuses its
+search input; a completed result focuses its heading. No comparison photos or writes.
+
+Recheck both permissions atomically on result loads/refresh/focus. Hide cached values
+while checking and after errors; unavailable never displays a partial side. Existing
+session/BFCache boundaries discard comparison UI, queries and selection dialogs on
+viewer changes. Comparison URLs/metadata remain non-indexable; IDs grant no access.

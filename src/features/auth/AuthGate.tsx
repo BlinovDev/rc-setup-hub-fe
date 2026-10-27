@@ -65,6 +65,7 @@ export function AuthGate(props: Props) {
               <NavLink to="/my/setups">My setups</NavLink>
               <NavLink to="/friends">Friends</NavLink>
               <NavLink to="/settings">Settings</NavLink>
+              <NavLink to="/compare">Compare</NavLink>
             </nav>
             <AuthenticatedShell user={session.data} />
           </>
@@ -76,8 +77,12 @@ export function AuthGate(props: Props) {
                 Explore
               </NavLink>
               <NavLink to="/my/setups/new">Create setup</NavLink>
+              <NavLink to="/compare">Compare</NavLink>
             </nav>
-            <SignInButton />
+            <div className="guest-header-controls">
+              <SignInButton />
+              <AuthenticatedShell user={null} />
+            </div>
           </>
         )}
       </header>

@@ -17,7 +17,8 @@
     "test": "vitest",
     "api:generate": "openapi-typescript api/openapi.yaml -o src/api/generated/schema.ts",
     "test:photos:browser": "node scripts/photo-browser-check.mjs",
-    "test:public:browser": "node scripts/public-browser-check.mjs"
+    "test:public:browser": "node scripts/public-browser-check.mjs",
+    "test:compare:browser": "node scripts/compare-browser-check.mjs"
   },
   "dependencies": {
     "@tanstack/react-query": "5.104.0",

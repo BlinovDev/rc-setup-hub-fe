@@ -134,3 +134,15 @@ Use the [product](product.md) and [UI](ui.md) for interaction rules,
 [testing](testing.md) for regression/physical QA boundaries. Endpoint inventories,
 exact limits/status schemas and decoder implementation are owned by backend contract,
 code and [API guidance](https://github.com/BlinovDev/rc-setup-hub/blob/main/AI/api.md).
+
+## Comparison reads
+
+GET /setups/visible is the bounded server-authorized candidate search for guests and
+members, distinct from public Explore. GET /setups/compare takes exactly left_id and
+right_id and returns an atomic SetupComparison or no sides. Use the committed types;
+never combine independent detail reads into a permission-checked pair. Both requests
+use credentials, no-store, abort signals and withSession; comparison/selection keys
+live below [setups, compare] with viewer identity, zero stale/gc time and no retries.
+Do not seed detail caches. Session changes purge this scope; setup writes invalidate
+it, and accepted-friendship changes reset it to discard/recheck protected results.
+Client display/difference rules live in [UI](ui.md#read-only-setup-comparison).

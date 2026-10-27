@@ -5,3 +5,4 @@ Disallow: /settings
 Disallow: /friends
 Disallow: /auth/
 Disallow: /users/
+Disallow: /compare
