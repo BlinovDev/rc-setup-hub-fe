@@ -279,7 +279,7 @@ it.each([400, 500, "network"])(
     );
     expect(screen.queryByText("Internal secret")).not.toBeInTheDocument();
     expect(
-      screen.queryByRole("button", { name: "Sign in with Google" }),
+      screen.queryByRole("button", { name: "Sign in" }),
     ).not.toBeInTheDocument();
     await userEvent
       .setup()
@@ -322,8 +322,10 @@ it("search 401 clears the existing auth state", async () => {
     ),
   );
   renderSetupRoute("/");
-  await screen.findByRole("button", { name: "Sign in with Google" });
-  expect(screen.queryByRole("textbox")).not.toBeInTheDocument();
+  await screen.findByRole("button", { name: "Sign in" });
+  expect(
+    screen.getByRole("textbox", { name: "Title or owner nickname" }),
+  ).toBeInTheDocument();
 });
 it("keeps a bookmarked historical filter without forcing it into active catalog options", async () => {
   server.use(
@@ -355,6 +357,6 @@ it("catalog 401 clears auth without a separate logged-out state", async () => {
     ),
   );
   renderSetupRoute("/");
-  await screen.findByRole("button", { name: "Sign in with Google" });
-  expect(screen.queryByRole("combobox")).not.toBeInTheDocument();
+  await screen.findByRole("button", { name: "Sign in" });
+  expect(screen.getByRole("combobox", { name: "Brand" })).toBeInTheDocument();
 });

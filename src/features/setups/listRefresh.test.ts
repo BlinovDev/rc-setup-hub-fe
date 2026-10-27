@@ -20,10 +20,19 @@ it.each(["setup", "photo", "unknown-owner"] as const)(
       [...detailKey("other-setup")],
     ];
     const owner = userSetupsKey("owner");
+    const publicList = [...owner, "public"];
     const detail = detailKey("setup");
     const gallery = [...photosKey("setup"), "viewer"];
     const media = [...detail, "media", "viewer", "photo", true, 2];
-    const all = [...affected, ...retained, owner, detail, gallery, media];
+    const all = [
+      ...affected,
+      ...retained,
+      owner,
+      publicList,
+      detail,
+      gallery,
+      media,
+    ];
     all.forEach((key) => client.setQueryData(key, "cached"));
     try {
       if (write === "photo") await refreshPhotos(client, "setup", "owner");
@@ -34,7 +43,7 @@ it.each(["setup", "photo", "unknown-owner"] as const)(
         );
       const invalidated: (readonly unknown[])[] = [
         ...affected,
-        ...(write !== "unknown-owner" ? [owner] : []),
+        ...(write !== "unknown-owner" ? [owner, publicList] : []),
         ...(write === "photo" ? [detail, gallery] : []),
       ];
       for (const key of all) {

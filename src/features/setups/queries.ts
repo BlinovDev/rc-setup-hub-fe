@@ -1,4 +1,5 @@
 import {
+  queryOptions,
   useMutation,
   useQuery,
   useQueryClient,
@@ -20,6 +21,8 @@ import {
 export const mineKey = ["setups", "mine"] as const;
 export const userSetupsKey = (userId: string) =>
   ["setups", "user", userId] as const;
+export const publicUserSetupsKey = (userId: string) =>
+  [...userSetupsKey(userId), "public"] as const;
 export const detailKey = (id: string) => ["setups", "detail", id] as const;
 // All setup writes refresh the same list projections; detail/media lifetimes
 // remain with the mutation that owns them.
@@ -31,7 +34,6 @@ export async function refreshSetupLists(client: QueryClient, ownerId?: string) {
       ? [
           client.invalidateQueries({
             queryKey: userSetupsKey(ownerId),
-            exact: true,
           }),
         ]
       : []),
@@ -64,14 +66,16 @@ export function useMySetups() {
     retry: false,
   });
 }
-export function useSetup(id: string, enabled: boolean) {
-  const client = useQueryClient();
-  return useQuery({
+export function setupOptions(client: QueryClient, id: string) {
+  return queryOptions({
     queryKey: detailKey(id),
     queryFn: ({ signal }) => withSession(client, () => getSetup(id, signal)),
-    enabled,
     retry: false,
   });
+}
+export function useSetup(id: string, enabled: boolean) {
+  const client = useQueryClient();
+  return useQuery({ ...setupOptions(client, id), enabled });
 }
 export function useUserSetups(userId: string, enabled: boolean) {
   const client = useQueryClient();

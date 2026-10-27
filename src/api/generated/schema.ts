@@ -111,7 +111,7 @@ export interface paths {
         };
         /**
          * Get an application user's public profile
-         * @description Authenticated lookup for direct frontend profile URLs. Returns only id, nickname and nullable avatar_url, without email, provider identity or friendship state.
+         * @description Guest or authenticated lookup for direct frontend profile URLs, including users with no public setups. Returns only id, nickname and nullable avatar_url, without email, provider identity or friendship state.
          */
         get: operations["getPublicUser"];
         put?: never;
@@ -269,7 +269,7 @@ export interface paths {
         };
         /**
          * Read a visible setup
-         * @description Owner sees every visibility. Other authenticated users see public; accepted friends also see friends-only. Private remains owner-only; pending relationships grant no access. Missing/inaccessible returns the same 404, before protected technical data decoding. Public still requires authentication.
+         * @description Owner sees every visibility. Other authenticated users see public; accepted friends also see friends-only. Private remains owner-only; pending relationships grant no access. Missing/inaccessible returns the same 404, before protected technical data decoding. Guests see public only. Successful public detail is index-eligible; non-public detail and all errors remain noindex.
          */
         get: operations["getSetup"];
         put?: never;
@@ -337,7 +337,7 @@ export interface paths {
         };
         /**
          * Browse/search public setups
-         * @description Authenticated PUBLIC discovery only: even owner/accepted friend never receives private/friends setups here. Filters combine with AND; disagreeing brand/model returns zero results. Custom chassis matches only unfiltered queries. Inactive historical catalog values remain searchable and displayable. Ordered created_at DESC, id DESC with keyset pagination. Empty response is {"items":[],"next_cursor":null}.
+         * @description PUBLIC discovery for guests and authenticated users: even owner/accepted friend never receives private/friends setups here. Filters combine with AND; disagreeing brand/model returns zero results. Custom chassis matches only unfiltered queries. Inactive historical catalog values remain searchable and displayable. Ordered created_at DESC, id DESC with keyset pagination. Empty response is {"items":[],"next_cursor":null}.
          */
         get: operations["searchPublicSetups"];
         put?: never;
@@ -449,7 +449,7 @@ export interface paths {
         };
         /**
          * Read authorized processed JPEG
-         * @description Checks current session and setup visibility on every read. No public static media. Cache-Control no-store, private; no ETag/Last-Modified. Lost access and unknown photo are identical 404.
+         * @description Resolves an optional session and checks current setup visibility on every read; guests see public only. No public static media. Cache-Control no-store, private; no ETag/Last-Modified. Lost access and unknown photo are identical 404.
          */
         get: operations["readSetupPhotoImage"];
         put?: never;
@@ -469,9 +469,29 @@ export interface paths {
         };
         /**
          * Read authorized processed JPEG
-         * @description Checks current session and setup visibility on every read. No public static media. Cache-Control no-store, private; no ETag/Last-Modified. Lost access and unknown photo are identical 404.
+         * @description Resolves an optional session and checks current setup visibility on every read; guests see public only. No public static media. Cache-Control no-store, private; no ETag/Last-Modified. Lost access and unknown photo are identical 404.
          */
         get: operations["readSetupPhotoThumbnail"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/users/{user_id}/public-setups": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List public setups for one safe owner profile
+         * @description Public-only for every viewer, including the owner and accepted friends. Returns bounded SetupSearchPage summaries without technical data, email, hidden counts or friendship state. Same validated filters, cursor ordering and 20/default, 50/maximum limit as Explore. Missing user and user without public setups both return an empty page. The existing /users/{user_id}/setups endpoint remains authenticated and visibility-dependent.
+         */
+        get: operations["listPublicUserSetups"];
         put?: never;
         post?: never;
         delete?: never;
@@ -971,6 +991,25 @@ export interface components {
                 "application/json": components["schemas"]["APIError"];
             };
         };
+        /** @description Guest request URI exceeds 2048 bytes; authenticated requests retain existing limits. */
+        PublicURITooLong: {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                "application/json": components["schemas"]["APIError"];
+            };
+        };
+        /** @description Anonymous process-wide rate or concurrency budget exhausted. Retry later; no per-IP forwarding header is trusted. */
+        PublicReadsBusy: {
+            headers: {
+                "Retry-After"?: 1;
+                [name: string]: unknown;
+            };
+            content: {
+                "application/json": components["schemas"]["APIError"];
+            };
+        };
     };
     parameters: never;
     requestBodies: never;
@@ -1157,8 +1196,9 @@ export interface operations {
                 };
             };
             400: components["responses"]["BadRequest"];
-            401: components["responses"]["Unauthorized"];
             404: components["responses"]["NotFound"];
+            414: components["responses"]["PublicURITooLong"];
+            429: components["responses"]["PublicReadsBusy"];
             500: components["responses"]["InternalError"];
         };
     };
@@ -1313,7 +1353,8 @@ export interface operations {
                     "application/json": components["schemas"]["ChassisBrand"][];
                 };
             };
-            401: components["responses"]["Unauthorized"];
+            414: components["responses"]["PublicURITooLong"];
+            429: components["responses"]["PublicReadsBusy"];
             500: components["responses"]["InternalError"];
         };
     };
@@ -1339,8 +1380,9 @@ export interface operations {
                 };
             };
             400: components["responses"]["BadRequest"];
-            401: components["responses"]["Unauthorized"];
             404: components["responses"]["NotFound"];
+            414: components["responses"]["PublicURITooLong"];
+            429: components["responses"]["PublicReadsBusy"];
             500: components["responses"]["InternalError"];
         };
     };
@@ -1396,8 +1438,9 @@ export interface operations {
                 };
             };
             400: components["responses"]["BadRequest"];
-            401: components["responses"]["Unauthorized"];
             404: components["responses"]["NotFound"];
+            414: components["responses"]["PublicURITooLong"];
+            429: components["responses"]["PublicReadsBusy"];
             500: components["responses"]["InternalError"];
         };
     };
@@ -1538,7 +1581,8 @@ export interface operations {
                 };
             };
             400: components["responses"]["BadRequest"];
-            401: components["responses"]["Unauthorized"];
+            414: components["responses"]["PublicURITooLong"];
+            429: components["responses"]["PublicReadsBusy"];
             500: components["responses"]["InternalError"];
         };
     };
@@ -1583,8 +1627,9 @@ export interface operations {
                 };
             };
             400: components["responses"]["BadRequest"];
-            401: components["responses"]["Unauthorized"];
             404: components["responses"]["NotFound"];
+            414: components["responses"]["PublicURITooLong"];
+            429: components["responses"]["PublicReadsBusy"];
             500: components["responses"]["InternalError"];
         };
     };
@@ -1752,8 +1797,9 @@ export interface operations {
                 };
             };
             400: components["responses"]["BadRequest"];
-            401: components["responses"]["Unauthorized"];
             404: components["responses"]["NotFound"];
+            414: components["responses"]["PublicURITooLong"];
+            429: components["responses"]["PublicReadsBusy"];
             500: components["responses"]["InternalError"];
         };
     };
@@ -1779,8 +1825,46 @@ export interface operations {
                 };
             };
             400: components["responses"]["BadRequest"];
-            401: components["responses"]["Unauthorized"];
             404: components["responses"]["NotFound"];
+            414: components["responses"]["PublicURITooLong"];
+            429: components["responses"]["PublicReadsBusy"];
+            500: components["responses"]["InternalError"];
+        };
+    };
+    listPublicUserSetups: {
+        parameters: {
+            query?: {
+                /** @description Trimmed literal case-insensitive substring of title OR owner nickname. Empty/omitted means no text filter; percent/underscore are literal. No null bytes. Never searches email, notes or technical data. */
+                q?: string;
+                /** @description Filter by historical parent brand. Valid nonexistent UUID yields zero results. */
+                brand_id?: string;
+                /** @description Filter by exact historical chassis model. Valid nonexistent UUID yields zero results. */
+                model_id?: string;
+                /** @description Maximum page size. */
+                limit?: number;
+                /** @description Opaque next-page cursor from the previous response. Invalid cursor returns 400. Repeat q/brand_id/model_id and desired limit on subsequent requests. */
+                cursor?: string;
+            };
+            header?: never;
+            path: {
+                user_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SetupSearchPage"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            414: components["responses"]["PublicURITooLong"];
+            429: components["responses"]["PublicReadsBusy"];
             500: components["responses"]["InternalError"];
         };
     };

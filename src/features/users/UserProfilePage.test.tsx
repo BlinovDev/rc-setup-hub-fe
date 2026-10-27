@@ -8,7 +8,14 @@ import { testSetup, testUser } from "../setups/testFixtures";
 import { renderSetupRoute } from "../setups/testUtils";
 import { detailKey } from "../setups/queries";
 import { mockList, emptyList } from "../friendships/testUtils";
-beforeEach(() => mockList(emptyList()));
+beforeEach(() => {
+  mockList(emptyList());
+  server.use(
+    http.get(`${apiUrl}/api/v1/users/:id/public-setups`, () =>
+      HttpResponse.json({ items: [], next_cursor: null }),
+    ),
+  );
+});
 const id = testSetup.chassis_model_id;
 const profile = {
   id,
@@ -54,7 +61,7 @@ it.each([400, 404])(
         return HttpResponse.json([]);
       }),
     );
-    renderSetupRoute(`/users/${id}`);
+    renderSetupRoute(`/users/${id}?view=visible`);
     await screen.findByText("User not found or unavailable.");
     expect(lists).toBe(0);
     expect(screen.queryByText("Private internals")).not.toBeInTheDocument();
@@ -79,7 +86,7 @@ it.each([500, "network"])(
         return HttpResponse.json([]);
       }),
     );
-    renderSetupRoute(`/users/${id}`);
+    renderSetupRoute(`/users/${id}?view=visible`);
     await screen.findByRole("button", { name: "Retry profile" });
     expect(lists).toBe(0);
     expect(screen.queryByText("No visible setups.")).not.toBeInTheDocument();
@@ -105,7 +112,7 @@ it("sequences profile then list, reuses public cache, and shows a safe empty lis
       return HttpResponse.json([]);
     }),
   );
-  const { client } = renderSetupRoute(`/users/${id}`);
+  const { client } = renderSetupRoute(`/users/${id}?view=visible`);
   await screen.findByText("Loading profile…");
   await screen.findByText("Loading visible setups…");
   await screen.findByText("No visible setups.");
@@ -143,7 +150,9 @@ it.each(["unrelated", "friend", "owner"])(
         HttpResponse.json(returned),
       ),
     );
-    const { client, router } = renderSetupRoute(`/users/${ownerId}`);
+    const { client, router } = renderSetupRoute(
+      `/users/${ownerId}?view=visible`,
+    );
     await screen.findByText("public setup");
     expect(screen.getAllByAltText("No setup photo — placeholder")).toHaveLength(
       returned.length,
@@ -194,7 +203,7 @@ it.each([400, 500, "network"])(
               );
       }),
     );
-    renderSetupRoute(`/users/${id}`);
+    renderSetupRoute(`/users/${id}?view=visible`);
     await screen.findByRole("button", { name: "Retry visible setups" });
     expect(
       screen.getByRole("heading", { name: profile.nickname }),
@@ -216,17 +225,17 @@ it.each(["profile", "list"])(
         HttpResponse.json({ error: "Expired" }, { status: 401 }),
       ),
     );
-    renderSetupRoute(`/users/${id}`);
-    await screen.findByRole("button", { name: "Sign in with Google" });
+    renderSetupRoute(`/users/${id}?view=visible`);
+    await screen.findByRole("button", { name: "Sign in" });
     expect(
-      screen.queryByRole("heading", { name: profile.nickname }),
+      screen.queryByRole("heading", { name: "Visible setups" }),
     ).not.toBeInTheDocument();
   },
 );
 it("uses a fresh public-profile cache without a duplicate owner request", async () => {
   mockProfile();
   server.use(http.get(listUrl, () => HttpResponse.json([])));
-  const { client, router } = renderSetupRoute(`/users/${id}`);
+  const { client, router } = renderSetupRoute(`/users/${id}?view=visible`);
   await screen.findByText("No visible setups.");
   let calls = 0;
   server.use(

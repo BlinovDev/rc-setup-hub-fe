@@ -16,7 +16,8 @@
     "typecheck": "tsc -p tsconfig.app.json && tsc -p tsconfig.node.json",
     "test": "vitest",
     "api:generate": "openapi-typescript api/openapi.yaml -o src/api/generated/schema.ts",
-    "test:photos:browser": "node scripts/photo-browser-check.mjs"
+    "test:photos:browser": "node scripts/photo-browser-check.mjs",
+    "test:public:browser": "node scripts/public-browser-check.mjs"
   },
   "dependencies": {
     "@tanstack/react-query": "5.104.0",
