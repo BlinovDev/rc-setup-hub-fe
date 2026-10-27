@@ -55,7 +55,7 @@ jobs:
           node-version-file: .nvmrc
           cache: npm
       - run: npm ci
-      - run: npx playwright install --with-deps chromium
+      - run: npx playwright install --with-deps chromium webkit
       - run: npm run test:photos:browser
       - run: npm run test:public:browser
       - run: node scripts/help-browser-check.mjs

@@ -1,4 +1,4 @@
-import { HelpFeedback } from "../help/HelpFeedback";
+import { NavLink } from "react-router";
 import { useCallback, useId, useRef, useState } from "react";
 import { NavigationDrawer } from "../../shared/components/NavigationDrawer";
 import { SocialLinks } from "../../shared/social/SocialLinks";
@@ -102,11 +102,22 @@ export function AuthenticatedShell({
         footer={
           <>
             <SocialLinks />
-            <HelpFeedback />
             {signOutControl}
           </>
         }
-      />
+      >
+        <nav className="account-nav" aria-label="Your account">
+          <NavLink to="/my/setups" onClick={closeMenu}>
+            My setups
+          </NavLink>
+          <NavLink to="/friends" onClick={closeMenu}>
+            Friends
+          </NavLink>
+          <NavLink to="/settings" onClick={closeMenu}>
+            Settings
+          </NavLink>
+        </nav>
+      </NavigationDrawer>
     </>
   );
 }

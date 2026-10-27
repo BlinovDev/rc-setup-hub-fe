@@ -37,14 +37,16 @@ Existing PR CI still runs regardless of a documentation-only local check selecti
 Photo/responsive/interaction changes also require the existing photo-browser gate:
 
 ```sh
-npx playwright install --with-deps chromium
+npx playwright install --with-deps chromium webkit
 npm run test:photos:browser
 npm run test:public:browser
 node scripts/help-browser-check.mjs
 ```
 
-The Help & Feedback check covers guest/member shell entry points, native modal
-keyboard/focus/backdrop behavior, selectable email/mailto and six viewport layouts;
+The Help & Feedback check runs Chromium and WebKit with iPhone emulation below
+768px. It covers guest/member single-row header/three-action bottom navigation,
+320/375/390/430px and desktop/short landscape layouts, protected creation, account
+routes, native modal keyboard/focus/backdrop behavior and selectable email/mailto;
 it uses mocked HTTP and writes help-prefixed screenshots to the same CI artifact.
 
 The photo script starts local Vite and runs independent `lifecycle` and `compact-edit`

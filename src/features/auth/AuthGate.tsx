@@ -58,7 +58,7 @@ export function AuthGate(props: Props) {
         <h1 className="app-title">RC Setup Hub</h1>
         {!suspended && session.isSuccess && session.data !== null && (
           <>
-            <nav className="primary-nav" aria-label="Main">
+            <nav className="primary-nav desktop-primary-nav" aria-label="Main">
               <NavLink to="/" end>
                 Explore
               </NavLink>
@@ -68,11 +68,6 @@ export function AuthGate(props: Props) {
             </nav>
             <AuthenticatedShell user={session.data} />
           </>
-        )}
-        {!authenticated && (
-          <div className="guest-help">
-            <HelpFeedback />
-          </div>
         )}
         {!suspended && session.isSuccess && session.data === null && (
           <>
@@ -116,6 +111,16 @@ export function AuthGate(props: Props) {
           </Fragment>
         )}
       </main>
+      <nav
+        className="primary-nav mobile-bottom-nav"
+        aria-label="Mobile navigation"
+      >
+        <NavLink to="/" end>
+          Explore
+        </NavLink>
+        <NavLink to="/my/setups/new">Create setup</NavLink>
+        <HelpFeedback />
+      </nav>
       <footer className="desktop-footer">
         {authenticated && <SocialLinks />}
         <HelpFeedback />

@@ -1,4 +1,4 @@
-import { chromium } from "playwright";
+import { chromium, webkit, devices } from "playwright";
 import { spawn } from "node:child_process";
 import { mkdir } from "node:fs/promises";
 import assert from "node:assert/strict";
@@ -21,6 +21,9 @@ const server = spawn(
 );
 const email = "internationaldrifthub@gmail.com";
 let browser;
+const engines = process.env.HELP_BROWSER_ENGINE
+  ? [process.env.HELP_BROWSER_ENGINE]
+  : ["chromium", "webkit"];
 try {
   for (let attempt = 0; attempt < 100; attempt++) {
     try {
@@ -31,211 +34,437 @@ try {
       await new Promise((resolve) => setTimeout(resolve, 100));
     }
   }
-  browser = await chromium.launch({ headless: true });
-  await mkdir("artifacts/photo-qa", { recursive: true });
-  for (const [width, height] of [
-    [320, 900],
-    [375, 900],
-    [390, 900],
-    [768, 900],
-    [1280, 900],
-    [640, 360],
-  ]) {
-    for (const signedIn of [false, true]) {
-      const context = await browser.newContext({
-        viewport: { width, height },
-        hasTouch: width < 768,
-      });
-      try {
-        const page = await context.newPage();
-        const errors = [],
-          unexpected = [];
-        page.on("pageerror", (error) => errors.push(error.message));
-        await page.route("http://127.0.0.1:8080/**", async (route) => {
-          const request = route.request();
-          const path = new URL(request.url()).pathname;
-          const headers = {
-            "access-control-allow-origin": origin,
-            "access-control-allow-credentials": "true",
-          };
-          if (request.method() === "GET" && path === "/api/v1/me") {
-            await route.fulfill({
-              status: signedIn ? 200 : 401,
-              headers,
-              json: signedIn
-                ? {
-                    id: "c61393b6-daa0-4eb8-923c-57aedbb46a46",
-                    nickname: "Driver",
-                    email: "driver@example.test",
-                    avatar_url: null,
-                    created_at: "2026-10-12T12:00:00Z",
-                  }
-                : {},
-            });
-          } else if (
-            !signedIn &&
-            request.method() === "GET" &&
-            path === "/api/v1/chassis/brands"
-          ) {
-            await route.fulfill({ headers, json: [] });
-          } else if (
-            !signedIn &&
-            request.method() === "GET" &&
-            path === "/api/v1/setups/search"
-          ) {
-            await route.fulfill({
-              headers,
-              json: { items: [], next_cursor: null },
-            });
-          } else if (
-            signedIn &&
-            request.method() === "GET" &&
-            path === "/api/v1/me/setups"
-          ) {
-            await route.fulfill({ headers, json: [] });
-          } else {
-            unexpected.push(`${request.method()} ${path}`);
-            await route.abort();
-          }
+  for (const engine of engines) {
+    assert(["chromium", "webkit"].includes(engine));
+    browser = await { chromium, webkit }[engine].launch({ headless: true });
+    await mkdir("artifacts/photo-qa", { recursive: true });
+    for (const [width, height] of [
+      [320, 900],
+      [375, 900],
+      [390, 900],
+      [430, 932],
+      [768, 900],
+      [1280, 900],
+      [640, 360],
+    ]) {
+      for (const signedIn of [false, true]) {
+        const context = await browser.newContext({
+          ...(engine === "webkit" && width < 768 ? devices["iPhone 13"] : {}),
+          viewport: { width, height },
+          hasTouch: width < 768,
         });
-        await page.goto(`${origin}${signedIn ? "/my/setups" : "/"}`);
-        await page
-          .getByText(
-            signedIn
-              ? "No setups yet."
-              : "No public setups match these filters.",
-            { exact: true },
-          )
-          .waitFor();
-        const mobile = width < 768;
-        let area;
-        if (mobile && signedIn) {
-          await page.getByRole("button", { name: "Open account menu" }).click();
-          area = page.getByRole("dialog", { name: "Account and navigation" });
-          await area.waitFor();
-          assert.equal(await area.getByRole("link").count(), 3);
-          assert.equal(
+        try {
+          const page = await context.newPage();
+          page.setDefaultTimeout(15000);
+          const errors = [],
+            unexpected = [];
+          let oauth = 0;
+          page.on("pageerror", (error) => errors.push(error.message));
+          await page.route("http://127.0.0.1:8080/**", async (route) => {
+            const request = route.request();
+            const path = new URL(request.url()).pathname;
+            const headers = {
+              "access-control-allow-origin": origin,
+              "access-control-allow-credentials": "true",
+            };
+            if (request.method() === "GET" && path === "/auth/google") {
+              oauth++;
+              await route.fulfill({
+                headers,
+                contentType: "text/html",
+                body: "<h1>Backend sign-in boundary</h1>",
+              });
+            } else if (request.method() === "GET" && path === "/api/v1/me") {
+              await route.fulfill({
+                status: signedIn ? 200 : 401,
+                headers,
+                json: signedIn
+                  ? {
+                      id: "c61393b6-daa0-4eb8-923c-57aedbb46a46",
+                      nickname: "Driver",
+                      email: "driver@example.test",
+                      avatar_url: null,
+                      created_at: "2026-10-12T12:00:00Z",
+                    }
+                  : {},
+              });
+            } else if (
+              request.method() === "GET" &&
+              path === "/api/v1/chassis/brands"
+            ) {
+              await route.fulfill({ headers, json: [] });
+            } else if (
+              request.method() === "GET" &&
+              path === "/api/v1/setups/search"
+            ) {
+              await route.fulfill({
+                headers,
+                json: { items: [], next_cursor: null },
+              });
+            } else if (
+              signedIn &&
+              request.method() === "GET" &&
+              path === "/api/v1/me/setups"
+            ) {
+              await route.fulfill({ headers, json: [] });
+            } else {
+              unexpected.push(`${request.method()} ${path}`);
+              await route.abort();
+            }
+          });
+          await page.goto(`${origin}${signedIn ? "/my/setups" : "/"}`);
+          await page
+            .getByText(
+              signedIn
+                ? "No setups yet."
+                : "No public setups match these filters.",
+              { exact: true },
+            )
+            .waitFor();
+          const mobile = width < 768;
+          let area;
+          if (mobile) {
+            const header = page.getByRole("banner");
+            assert.equal(await header.getByRole("navigation").count(), 0);
+            assert.equal(
+              await header
+                .getByRole("button", { name: "Help & Feedback" })
+                .count(),
+              0,
+            );
+            const title = await header
+              .getByRole("heading", { name: "RC Setup Hub" })
+              .boundingBox();
+            const control = header.getByRole("button", {
+              name: signedIn ? "Open account menu" : "Sign in",
+              exact: true,
+            });
+            const controlBox = await control.boundingBox();
+            assert(
+              Math.abs(
+                title.y +
+                  title.height / 2 -
+                  controlBox.y -
+                  controlBox.height / 2,
+              ) < 2,
+              "header stays one row",
+            );
+            area = page.getByRole("navigation", {
+              name: "Mobile navigation",
+              exact: true,
+            });
+            await area.waitFor();
+            assert(
+              (
+                await page
+                  .locator('meta[name="viewport"]')
+                  .getAttribute("content")
+              ).includes("viewport-fit=cover"),
+            );
+            if (engine === "chromium") {
+              const cdp = await context.newCDPSession(page);
+              await cdp.send("Emulation.setSafeAreaInsetsOverride", {
+                insets: { top: 0, bottom: 34, left: 0, right: 0 },
+              });
+              await page.waitForFunction(
+                () =>
+                  parseFloat(
+                    getComputedStyle(
+                      document.querySelector(".mobile-bottom-nav"),
+                    ).paddingBottom,
+                  ) >= 34,
+              );
+              assert(
+                await area.evaluate((el) => {
+                  const bar = el.getBoundingClientRect();
+                  return [...el.children]
+                    .filter((child) => child.matches("a,button"))
+                    .every(
+                      (child) =>
+                        child.getBoundingClientRect().bottom <= bar.bottom - 34,
+                    );
+                }),
+                "actions stay above the simulated home indicator",
+              );
+            }
+            const actions = area.locator(":scope > a, :scope > button");
+            assert.deepEqual(await actions.allTextContents(), [
+              "Explore",
+              "Create setup",
+              "Help & Feedback",
+            ]);
+            const boxes = await actions.evaluateAll((elements) =>
+              elements.map((el) => {
+                const r = el.getBoundingClientRect();
+                return {
+                  x: r.x,
+                  y: r.y,
+                  width: r.width,
+                  height: r.height,
+                  wrapped:
+                    el.scrollWidth > el.clientWidth ||
+                    (() => {
+                      const range = document.createRange();
+                      range.selectNodeContents(el);
+                      return (
+                        range.getClientRects().length !== 1 ||
+                        range.getBoundingClientRect().width > el.clientWidth
+                      );
+                    })(),
+                };
+              }),
+            );
+            for (const box of boxes) {
+              assert.equal(
+                box.y,
+                boxes[0].y,
+                "bottom navigation stays one row",
+              );
+              assert(
+                box.height >= 44 &&
+                  !box.wrapped &&
+                  box.x >= 0 &&
+                  box.x + box.width <= width + 1,
+              );
+            }
+            assert.equal(
+              await area
+                .getByRole("link", { name: "Create setup" })
+                .getAttribute("href"),
+              "/my/setups/new",
+            );
             await area
-              .getByRole("button", { name: "Sign out", exact: true })
-              .count(),
-            1,
-          );
-        } else area = page.getByRole(mobile ? "banner" : "contentinfo");
-        const trigger = area.getByRole("button", {
-          name: "Help & Feedback",
-          exact: true,
-        });
-        await trigger.focus();
-        await page.keyboard.press("Enter");
-        const panel = page.getByRole("dialog", {
-          name: "Help & Feedback",
-          exact: true,
-        });
-        const close = panel.getByRole("button", { name: "Close help" });
-        const mail = panel.getByRole("link", { name: "Send email" });
-        await panel.waitFor();
-        assert(await close.evaluate((el) => el === document.activeElement));
-        assert.equal(await mail.getAttribute("href"), `mailto:${email}`);
-        assert(
-          await panel.evaluate(
-            (el) =>
-              !!el.getAttribute("aria-labelledby") &&
-              !!el.getAttribute("aria-describedby") &&
-              el.matches(":modal"),
-          ),
-        );
-        const content = await panel.textContent();
-        for (const text of [
-          "creating or accessing an account",
-          "technical support",
-          "report a bug",
-          "suggest a feature",
-          "ask something else",
-        ])
-          assert(content.includes(text));
-        await page.keyboard.press("Shift+Tab");
-        assert(await mail.evaluate((el) => el === document.activeElement));
-        await page.keyboard.press("Tab");
-        assert(await close.evaluate((el) => el === document.activeElement));
-        await page.keyboard.press("Tab");
-        assert(await mail.evaluate((el) => el === document.activeElement));
-        const text = panel.getByText(email, { exact: true });
-        assert.equal(
-          await text.evaluate((el) => {
-            const range = document.createRange();
-            range.selectNodeContents(el);
-            const selection = window.getSelection();
-            selection.removeAllRanges();
-            selection.addRange(range);
-            return selection.toString();
-          }),
-          email,
-        );
-        await text.click();
-        assert(
-          await panel.isVisible(),
-          "selecting contact text must not dismiss help",
-        );
-        const bounds = await panel.boundingBox();
-        assert(
-          bounds.x >= 0 &&
-            bounds.y >= 0 &&
-            bounds.x + bounds.width <= width + 1 &&
-            bounds.y + bounds.height <= height + 1,
-        );
-        assert(
-          await panel.evaluate((el) => el.scrollWidth <= el.clientWidth + 1),
-          "dialog must not overflow horizontally",
-        );
-        for (const action of [close, mail]) {
-          await action.scrollIntoViewIfNeeded();
-          assert((await action.boundingBox()).height >= 44);
-        }
-        await page.screenshot({
-          path: `artifacts/photo-qa/help-${signedIn ? "member" : "guest"}-${width}x${height}.png`,
-        });
-        await page.keyboard.press("Escape");
-        await panel.waitFor({ state: "hidden" });
-        assert(await trigger.evaluate((el) => el === document.activeElement));
-        await trigger.click();
-        await close.click();
-        await panel.waitFor({ state: "hidden" });
-        assert(await trigger.evaluate((el) => el === document.activeElement));
-        await trigger.click();
-        await page.mouse.click(2, 2);
-        await panel.waitFor({ state: "hidden" });
-        assert(await trigger.evaluate((el) => el === document.activeElement));
-        if (mobile && signedIn) {
-          assert(
-            await area.isVisible(),
-            "closing help must leave the account drawer intact",
-          );
-          await page.keyboard.press("Escape");
-          await area.waitFor({ state: "hidden" });
-          assert(
+              .getByRole("link", { name: "Explore", exact: true })
+              .click();
+            await page
+              .getByText("No public setups match these filters.", {
+                exact: true,
+              })
+              .waitFor();
+            assert.equal(
+              await area
+                .getByRole("link", { name: "Explore", exact: true })
+                .getAttribute("aria-current"),
+              "page",
+            );
+            await area.getByRole("link", { name: "Create setup" }).click();
+            await page
+              .getByRole(signedIn ? "heading" : "button", {
+                name: signedIn ? "New setup" : "Sign in with Google",
+                exact: true,
+              })
+              .waitFor();
+            assert.equal(
+              await area
+                .getByRole("link", { name: "Create setup" })
+                .getAttribute("aria-current"),
+              "page",
+            );
+            if (!signedIn)
+              assert.equal(
+                await page
+                  .getByRole("button", { name: "Create setup", exact: true })
+                  .count(),
+                0,
+                "guest cannot submit creation",
+              );
+            await page.screenshot({
+              path: `artifacts/photo-qa/nav-${engine}-${signedIn ? "member" : "guest"}-${width}x${height}.png`,
+            });
+            // Shrinking the layout viewport models toolbar expansion/short landscape.
+            await page.setViewportSize({
+              width,
+              height: Math.min(height, 360),
+            });
+            assert(
+              await area.evaluate((el) => {
+                const r = el.getBoundingClientRect();
+                return (
+                  Math.abs(r.bottom - window.innerHeight) <= 1 && r.top >= 0
+                );
+              }),
+            );
+            await page.setViewportSize({ width, height });
+            await page
+              .locator("#page-content")
+              .evaluate((el) => el.scrollIntoView({ block: "end" }));
+            assert(
+              await page.locator("#page-content").evaluate((el) => {
+                const content = el.getBoundingClientRect();
+                const bar = document
+                  .querySelector(".mobile-bottom-nav")
+                  .getBoundingClientRect();
+                return (
+                  content.bottom -
+                    parseFloat(getComputedStyle(el).paddingBottom) <=
+                  bar.top
+                );
+              }),
+              "content scrolls clear of the fixed navigation",
+            );
+          } else {
+            area = page.getByRole("contentinfo");
+            assert.equal(
+              await page
+                .getByRole("navigation", {
+                  name: "Mobile navigation",
+                  exact: true,
+                })
+                .count(),
+              0,
+            );
+            const desktopNav = page.getByRole("navigation", {
+              name: signedIn ? "Main" : "Public navigation",
+              exact: true,
+            });
+            assert.deepEqual(
+              await desktopNav.getByRole("link").allTextContents(),
+              signedIn
+                ? ["Explore", "My setups", "Friends", "Settings"]
+                : ["Explore", "Create setup"],
+            );
+          }
+          if (mobile && signedIn) {
             await page
               .getByRole("button", { name: "Open account menu" })
-              .evaluate((el) => el === document.activeElement),
+              .click();
+            const menu = page.getByRole("dialog", {
+              name: "Account and navigation",
+            });
+            await menu.waitFor();
+            for (const name of ["My setups", "Friends", "Settings"])
+              assert(
+                await menu.getByRole("link", { name, exact: true }).isVisible(),
+              );
+            assert.equal(
+              await menu
+                .getByRole("button", { name: "Help & Feedback" })
+                .count(),
+              0,
+            );
+            await page.keyboard.press("Escape");
+            await menu.waitFor({ state: "hidden" });
+          }
+          const trigger = area.getByRole("button", {
+            name: "Help & Feedback",
+            exact: true,
+          });
+          await trigger.focus();
+          await page.keyboard.press("Enter");
+          const panel = page.getByRole("dialog", {
+            name: "Help & Feedback",
+            exact: true,
+          });
+          const close = panel.getByRole("button", { name: "Close help" });
+          const mail = panel.getByRole("link", { name: "Send email" });
+          await panel.waitFor();
+          assert(await close.evaluate((el) => el === document.activeElement));
+          assert.equal(await mail.getAttribute("href"), `mailto:${email}`);
+          assert(
+            await panel.evaluate(
+              (el) =>
+                !!el.getAttribute("aria-labelledby") &&
+                !!el.getAttribute("aria-describedby") &&
+                el.matches(":modal"),
+            ),
           );
+          const content = await panel.textContent();
+          for (const text of [
+            "creating or accessing an account",
+            "technical support",
+            "report a bug",
+            "suggest a feature",
+            "ask something else",
+          ])
+            assert(content.includes(text));
+          await page.keyboard.press("Shift+Tab");
+          assert(await mail.evaluate((el) => el === document.activeElement));
+          await page.keyboard.press("Tab");
+          assert(await close.evaluate((el) => el === document.activeElement));
+          await page.keyboard.press("Tab");
+          assert(await mail.evaluate((el) => el === document.activeElement));
+          const text = panel.getByText(email, { exact: true });
+          assert.equal(
+            await text.evaluate((el) => {
+              const range = document.createRange();
+              range.selectNodeContents(el);
+              const selection = window.getSelection();
+              selection.removeAllRanges();
+              selection.addRange(range);
+              return selection.toString();
+            }),
+            email,
+          );
+          await text.click();
+          assert(
+            await panel.isVisible(),
+            "selecting contact text must not dismiss help",
+          );
+          const bounds = await panel.boundingBox();
+          assert(
+            bounds.x >= 0 &&
+              bounds.y >= 0 &&
+              bounds.x + bounds.width <= width + 1 &&
+              bounds.y + bounds.height <= height + 1,
+          );
+          assert(
+            await panel.evaluate((el) => el.scrollWidth <= el.clientWidth + 1),
+            "dialog must not overflow horizontally",
+          );
+          for (const action of [close, mail]) {
+            await action.scrollIntoViewIfNeeded();
+            assert((await action.boundingBox()).height >= 44);
+          }
+          await page.screenshot({
+            path: `artifacts/photo-qa/help-${engine}-${signedIn ? "member" : "guest"}-${width}x${height}.png`,
+          });
+          await page.keyboard.press("Escape");
+          await panel.waitFor({ state: "hidden" });
+          assert(await trigger.evaluate((el) => el === document.activeElement));
+          await trigger.click();
+          await close.click();
+          await panel.waitFor({ state: "hidden" });
+          assert(await trigger.evaluate((el) => el === document.activeElement));
+          await trigger.click();
+          await page.mouse.click(2, 2);
+          await panel.waitFor({ state: "hidden" });
+          assert(await trigger.evaluate((el) => el === document.activeElement));
+          assert(
+            await page.evaluate(
+              () =>
+                document.documentElement.scrollWidth <= window.innerWidth + 1,
+            ),
+          );
+          assert.equal(
+            oauth,
+            0,
+            "opening protected creation never starts OAuth automatically",
+          );
+          if (!signedIn && mobile) {
+            await page
+              .getByRole("button", { name: "Sign in", exact: true })
+              .click();
+            await page
+              .getByRole("heading", { name: "Backend sign-in boundary" })
+              .waitFor();
+            assert.equal(oauth, 1);
+          }
+          assert.deepEqual(
+            unexpected,
+            [],
+            "help must not issue API requests or mutations",
+          );
+          assert.deepEqual(errors, []);
+          console.log(
+            `PASS Help & Feedback ${engine} ${signedIn ? "member" : "guest"} ${width}x${height}: keyboard/modal/focus/backdrop/selectable email/mailto/layout; mocked HTTP, real browser engine`,
+          );
+        } finally {
+          await context.close();
         }
-        assert(
-          await page.evaluate(
-            () => document.documentElement.scrollWidth <= window.innerWidth + 1,
-          ),
-        );
-        assert.deepEqual(
-          unexpected,
-          [],
-          "help must not issue API requests or mutations",
-        );
-        assert.deepEqual(errors, []);
-        console.log(
-          `PASS Help & Feedback ${signedIn ? "member" : "guest"} ${width}x${height}: keyboard/modal/focus/backdrop/selectable email/mailto/layout; mocked HTTP, real Chromium`,
-        );
-      } finally {
-        await context.close();
       }
     }
+    await browser.close();
+    browser = undefined;
   }
 } finally {
   await browser?.close();

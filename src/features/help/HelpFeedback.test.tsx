@@ -81,7 +81,7 @@ it("dismisses only a backdrop click, not text or panel padding", async () => {
   bounds.mockRestore();
 });
 
-it("is available to guests in the mobile header and desktop footer without signing in", async () => {
+it("is available to guests in the shared bottom navigation and desktop footer without signing in", async () => {
   server.use(
     http.get(`${apiUrl}/api/v1/chassis/brands`, () => HttpResponse.json([])),
     http.get(`${apiUrl}/api/v1/setups/search`, () =>
@@ -109,9 +109,14 @@ it("is available to guests in the mobile header and desktop footer without signi
       screen.getByRole("navigation", { name: "Public navigation" }),
     ).getByRole("link", { name: "Explore" }),
   ).toBeInTheDocument();
+  expect(
+    within(screen.getByRole("banner")).queryByRole("button", {
+      name: "Help & Feedback",
+    }),
+  ).not.toBeInTheDocument();
   const user = userEvent.setup();
   for (const area of [
-    screen.getByRole("banner"),
+    screen.getByRole("navigation", { name: "Mobile navigation" }),
     screen.getByRole("contentinfo"),
   ]) {
     await user.click(
@@ -127,7 +132,7 @@ it("is available to guests in the mobile header and desktop footer without signi
   client.clear();
 });
 
-it("reuses the signed-in footer and drawer, restoring help focus before account-menu dismissal", async () => {
+it("reuses the signed-in footer and bottom navigation while keeping account routes reachable", async () => {
   server.use(
     http.get(`${apiUrl}/api/v1/me/setups`, () => HttpResponse.json([])),
   );
@@ -144,16 +149,20 @@ it("reuses the signed-in footer and drawer, restoring help focus before account-
   const menuTrigger = screen.getByRole("button", { name: "Open account menu" });
   await user.click(menuTrigger);
   const menu = screen.getByRole("dialog", { name: "Account and navigation" });
-  const help = within(menu).getByRole("button", { name: "Help & Feedback" });
-  await user.click(help);
-  const panel = assertContent();
-  fireEvent(panel, new Event("cancel", { bubbles: true, cancelable: true }));
-  expect(help).toHaveFocus();
-  expect(menu).toBeVisible();
-  expect(within(menu).getByRole("button", { name: "Sign out" })).toBeVisible();
-  expect(within(menu).getAllByRole("link")).toHaveLength(3);
+  expect(
+    within(menu).queryByRole("button", { name: "Help & Feedback" }),
+  ).not.toBeInTheDocument();
+  for (const name of ["My setups", "Friends", "Settings"])
+    expect(within(menu).getByRole("link", { name })).toBeVisible();
   await user.click(
     within(menu).getByRole("button", { name: "Close account menu" }),
   );
   expect(menuTrigger).toHaveFocus();
+  const help = within(
+    screen.getByRole("navigation", { name: "Mobile navigation" }),
+  ).getByRole("button", { name: "Help & Feedback" });
+  await user.click(help);
+  const panel = assertContent();
+  fireEvent(panel, new Event("cancel", { bubbles: true, cancelable: true }));
+  expect(help).toHaveFocus();
 });

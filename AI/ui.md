@@ -153,15 +153,18 @@ not only jsdom shims. Owner view navigation performs no setup/photo mutation.
 
 ## Responsive shell and social links
 
-Below 768px keep fixed Home/My setups/Friends/Settings bottom navigation and account
-menu/avatar in header. The modal drawer puts avatar/nickname at top, future navigation
-space in middle, canonical social icons then Sign out at bottom. Focus Close on open;
-keep outside navigation inert; desktop resize dismisses; scroll/safe areas remain usable.
-At desktop retain compact header identity/Sign out and add the social footer.
+Below 768px keep a single-row header: branding and Sign in for guests, existing
+avatar/account menu for members. One fixed bottom row contains exactly Explore,
+Create setup and Help & Feedback, in that order, for both states. Create setup opens
+the existing protected route; guests see the sign-in CTA before any creation form.
+The member drawer keeps My setups, Friends and Settings reachable, then canonical
+social icons and Sign out. Focus Close on open; keep outside navigation inert;
+desktop resize dismisses. Reserve safe-area padding below the bar and above fixed
+Save controls; viewport-fit=cover enables iOS insets. Desktop navigation, identity,
+Sign out and social footer remain unchanged.
 
-Help & Feedback is a quiet desktop-footer action and a mobile account-menu entry;
-guests have the same action in the mobile header and desktop footer without signing
-in. Its compact native dialog shows selectable support email, mailto, Close/Escape,
+Help & Feedback is the mobile bottom-bar action and a quiet desktop-footer action.
+Its compact native dialog shows selectable support email, mailto, Close/Escape,
 backdrop dismissal and contained/restored focus. Feature copy is centralized under
 src/features/help for later translation; no response-time or account-creation promise.
 
