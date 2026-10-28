@@ -5,6 +5,32 @@ RTL for interactions, MSW at the HTTP boundary. Avoid deep client mocks; unhandl
 requests fail tests and handlers reset per test. Automated suites do not perform
 real Google OAuth or establish backend/database authorization.
 
+## Agent-side verification
+
+Use the backend's canonical [Light / Standard / Critical tiers](https://github.com/BlinovDev/rc-setup-hub/blob/main/AI/testing.md#agent-side-verification),
+including its risk escalation and coverage requirements. During paired unmerged work,
+resolve policy at the exact backend PR head linked in the owning Issue/PR.
+
+Install with `npm ci` once per clean environment/lockfile change, not each edit.
+For changed behavior run `npx vitest run <affected-test-paths>` and relevant format,
+lint and type checks (for example `npx prettier --check <changed-paths>`,
+`npx eslint <changed-source-paths> --max-warnings 0`, `npm run typecheck`). Include
+connected regressions; broader local checks are appropriate when risk warrants.
+For docs/instruction-only changes use the Python checks below. If CI configuration
+changes, also parse YAML and verify triggers, job/gate identities, commands and
+artifacts against the prior workflow; browser scripts/coverage must remain intact.
+
+When OpenAPI changes, copy bytes from the exact backend PR HEAD SHA, regenerate
+with `npm run api:generate`, commit the copy/types and regenerate again to require
+no diff. Record contract SHA and compatible heads in both PRs. Do not regenerate
+unchanged contracts as an edit-cycle ritual.
+
+Run a focused browser scenario when needed to validate affected browser behavior;
+use `PHOTO_BROWSER_SCENARIO=compact-edit npm run test:photos:browser` or `lifecycle`
+for photo isolation, or the relevant unfiltered suite when no scenario filter exists.
+Install only the browsers needed for that feedback. Do not require all five suites
+locally for unrelated changes. These selections do not reduce PR CI coverage.
+
 ## Commands (repository root)
 
 Docs/instruction-only changes:
@@ -17,7 +43,10 @@ python3 -m unittest discover -s scripts -p 'test_engineering_skills.py' -v
 git diff --check
 ```
 
-Application changes / existing CI test job:
+## Mandatory full GitHub Actions checks
+
+Every PR still runs `docs-and-skills`, `test`, all five browser suite jobs and the
+`photo-browser` compatibility gate. The full `test` job remains:
 
 ```sh
 npm ci
@@ -34,7 +63,7 @@ With intentional contract changes, commit the exact backend contract/generated t
 then regenerate and require no diff. Do not manually format/edit generated files.
 Existing PR CI still runs regardless of a documentation-only local check selection.
 
-Photo/responsive/interaction changes also require the existing photo-browser gate:
+All PRs also require all five unfiltered browser suites in CI:
 
 ```sh
 npx playwright install --with-deps chromium webkit
@@ -51,7 +80,8 @@ The Help & Feedback check runs Chromium and WebKit with iPhone emulation below
 without private requests, auth-dependent action order, login/logout/history cleanup,
 Account settings and nested Help drawer access, native modal keyboard/focus/backdrop
 behavior and selectable email/mailto;
-it uses mocked HTTP and writes help-prefixed screenshots to the same CI artifact.
+it uses mocked HTTP and writes help/nav-prefixed screenshots under artifacts/photo-qa,
+uploaded in the independent Help & Feedback CI artifact.
 
 The photo script starts local Vite and runs independent `lifecycle` and `compact-edit`
 scenarios, each with a fresh browser context and explicit backend fixture. Failures
@@ -76,6 +106,31 @@ history and no overflow. It checks rendered metadata **and raw static HTML**;
 mocked OAuth/cookies are not a real Google login or proof of crawler indexing.
 Screenshots are CI artifacts under artifacts/public-qa. All five browser commands are
 required; the photo gate continues to exercise authenticated visible-to-you lists.
+
+## Browser CI compatibility and diagnosis
+
+The `browser-suites` matrix exposes stable `browser-photo`, `browser-public`,
+`browser-help`, `browser-compare` and `browser-suspension-links` checks. Each runs
+its original unfiltered script with Chromium/WebKit and unchanged viewport coverage.
+`fail-fast: false` allows every suite to finish even when another fails. Each job
+always uploads its own screenshots with a unique artifact name; retention continues
+to use the repository default. Help includes both navigation and Help screenshots.
+
+Keep the existing `photo-browser` check name as an always-run aggregate that fails
+unless **every** matrix job succeeds, including when a dependency fails or is skipped.
+Existing `docs-and-skills` and `test` check identities and triggers are unchanged.
+Branch-protection access may require administrator permissions: if unavailable,
+record that limitation in the PR; do not rename/remove the compatibility gate or
+change protection settings. No required-check migration is needed with this gate.
+Any future removal requires an administrator to add and verify replacement required
+checks before removing the old requirement/job together.
+
+Use the shared [CI/context/output budget](https://github.com/BlinovDev/rc-setup-hub/blob/main/AI/workflow.md#context-ci-and-output-budget).
+Inspect a failed suite's step and concise error excerpt, then rerun only that failed
+suite job after an authorized transient retry (or repair once). If GitHub reruns do
+not refresh the failed aggregate automatically, rerun the cheap `photo-browser`
+gate after all suites succeed, within the same single repair/recheck cycle. Never
+rerun passing browser suites to diagnose another suite or poll pending runs.
 
 ## Mandatory regressions
 
@@ -121,7 +176,7 @@ optional/array/zero/missing alignment, precision, only-differences/empty section
 keyboard horizontal scroll, error/retry/direct refresh, own/private/accepted-friend
 pairs, visibility revocation, late member responses after logout and history. HTTP
 fixtures model authorization; they do not establish real backend/OAuth/device QA.
-Screenshots are under artifacts/compare-qa in the existing browser CI artifact.
+Screenshots are under artifacts/compare-qa in the independent Compare CI artifact.
 
 The suspension-links browser gate runs the same seven Chromium/WebKit layouts,
 including emulated iPhone Safari. It exercises both tabs/axles, always-visible fixed inputs and

@@ -46,8 +46,33 @@ jobs:
           VITE_API_URL: https://international-drift-hub.com
         run: npm run build
 
-  photo-browser:
+  browser-suites:
+    name: browser-${{ matrix.suite }}
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - suite: photo
+            command: npm run test:photos:browser
+            artifact: photo-qa-screenshots
+            path: artifacts/photo-qa/
+          - suite: public
+            command: npm run test:public:browser
+            artifact: public-qa-screenshots
+            path: artifacts/public-qa/
+          - suite: help
+            command: node scripts/help-browser-check.mjs
+            artifact: help-qa-screenshots
+            path: artifacts/photo-qa/
+          - suite: compare
+            command: npm run test:compare:browser
+            artifact: compare-qa-screenshots
+            path: artifacts/compare-qa/
+          - suite: suspension-links
+            command: npm run test:links:browser
+            artifact: links-qa-screenshots
+            path: artifacts/links-qa/
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -56,19 +81,23 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npx playwright install --with-deps chromium webkit
-      - run: npm run test:photos:browser
-      - run: npm run test:public:browser
-      - run: node scripts/help-browser-check.mjs
-      - run: npm run test:compare:browser
-      - run: npm run test:links:browser
-      - name: Upload photo QA screenshots
+      - name: Run ${{ matrix.suite }} browser suite
+        run: ${{ matrix.command }}
+      - name: Upload ${{ matrix.suite }} QA screenshots
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: photo-qa-screenshots
-          path: |
-            artifacts/photo-qa/
-            artifacts/public-qa/
-            artifacts/compare-qa/
-            artifacts/links-qa/
+          name: ${{ matrix.artifact }}
+          path: ${{ matrix.path }}
           if-no-files-found: ignore
+
+  # Preserve the existing required-check name; no branch-protection migration.
+  photo-browser:
+    if: always()
+    needs: browser-suites
+    runs-on: ubuntu-latest
+    steps:
+      - name: Require every browser suite to succeed
+        env:
+          BROWSER_RESULT: ${{ needs.browser-suites.result }}
+        run: test "$BROWSER_RESULT" = success
