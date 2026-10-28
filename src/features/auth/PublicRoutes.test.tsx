@@ -220,7 +220,7 @@ it("guests read public technical data and credentialed no-store media with safe 
       "blob:guest-photo",
     ),
   );
-  await userEvent.click(screen.getByRole("button", { name: "Close photo" }));
+  await userEvent.click(screen.getByRole("button", { name: "Close photo 1" }));
   expect(URL.revokeObjectURL).toHaveBeenCalled();
 });
 
