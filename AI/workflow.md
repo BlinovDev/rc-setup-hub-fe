@@ -16,17 +16,28 @@ No sibling checkout, earlier chat or backend source access is required to find r
 1. Read the owning Issue/acceptance criteria and [AGENTS](../AGENTS.md) task rows;
    inspect relevant code/tests and [decisions](decisions.md). Resolve conflicts with
    code/contract explicitly; neither code nor an old report silently changes policy.
-2. Implement approved scope on a branch. Cross-repo work has one owning spec Issue,
+2. Prefer one fresh task context and one capable agent for BE → FE, after verifying
+   real inspect/edit/test/commit/PR capabilities in both repositories. Follow the
+   backend [paired workflow](https://github.com/BlinovDev/rc-setup-hub/blob/main/AI/workflow.md#scope-and-implementation):
+   backend PR first, immediately continue here without waiting for merge; no
+   simulated Cloud launch or silent agent substitution. Cross-repo work has one owning spec Issue,
    linked local deltas, and separate linked PRs; backend OpenAPI changes first.
    Copy the exact [contract](../api/openapi.yaml), regenerate/commit types using
    [API guidance](api.md), and record compatibility/order and exact SHA pair in PRs.
-3. Run [checks](testing.md) with Node 24 and inspect required CI at the current head.
+3. Run [targeted tier checks](testing.md#agent-side-verification) with Node 24; full CI
+   remains mandatory. Use the shared [CI/context/output budget](https://github.com/BlinovDev/rc-setup-hub/blob/main/AI/workflow.md#context-ci-and-output-budget)
+   for one initial current-head status observation and at most one focused repair/recheck.
    Report pending/failed/missing checks and mocked versus physical/live evidence.
 4. PR against main with issue/companion links, risks, verification and staging steps
    using the [template](../.github/pull_request_template.md). Do not merge or deploy
    without explicit authorization. Green CI and implementation completion are not QA,
    merge or production approval. Shared staging is explicit and must not be overwritten
    automatically; [deployment](deployment.md) points to the sole backend coordinator.
+
+Measure the next 2–3 features using the backend
+[comparison plan](https://github.com/BlinovDev/rc-setup-hub/blob/main/AI/workflow.md#context-ci-and-output-budget),
+owned by [Issue #54](https://github.com/BlinovDev/rc-setup-hub/issues/54).
+Keep observations in PRs; do not claim token savings without exposed usage data.
 
 ## Documentation ownership
 
