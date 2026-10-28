@@ -466,7 +466,7 @@ it("gallery viewer supports close/Escape, previous/next and focus containment/re
   });
   await user.click(opener);
   const dialog = screen.getByRole("dialog", { name: "Enlarged setup photo" });
-  const close = within(dialog).getByRole("button", { name: "Close photo" });
+  const close = within(dialog).getByRole("button", { name: "Close photo 1" });
   expect(close).toHaveFocus();
   await user.tab({ shift: true });
   expect(
@@ -476,6 +476,9 @@ it("gallery viewer supports close/Escape, previous/next and focus containment/re
   expect(close).toHaveFocus();
   await user.click(within(dialog).getByRole("button", { name: "Next photo" }));
   expect(within(dialog).getByText("Photo 2 of 2")).toBeInTheDocument();
+  expect(
+    within(dialog).getByRole("button", { name: "Close photo 2" }),
+  ).toHaveFocus();
   await user.click(
     within(dialog).getByRole("button", { name: "Previous photo" }),
   );
@@ -484,7 +487,7 @@ it("gallery viewer supports close/Escape, previous/next and focus containment/re
   await waitFor(() => expect(opener).toHaveFocus());
   expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
   await user.click(opener);
-  await user.click(setupButton({ name: "Close photo" }));
+  await user.click(setupButton({ name: "Close photo 1" }));
   expect(opener).toHaveFocus();
 });
 
@@ -530,7 +533,7 @@ it("suppresses duplicate pending uploads and photo writes", async () => {
 it("media 401 expires the session; inaccessible media does not pretend to be a zero-photo setup", async () => {
   mockSetupGallery([photo(1)]);
   server.use(
-    http.get(`${apiUrl}/api/v1/setups/:id/photos/:photoId/thumbnail`, () =>
+    http.get(`${apiUrl}/api/v1/setups/:id/photos/:photoId/image`, () =>
       HttpResponse.json({ error: "gone" }, { status: 404 }),
     ),
   );
@@ -577,7 +580,7 @@ it("revokes object URLs and gallery state after access is lost", async () => {
       .findAll({ queryKey: [...detailKey(testSetup.id), "media"] }),
   ).toHaveLength(0);
 });
-it("broken thumbnail decoding uses the bundled fallback", async () => {
+it("broken full-image decoding uses the bundled fallback", async () => {
   mockSetupGallery([photo(1)]);
   renderSetupRoute(`/setups/${testSetup.id}`);
   const image = await screen.findByAltText("Setup photo 1");
@@ -696,27 +699,30 @@ it("changing session identity discards local queued previews and fields", async 
   expect(setupControl("Title")).toHaveValue("");
   expect(URL.revokeObjectURL).toHaveBeenCalled();
 });
-it("a permitted non-owner sees gallery but no upload/cover/delete controls", async () => {
-  mockSetupGallery([photo(1)]);
-  const owner = "22222222-2222-4222-8222-222222222222";
-  server.use(
-    http.get(`${apiUrl}/api/v1/setups/${testSetup.id}`, () =>
-      HttpResponse.json({ ...testSetup, owner_id: owner }),
-    ),
-    http.get(`${apiUrl}/api/v1/users/${owner}`, () =>
-      HttpResponse.json({ id: owner, nickname: "Owner", avatar_url: null }),
-    ),
-  );
-  renderSetupRoute(`/setups/${testSetup.id}`);
-  await screen.findByRole("button", { name: "Enlarge photo 1 (cover)" });
-  expect(screen.queryByLabelText("Photo files")).not.toBeInTheDocument();
-  expect(
-    screen.queryByRole("button", { name: /Make photo|Delete photo/ }),
-  ).not.toBeInTheDocument();
-  expect(
-    screen.queryByRole("link", { name: "Edit setup" }),
-  ).not.toBeInTheDocument();
-});
+it.each(["public", "friends"] as const)(
+  "a permitted %s non-owner sees gallery but no upload/cover/delete controls",
+  async (visibility) => {
+    mockSetupGallery([photo(1)]);
+    const owner = "22222222-2222-4222-8222-222222222222";
+    server.use(
+      http.get(`${apiUrl}/api/v1/setups/${testSetup.id}`, () =>
+        HttpResponse.json({ ...testSetup, owner_id: owner, visibility }),
+      ),
+      http.get(`${apiUrl}/api/v1/users/${owner}`, () =>
+        HttpResponse.json({ id: owner, nickname: "Owner", avatar_url: null }),
+      ),
+    );
+    renderSetupRoute(`/setups/${testSetup.id}`);
+    await screen.findByRole("button", { name: "Enlarge photo 1 (cover)" });
+    expect(screen.queryByLabelText("Photo files")).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: /Make photo|Delete photo/ }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("link", { name: "Edit setup" }),
+    ).not.toBeInTheDocument();
+  },
+);
 it("keeps an upload and its crop offer usable after General is hidden, retaining technical and file state", async () => {
   const items: Photo[] = [];
   mockSetupGallery(items);
@@ -762,4 +768,145 @@ it("keeps an upload and its crop offer usable after General is hidden, retaining
   expect(screen.getByText("continued.heic")).toBeVisible();
   expect(screen.getByText("Uploaded and saved")).toBeVisible();
   expect(uploads).toBe(1);
+});
+
+it("navigates the native full-aspect gallery by scroll and keyboard without opening the lightbox", async () => {
+  mockSetupGallery([photo(1), photo(2), photo(3)]);
+  renderSetupRoute(`/setups/${testSetup.id}`);
+  const user = userEvent.setup();
+  const track = await screen.findByRole("group", { name: "Photo slides" });
+  Object.defineProperty(track, "clientWidth", {
+    configurable: true,
+    value: 300,
+  });
+  Object.defineProperty(track, "scrollWidth", {
+    configurable: true,
+    value: 900,
+  });
+  track.scrollTo = vi.fn((options) => {
+    track.scrollLeft = (options as ScrollToOptions).left ?? 0;
+    fireEvent.scroll(track);
+  });
+  track.scrollLeft = 300;
+  fireEvent.scroll(track);
+  const gallery = screen.getByRole("region", { name: "Setup gallery" });
+  expect(within(gallery).getByText("Photo 2 of 3")).toBeVisible();
+  expect(
+    within(gallery).getByRole("button", { name: "Enlarge photo 2" }),
+  ).toBeVisible();
+  expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+  track.focus();
+  await user.keyboard("{End}");
+  expect(within(gallery).getByText("Photo 3 of 3")).toBeVisible();
+  await user.keyboard("{Home}");
+  expect(within(gallery).getByText("Photo 1 of 3")).toBeVisible();
+  expect(track).toHaveFocus();
+});
+it("offers one-photo expansion without redundant carousel navigation", async () => {
+  mockSetupGallery([photo(1)]);
+  renderSetupRoute(`/setups/${testSetup.id}`);
+  expect(await screen.findByText("Photo 1 of 1")).toBeVisible();
+  expect(
+    screen.queryByRole("button", { name: "Next gallery photo" }),
+  ).not.toBeInTheDocument();
+  const user = userEvent.setup();
+  await user.click(
+    screen.getByRole("button", { name: "Enlarge photo 1 (cover)" }),
+  );
+  expect(
+    screen.queryByRole("button", { name: "Next photo" }),
+  ).not.toBeInTheDocument();
+  await user.keyboard("{Escape}");
+  expect(
+    screen.getByRole("button", { name: "Enlarge photo 1 (cover)" }),
+  ).toHaveFocus();
+});
+
+it("has no visible enlarge label, thumbnail strip or separate control rows", async () => {
+  mockSetupGallery([photo(1), photo(2), photo(3), photo(4)]);
+  renderSetupRoute(`/setups/${testSetup.id}`);
+  const gallery = await screen.findByRole("region", { name: "Setup gallery" });
+  expect(
+    within(gallery).queryByText("Enlarge", { exact: true }),
+  ).not.toBeInTheDocument();
+  expect(
+    within(gallery).queryByRole("group", { name: "Choose photo" }),
+  ).not.toBeInTheDocument();
+  expect(gallery.querySelector(".gallery-controls")).toBeNull();
+});
+
+it("suppresses image activation after drag/cancel while keeping keyboard activation", async () => {
+  mockSetupGallery([photo(1), photo(2)]);
+  renderSetupRoute(`/setups/${testSetup.id}`);
+  const opener = await screen.findByRole("button", {
+    name: "Enlarge photo 1 (cover)",
+  });
+  const track = screen.getByRole("group", { name: "Photo slides" });
+  fireEvent.pointerDown(track, { clientX: 250, clientY: 100 });
+  fireEvent.pointerCancel(track);
+  fireEvent.click(opener, { detail: 1 });
+  expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+  opener.focus();
+  const user = userEvent.setup();
+  await user.keyboard("{Enter}");
+  const dialog = screen.getByRole("dialog", { name: "Enlarged setup photo" });
+  const image = within(dialog).getByRole("button", { name: "Close photo 1" });
+  const enlarged = within(dialog).getByRole("group", {
+    name: "Enlarged photo slides",
+  });
+  fireEvent.pointerDown(enlarged, { clientX: 250, clientY: 100 });
+  fireEvent.pointerCancel(enlarged);
+  fireEvent.click(image, { detail: 1 });
+  expect(dialog).toBeVisible();
+  await user.keyboard("{ArrowRight}");
+  expect(within(dialog).getByText("Photo 2 of 2")).toBeInTheDocument();
+  await user.keyboard("{Escape}");
+  expect(opener).toHaveFocus();
+});
+
+it("advances desktop by one slot and bounds navigation at each end", async () => {
+  mockSetupGallery(Array.from({ length: 10 }, (_, i) => photo(i + 1)));
+  renderSetupRoute(`/setups/${testSetup.id}`);
+  const track = await screen.findByRole("group", { name: "Photo slides" });
+  Object.defineProperty(track, "clientWidth", {
+    configurable: true,
+    value: 900,
+  });
+  Object.defineProperty(track, "scrollWidth", {
+    configurable: true,
+    value: 3000,
+  });
+  Array.from(track.children).forEach((slide, i) =>
+    Object.defineProperty(slide, "offsetLeft", {
+      configurable: true,
+      value: i * 300,
+    }),
+  );
+  track.scrollTo = vi.fn((options) => {
+    track.scrollLeft = Math.min(
+      2100,
+      Math.max(0, (options as ScrollToOptions).left ?? 0),
+    );
+    fireEvent.scroll(track);
+  });
+  fireEvent.scroll(track);
+  const gallery = screen.getByRole("region", { name: "Setup gallery" });
+  const next = within(gallery).getByRole("button", {
+    name: "Next gallery photo",
+  });
+  const previous = within(gallery).getByRole("button", {
+    name: "Previous gallery photo",
+  });
+  expect(previous).toBeDisabled();
+  const user = userEvent.setup();
+  await user.click(next);
+  expect(track.scrollLeft).toBe(300);
+  await user.click(next);
+  expect(track.scrollLeft).toBe(600);
+  track.focus();
+  await user.keyboard("{End}");
+  expect(track.scrollLeft).toBe(2100);
+  expect(next).toBeDisabled();
+  await user.click(previous);
+  expect(track.scrollLeft).toBe(1800);
 });

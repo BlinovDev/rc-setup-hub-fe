@@ -8,7 +8,15 @@ import {
 import { SetupError } from "../api";
 import { useCropPhoto } from "./queries";
 import { usePhotoMedia } from "./usePhotoMedia";
-import { boundCrop, centerCrop, zoomCrop } from "./crop";
+import {
+  boundCrop,
+  centerCrop,
+  zoomCrop,
+  maxCropZoom,
+  panCrop,
+  zoomCropAt,
+} from "./crop";
+import { trapDialogTab } from "../form/dialogFocus";
 type Photo = components["schemas"]["SetupPhoto"];
 type Crop = components["schemas"]["PhotoCrop"];
 
@@ -26,16 +34,28 @@ export function CropEditor({
   const dialog = useRef<HTMLDialogElement>(null);
   const image = useRef<HTMLImageElement>(null);
   const frame = useRef<HTMLDivElement>(null);
-  const drag = useRef<{
-    pointer: number;
-    x: number;
-    y: number;
-    crop: Crop;
-  } | null>(null);
   const [base, setBase] = useState(photo);
   const [crop, setCrop] = useState(
     photo.crop ?? centerCrop(photo.width, photo.height),
   );
+  const draft = useRef(crop);
+  const resetDraft = useRef(false);
+  type Point = { x: number; y: number };
+  const pointers = useRef(new Map<number, Point>());
+  const gesture = useRef<{ crop: Crop; points: Point[] } | null>(null);
+  const zoomLimit = maxCropZoom(base.width, base.height);
+  const actualZoom = Math.min(base.width, base.height) / crop.size;
+  const legacyZoom = actualZoom > zoomLimit + 0.01;
+  function replaceCrop(next: Crop) {
+    draft.current = next;
+    setCrop(next);
+  }
+  function startGesture() {
+    gesture.current = {
+      crop: draft.current,
+      points: [...pointers.current.values()],
+    };
+  }
   const [loaded, setLoaded] = useState(false);
   const [decodeError, setDecodeError] = useState(false);
   const [reloading, setReloading] = useState(false);
@@ -79,7 +99,8 @@ export function CropEditor({
     if (!ready) return;
     request.current = null;
     mutation.reset();
-    setCrop(boundCrop(next, base.width, base.height));
+    resetDraft.current = false;
+    replaceCrop(boundCrop(next, base.width, base.height));
   }
   async function save(value: Crop | null, retry = false) {
     if (!ready || lock.current) return;
@@ -117,22 +138,7 @@ export function CropEditor({
           event.preventDefault();
           if (!pending) onClose();
         }
-        if (event.key === "Tab") {
-          const controls = Array.from(
-            event.currentTarget.querySelectorAll<HTMLElement>(
-              'button:not(:disabled), input:not(:disabled), [tabindex="0"]',
-            ),
-          );
-          const first = controls[0],
-            last = controls.at(-1);
-          if (event.shiftKey && document.activeElement === first) {
-            event.preventDefault();
-            last?.focus();
-          } else if (!event.shiftKey && document.activeElement === last) {
-            event.preventDefault();
-            first?.focus();
-          }
-        }
+        trapDialogTab(event);
       }}
     >
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -184,34 +190,84 @@ export function CropEditor({
                 change({ ...crop, x: crop.x + move[0]!, y: crop.y + move[1]! });
               }
             }}
+            aria-describedby="crop-instructions"
             onPointerDown={(event) => {
-              if (!ready) return;
+              if (
+                !ready ||
+                pointers.current.size >= 2 ||
+                (event.pointerType === "mouse" && event.button !== 0)
+              )
+                return;
               event.currentTarget.focus();
               event.currentTarget.setPointerCapture(event.pointerId);
-              drag.current = {
-                pointer: event.pointerId,
+              pointers.current.set(event.pointerId, {
                 x: event.clientX,
                 y: event.clientY,
-                crop,
-              };
+              });
+              startGesture();
             }}
             onPointerMove={(event) => {
-              const start = drag.current;
-              if (!start || start.pointer !== event.pointerId || !ready) return;
-              const scale =
-                start.crop.size /
-                event.currentTarget.getBoundingClientRect().width;
-              change({
-                ...start.crop,
-                x: start.crop.x - (event.clientX - start.x) * scale,
-                y: start.crop.y - (event.clientY - start.y) * scale,
+              const start = gesture.current;
+              if (!start || !pointers.current.has(event.pointerId) || !ready)
+                return;
+              pointers.current.set(event.pointerId, {
+                x: event.clientX,
+                y: event.clientY,
               });
+              const points = [...pointers.current.values()];
+              const box = event.currentTarget.getBoundingClientRect();
+              if (box.width <= 0) return;
+              if (
+                start.points.length === 2 &&
+                points.length === 2 &&
+                !legacyZoom
+              ) {
+                const distance = (p: Point[]) =>
+                  Math.hypot(p[1]!.x - p[0]!.x, p[1]!.y - p[0]!.y);
+                const midpoint = (p: Point[]) => ({
+                  x: ((p[0]!.x + p[1]!.x) / 2 - box.left) / box.width,
+                  y: ((p[0]!.y + p[1]!.y) / 2 - box.top) / box.width,
+                });
+                const initial = distance(start.points);
+                if (initial < 1) return;
+                const zoom =
+                  ((Math.min(base.width, base.height) / start.crop.size) *
+                    distance(points)) /
+                  initial;
+                change(
+                  zoomCropAt(
+                    start.crop,
+                    zoom,
+                    base.width,
+                    base.height,
+                    midpoint(start.points),
+                    midpoint(points),
+                  ),
+                );
+              } else if (points.length === 1 && start.points.length === 1) {
+                change(
+                  panCrop(
+                    start.crop,
+                    points[0]!.x - start.points[0]!.x,
+                    points[0]!.y - start.points[0]!.y,
+                    box.width,
+                    base.width,
+                    base.height,
+                  ),
+                );
+              }
             }}
-            onPointerUp={() => {
-              drag.current = null;
+            onPointerUp={(event) => {
+              pointers.current.delete(event.pointerId);
+              startGesture();
             }}
-            onPointerCancel={() => {
-              drag.current = null;
+            onPointerCancel={(event) => {
+              pointers.current.delete(event.pointerId);
+              startGesture();
+            }}
+            onLostPointerCapture={(event) => {
+              pointers.current.delete(event.pointerId);
+              startGesture();
             }}
           >
             <img
@@ -241,21 +297,30 @@ export function CropEditor({
               }}
             />
           </div>
-          <p className="text-sm">
-            Drag the photo or use arrow keys (Shift for 10 pixels). Sliders
-            offer the same controls. Preview uses integer pixels; JPEG
-            resampling can slightly change edge colors.
+          <p id="crop-instructions" className="text-sm">
+            Drag or pinch the photo or use arrow keys to move the crop window
+            (Shift for 10 pixels). Sliders offer the same controls. Preview uses
+            integer pixels; JPEG resampling can slightly change edge colors.
           </p>
+          <p role="status">Zoom {actualZoom.toFixed(2)}×</p>
+          {legacyZoom && (
+            <p>
+              The saved crop is tighter than the 4× editing range. It is
+              preserved. Reset to center to adjust zoom; Cancel keeps the saved
+              frame.
+            </p>
+          )}
           <div className="crop-controls">
             <label>
               Zoom
               <input
                 type="range"
                 min={1}
-                max={Math.min(base.width, base.height)}
-                step={0.01}
-                value={Math.min(base.width, base.height) / crop.size}
-                disabled={!ready}
+                max={zoomLimit}
+                step={0.05}
+                value={Math.min(zoomLimit, actualZoom)}
+                aria-valuetext={`${actualZoom.toFixed(2)} times`}
+                disabled={!ready || legacyZoom || zoomLimit === 1}
                 onChange={(e) =>
                   change(
                     zoomCrop(
@@ -299,14 +364,21 @@ export function CropEditor({
       {reloadError && <InlineNotice tone="error">{reloadError}</InlineNotice>}
       {pending && <p role="status">Saving thumbnail adjustment…</p>}
       <div className="flex flex-wrap gap-3">
-        <Button disabled={!ready} onClick={() => void save(crop)}>
+        <Button
+          disabled={!ready}
+          onClick={() => void save(resetDraft.current ? null : crop)}
+        >
           Apply thumbnail
         </Button>
         <Button
           disabled={!ready}
           onClick={() => {
-            setCrop(centerCrop(base.width, base.height));
-            void save(null);
+            request.current = null;
+            mutation.reset();
+            pointers.current.clear();
+            gesture.current = null;
+            replaceCrop(centerCrop(base.width, base.height));
+            resetDraft.current = true;
           }}
         >
           Reset to center
@@ -326,9 +398,12 @@ export function CropEditor({
                 const current = await onReload();
                 if (current) {
                   setBase(current);
-                  setCrop(
+                  replaceCrop(
                     current.crop ?? centerCrop(current.width, current.height),
                   );
+                  resetDraft.current = false;
+                  pointers.current.clear();
+                  gesture.current = null;
                   mutation.reset();
                   request.current = null;
                 } else setMissing(true);

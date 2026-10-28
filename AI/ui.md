@@ -200,13 +200,35 @@ All thumbnail slots are square. Mobile Home/My/profile cards use 88px squares be
 wrapping metadata/actions; at >=768px grid cards are <=360px, covers <=300px. The
 existing 600x400 monochrome WebP is center-fitted, FE-only, not an uploaded photo.
 No photo/decode/server failure can use fallback; permission/session failure instead
-shows unavailable. Full viewer keeps natural aspect/contain fitting, Close/Escape,
-previous/next, focus containment and restoration. Covers lazy-load without metadata N+1.
+shows unavailable. Full photos retain natural aspect/contain fitting without decorative backgrounds,
+frames, padding, visible Enlarge labels or thumbnail selectors. The read-only gallery
+follows title/author and aligns to the content's left edge. Mobile (<768px) shows
+one full-width native scroll-snap slide; vertical page scrolling remains available.
+A quiet position counter and keyboard navigation supplement swipe, without visible
+mobile arrows. Tap opens a viewport-sized viewer; tap the enlarged photo closes it.
+Native fullscreen swipe changes photos without dismissing; drag/cancel is never tap.
+Desktop shows 3–4 modest equal-height slots when space permits, with subtle edge
+chevrons advancing exactly one photo. No separate navigation row or thumbnail strip.
+The enlarged viewer shows one contain-fit image, overlay chevrons, ArrowLeft/Right,
+Home/End and Escape, with modal focus containment/restoration and scroll preservation.
+Icon controls have accessible names/44px hit areas; arrows hide at strip boundaries
+or when redundant. No autoplay or scripted smooth scroll; reduced motion is instant.
+Zero/one photos have explicit states without redundant arrows. Inline visible/adjacent
+full images and viewer current/adjacent full images mount through existing protected
+media hooks; cover/list/manager crops remain unchanged. Session/setup/access-loss
+boundaries unmount viewers and revoke blobs.
+Covers lazy-load without metadata N+1.
 
 Crop editor always previews authorized normalized full JPEG. Drag/touch pans, arrows
-move one pixel (Shift ten), zoom adjusts integer size; horizontal/vertical sliders are
-alternatives. Clamp frame to full bounds. Apply/Reset save immediately; Cancel/Escape
-sends no mutation and restores trigger focus. Upload may offer editor without blocking
+move the crop window one source pixel (Shift ten); horizontal/vertical sliders are
+source-window alternatives. Normal zoom is 1–4× (0.05 increments, bounded by whole
+pixels for tiny images). Drag moves the image; a two-pointer pinch preserves its
+midpoint/focal source point with bounded pan. Pointer-count changes rebase the gesture.
+Keep the square frame stable, including reduced-height modals; clamp to full bounds.
+Historical tighter crops remain unchanged and can still be applied/cancelled; Reset
+is required to re-enter the normal zoom range. Reset to center changes only the draft;
+Apply persists (null reset with current revision, or integer coordinates). Cancel/Escape
+sends no mutation, including after Reset, and restores trigger focus. Upload may offer editor without blocking
 subsequent queue items. Pending writes suppress duplicates and delay dismissal until
 outcome; retry is explicit, 409 requires Reload crop/discard draft, 404 disables Apply.
 Revisions refresh thumbnails and joined covers; never destructively crop full photos.

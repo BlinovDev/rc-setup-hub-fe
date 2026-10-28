@@ -22,13 +22,53 @@ export function zoomCrop(
   width: number,
   height: number,
 ): Crop {
-  const size = Math.max(1, Math.round(Math.min(width, height) / zoom));
+  return zoomCropAt(crop, zoom, width, height);
+}
+
+/** Normal editing is limited to 4x; tiny images never pretend to have subpixels. */
+export function maxCropZoom(width: number, height: number): number {
+  return Math.min(4, width, height);
+}
+
+export function zoomCropAt(
+  crop: Crop,
+  zoom: number,
+  width: number,
+  height: number,
+  from = { x: 0.5, y: 0.5 },
+  to = from,
+): Crop {
+  const bounded = Math.max(
+    1,
+    Math.min(Number.isFinite(zoom) ? zoom : 1, maxCropZoom(width, height)),
+  );
+  const size = Math.max(
+    Math.ceil(Math.min(width, height) / maxCropZoom(width, height)),
+    Math.round(Math.min(width, height) / bounded),
+  );
   return boundCrop(
     {
       size,
-      x: crop.x + (crop.size - size) / 2,
-      y: crop.y + (crop.size - size) / 2,
+      x: crop.x + from.x * crop.size - to.x * size,
+      y: crop.y + from.y * crop.size - to.y * size,
     },
+    width,
+    height,
+  );
+}
+
+export function panCrop(
+  crop: Crop,
+  dx: number,
+  dy: number,
+  frameWidth: number,
+  width: number,
+  height: number,
+): Crop {
+  if (frameWidth <= 0) return crop;
+  const scale = crop.size / frameWidth;
+  return boundCrop(
+    { ...crop, x: crop.x - dx * scale, y: crop.y - dy * scale },
     width,
     height,
   );

@@ -134,7 +134,7 @@ Status: implemented (backend #10 / frontend #13, setup-photo-ux-v2).
 Supersedes prior 3:2/no-crop thumbnail presentation. The crop extension originated
 in backend PR #11; use current committed
 OpenAPI/generated types, server-normalized full JPEG previews and integer square
-coordinates/revisions. Apply/reset persist independently; Cancel preserves the
+coordinates/revisions. Apply persists independently; Reset is a draft until Apply (Issue #52); Cancel preserves the
 current frame and full media never changes. Touch/keyboard/slider controls are
 bounded. Revision-bearing media identities refresh all joined list covers without
 metadata N+1; old null crops remain centered until adjusted, no backfill/re-upload.
