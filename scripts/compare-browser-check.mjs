@@ -409,8 +409,16 @@ try {
           ["0", "Not specified"],
         );
         assert.deepEqual(
-          await row("Tie rod").getByRole("cell").allTextContents(),
+          await row("^Tie rod").getByRole("cell").allTextContents(),
           ["16.23456789", "16.23456789"],
+        );
+        assert.deepEqual(
+          await row("^Steering tie rod").getByRole("cell").allTextContents(),
+          ["Not specified", "Not specified"],
+        );
+        assert.deepEqual(
+          await row("^Upper arm").getByRole("cell").allTextContents(),
+          ["42.5", "42.5"],
         );
         assert(await page.getByText(/Different or custom chassis/).isVisible());
         assert.equal(
