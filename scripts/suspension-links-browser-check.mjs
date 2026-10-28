@@ -386,10 +386,20 @@ try {
         const normalized = structuredClone(legacy);
         delete normalized.suspension.front.link_lengths[4].length_mm;
         assert.deepEqual(saved.data, normalized);
-        await page
-          .getByRole("link", { name: "Edit setup", exact: true })
-          .click();
+        // Historical zero is readable but cannot be newly saved as a length.
+        // Correct it through the fixed input without validating the removed row.
+        saved.data.suspension.front.link_lengths[0].length_mm = 0;
+        await page.goto(origin + `/my/setups/${id}/edit`);
         await select("Front");
+        assert.equal(await upper.inputValue(), "0");
+        await tab("Angles").click();
+        await button("Save setup").click();
+        await page.waitForFunction(
+          () =>
+            document.activeElement?.getAttribute("name") ===
+            "front.upper_arm_length_mm",
+        );
+        assert.equal(patches.length, 2);
         await upper.fill("43,5");
         await select("Rear");
         assert.equal(

@@ -92,41 +92,57 @@ const length = z
     (value) => validNumber(value, true, false, parseSuspensionNumber),
     "Enter a finite length greater than zero.",
   );
-const axle = z.object({
-  upper_arm_length_mm: length,
-  lower_arm_length_mm: length,
-  steering_tie_rod_length_mm: length,
-  lowerArmMount: z.object({
-    manufacturerId: z.string().uuid().nullable(),
-    model: text(200),
-    configurationNotes: text(10000),
-  }),
-  top_arm_spacing: armSpacing.optional(),
-  lower_arm_spacing: armSpacing.optional(),
-  camber_deg: angle,
-  caster_deg: angle,
-  toe_deg: angle,
-  link_lengths: z
-    .array(
-      z.object({
-        name: text(200, true),
-        length_mm: length,
-        // Form-only provenance for the unique original legacy row. New custom
-        // rows never acquire this marker through user-entered names.
-        legacyStandard: z
-          .object({
-            field: z.enum([
-              "upper_arm_length_mm",
-              "lower_arm_length_mm",
-              "steering_tie_rod_length_mm",
-            ]),
-            value: z.string(),
-          })
-          .optional(),
-      }),
-    )
-    .max(100, "Use at most 100 links."),
-});
+const axle = z
+  .object({
+    upper_arm_length_mm: length,
+    lower_arm_length_mm: length,
+    steering_tie_rod_length_mm: length,
+    lowerArmMount: z.object({
+      manufacturerId: z.string().uuid().nullable(),
+      model: text(200),
+      configurationNotes: text(10000),
+    }),
+    top_arm_spacing: armSpacing.optional(),
+    lower_arm_spacing: armSpacing.optional(),
+    camber_deg: angle,
+    caster_deg: angle,
+    toe_deg: angle,
+    link_lengths: z
+      .array(
+        z.object({
+          name: text(200, true),
+          length_mm: z.string(),
+          // Form-only provenance for the unique original legacy row. New custom
+          // rows never acquire this marker through user-entered names.
+          legacyStandard: z
+            .object({
+              field: z.enum([
+                "upper_arm_length_mm",
+                "lower_arm_length_mm",
+                "steering_tie_rod_length_mm",
+              ]),
+              value: z.string(),
+            })
+            .optional(),
+        }),
+      )
+      .max(100, "Use at most 100 links."),
+  })
+  .superRefine((value, context) => {
+    value.link_lengths.forEach((link, index) => {
+      const original = link.legacyStandard;
+      const mapped = original && original.value === link.length_mm;
+      // The visible fixed input validates mapped measurements and replacements.
+      // Avoid duplicate errors on an uneditable source row; custom rows keep
+      // their existing positive-length validation.
+      if (!mapped && !length.safeParse(link.length_mm).success)
+        context.addIssue({
+          code: "custom",
+          path: ["link_lengths", index, "length_mm"],
+          message: "Enter a finite length greater than zero.",
+        });
+    });
+  });
 export function parsePistonHoles(input: string): number | undefined {
   const value = input.trim();
   if (!value) return undefined;

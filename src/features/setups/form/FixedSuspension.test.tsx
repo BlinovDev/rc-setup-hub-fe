@@ -458,3 +458,41 @@ it("refuses to consume a different custom row as legacy conversion provenance", 
     "45",
   ]);
 });
+it("can clear or correct a historical zero without validating the legacy row removed from the payload", () => {
+  const values = setupToForm({
+    ...testSetup,
+    data: {
+      suspension: {
+        front: {
+          link_lengths: [
+            { name: "upper_arm", length_mm: 0 },
+            { name: "Custom", length_mm: 17 },
+          ],
+        },
+      },
+    },
+  });
+  const invalid = setupFormSchema.safeParse(values);
+  expect(invalid.success).toBe(false);
+  if (!invalid.success)
+    expect(invalid.error.issues.map((issue) => issue.path.join("."))).toEqual([
+      "front.upper_arm_length_mm",
+    ]);
+  values.front.upper_arm_length_mm = "42,5";
+  expect(setupFormSchema.safeParse(values).success).toBe(true);
+  expect(serializeData(values)).toEqual({
+    suspension: {
+      front: {
+        upper_arm_length_mm: 42.5,
+        link_lengths: [{ name: "Custom", length_mm: 17 }],
+      },
+    },
+  });
+  values.front.upper_arm_length_mm = "";
+  expect(setupFormSchema.safeParse(values).success).toBe(true);
+  expect(serializeData(values)).toEqual({
+    suspension: {
+      front: { link_lengths: [{ name: "Custom", length_mm: 17 }] },
+    },
+  });
+});
