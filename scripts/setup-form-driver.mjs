@@ -39,6 +39,7 @@ export function setupFormDriver(page) {
   };
   const select = async (label) => {
     if (!label) return;
+    await page.locator("form").waitFor({ state: "visible" });
     const desktop = await page.locator(".section-sidebar").isVisible();
     const nav = desktop
       ? page.getByRole("navigation", { name: "Setup sections", exact: true })
@@ -99,7 +100,8 @@ export function setupFormDriver(page) {
     if (
       component &&
       (await page.locator(".setup-edit-layout").count()) &&
-      component !== "Setup notes"
+      component !== "Setup notes" &&
+      !component.endsWith("link lengths")
     ) {
       const existing = page.locator(
         `.component-card[aria-label="${component}"]`,
@@ -118,6 +120,7 @@ export function setupFormDriver(page) {
     }
     if (
       component &&
+      !component.endsWith("link lengths") &&
       (component !== "Setup notes" ||
         !(await page.locator(".setup-edit-layout").count()))
     ) {
@@ -128,12 +131,39 @@ export function setupFormDriver(page) {
       if ((await edit.getAttribute("aria-expanded")) !== "true")
         await edit.click();
     }
+    const tabName = /camber|caster|toe/.test(String(name).toLowerCase())
+      ? "Angles"
+      : component?.endsWith("link lengths")
+        ? "Link lengths"
+        : null;
+    if (tabName) {
+      const tab = page.getByRole("tab", { name: tabName, exact: true });
+      if (
+        (await tab.count()) &&
+        (await tab.getAttribute("aria-selected")) !== "true"
+      )
+        await tab.click();
+    }
     return component;
   };
   return {
     select,
     field: async (...args) => {
       await prepare(args[0]);
+      const match = /^(Front|Rear) link (\d+) (name|length \(mm\))$/.exec(
+        String(args[0]),
+      );
+      if (match) {
+        const input = page.locator(
+          `[name="${match[1].toLowerCase()}.link_lengths.${Number(match[2]) - 1}.${match[3] === "name" ? "name" : "length_mm"}"]`,
+        );
+        if (await input.count()) {
+          await input.evaluate((el) =>
+            el.closest("details")?.setAttribute("open", ""),
+          );
+          return input;
+        }
+      }
       return page.getByLabel(...args);
     },
     group: async (options) => {

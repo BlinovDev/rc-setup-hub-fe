@@ -1,14 +1,18 @@
-import { differentialLabels, manufacturerLabel } from "./differential";
-import type { components } from "../../api/generated/schema";
+import {
+  technicalSections,
+  type TechnicalValue,
+  type TechnicalProps,
+} from "./technicalSections";
 function Values({
   title,
   values,
 }: {
   title: string;
-  values: [string, string | number | null | undefined][];
+  values: TechnicalValue[];
 }) {
   const present = values.filter(
-    ([, value]) => value !== undefined && value !== null,
+    ([, value, , showMissing]) =>
+      showMissing || (value !== undefined && value !== null),
   );
   if (!present.length) return null;
   return (
@@ -18,191 +22,28 @@ function Values({
         {present.map(([label, value], index) => (
           <div key={index}>
             <dt>{label}:</dt>
-            <dd className="whitespace-pre-wrap">{value}</dd>
+            <dd className="whitespace-pre-wrap">{value ?? "Not specified"}</dd>
           </div>
         ))}
       </dl>
     </section>
   );
 }
-export function TechnicalData({
-  data,
-  differentialManufacturer,
-  mountManufacturers,
-  runningGearManufacturers,
-  knuckleManufacturer,
-}: {
-  data: components["schemas"]["SetupDataV1"];
-  runningGearManufacturers?:
-    components["schemas"]["RunningGearManufacturers"] | null;
-  knuckleManufacturer?:
-    components["schemas"]["DifferentialManufacturer"] | null;
-  mountManufacturers?:
-    components["schemas"]["LowerArmMountManufacturers"] | null;
-  differentialManufacturer?:
-    components["schemas"]["DifferentialManufacturer"] | null;
-}) {
-  const sections: {
-    title: string;
-    values: [string, string | number | null | undefined][];
-  }[] = [];
-  for (const axle of ["front", "rear"] as const) {
-    const suspension = data.suspension?.[axle];
-    const shock = data.shocks?.[axle];
-    const label = axle === "front" ? "Front" : "Rear";
-    sections.push({
-      title: `${label} suspension`,
-      values: [
-        ["Camber (deg)", suspension?.camber_deg],
-        ["Caster (deg)", suspension?.caster_deg],
-        ["Toe (deg)", suspension?.toe_deg],
-        ...(suspension?.link_lengths?.map(
-          (link) => [link.name, `${link.length_mm} mm`] as [string, string],
-        ) ?? []),
-      ],
-    });
-    const gear = data.running_gear?.[axle];
-    sections.push({
-      title: `${label} hex`,
-      values: [["Offset (mm)", gear?.hex?.offset_mm]],
-    });
-    for (const part of ["wheel", "tire"] as const) {
-      const component = gear?.[part];
-      sections.push({
-        title: `${label} ${part}`,
-        values: [
-          [
-            "Manufacturer",
-            component?.manufacturer_id
-              ? manufacturerLabel(
-                  component.manufacturer_id,
-                  runningGearManufacturers?.[axle]?.[part],
-                )
-              : undefined,
-          ],
-          ["Model", component?.model?.trim() || undefined],
-          ...(part === "wheel"
-            ? [
-                ["Offset (mm)", gear?.wheel?.offset_mm] as [
-                  string,
-                  number | null | undefined,
-                ],
-              ]
-            : []),
-        ],
-      });
-    }
-    const mount = suspension?.lower_arm_mount;
-    sections.push({
-      title: `${label} lower arm mount`,
-      values: [
-        [
-          "Manufacturer",
-          mount?.manufacturer_id
-            ? manufacturerLabel(
-                mount.manufacturer_id,
-                mountManufacturers?.[axle],
-              )
-            : undefined,
-        ],
-        ["Model / part number", mount?.model?.trim() || undefined],
-        [
-          "Configuration notes",
-          mount?.configuration_notes?.trim() || undefined,
-        ],
-      ],
-    });
-    for (const arm of ["top_arm_spacing", "lower_arm_spacing"] as const) {
-      const spacing = suspension?.[arm];
-      sections.push({
-        title: `${label} ${arm === "top_arm_spacing" ? "top" : "lower"} arm spacing`,
-        values: [
-          [
-            "Front spacers (ahead of arm)",
-            spacing?.front_mm == null ? undefined : `${spacing.front_mm} mm`,
-          ],
-          [
-            "Rear spacers (behind arm)",
-            spacing?.rear_mm == null ? undefined : `${spacing.rear_mm} mm`,
-          ],
-        ],
-      });
-    }
-    sections.push({
-      title: `${label} shocks`,
-      values: [
-        ["Manufacturer", shock?.manufacturer],
-        ["Model", shock?.model],
-        ["Spring manufacturer", shock?.spring?.manufacturer],
-        ["Spring color", shock?.spring?.color],
-        ["Oil (cSt)", shock?.oil_cst],
-        ["Piston holes", shock?.piston?.holes],
-        ["Piston hole diameter (mm)", shock?.piston?.hole_diameter_mm],
-        ["Piston notes", shock?.piston?.notes?.trim() || undefined],
-        [
-          "Seal type",
-          shock?.seal?.type === "o-ring"
-            ? "O-ring"
-            : shock?.seal?.type === "x-ring"
-              ? "X-ring"
-              : undefined,
-        ],
-        ["Seal description", shock?.seal?.description?.trim() || undefined],
-      ],
-    });
-  }
-  const knuckle = data.front_steering_knuckle;
-  sections.push({
-    title: "Front steering knuckle",
-    values: [
-      [
-        "Manufacturer",
-        knuckle?.manufacturer_id
-          ? manufacturerLabel(knuckle.manufacturer_id, knuckleManufacturer)
-          : undefined,
-      ],
-      ["Part number / description", knuckle?.description?.trim() || undefined],
-    ],
-  });
-  const differential = data.rear_differential;
-  sections.push({
-    title: "Rear differential",
-    values: [
-      [
-        "Type",
-        differential?.type ? differentialLabels[differential.type] : undefined,
-      ],
-      [
-        "Manufacturer",
-        differential?.manufacturer_id
-          ? manufacturerLabel(
-              differential.manufacturer_id,
-              differentialManufacturer,
-            )
-          : undefined,
-      ],
-      ["Model", differential?.model?.trim() || undefined],
-      ["Tuning notes", differential?.tuning_notes?.trim() || undefined],
-    ],
-  });
-  sections.push({
-    title: "Electronics",
-    values: (["motor", "esc", "servo", "gyro", "radio"] as const).map((key) => [
-      key === "esc" ? "ESC" : key.charAt(0).toUpperCase() + key.slice(1),
-      data.electronics?.[key],
-    ]),
-  });
-  if (
-    !sections.some((section) =>
-      section.values.some(([, value]) => value !== undefined && value !== null),
-    )
-  )
-    return <p>No technical setup data yet.</p>;
+export function TechnicalData(props: TechnicalProps) {
+  const sections = technicalSections(props);
+  const hasData = sections.some((section) =>
+    section.values.some(
+      ([, value, , showMissing, key]) => value != null || (showMissing && !key),
+    ),
+  );
   return (
-    <div className="grid gap-4 sm:grid-cols-2">
-      {sections.map((section) => (
-        <Values key={section.title} {...section} />
-      ))}
-    </div>
+    <>
+      {!hasData && <p>No technical setup data yet.</p>}
+      <div className="grid gap-4 sm:grid-cols-2">
+        {sections.map((section) => (
+          <Values key={section.title} {...section} />
+        ))}
+      </div>
+    </>
   );
 }

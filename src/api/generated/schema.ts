@@ -111,7 +111,7 @@ export interface paths {
         };
         /**
          * Get an application user's public profile
-         * @description Authenticated lookup for direct frontend profile URLs. Returns only id, nickname and nullable avatar_url, without email, provider identity or friendship state.
+         * @description Guest or authenticated lookup for direct frontend profile URLs, including users with no public setups. Returns only id, nickname and nullable avatar_url, without email, provider identity or friendship state.
          */
         get: operations["getPublicUser"];
         put?: never;
@@ -269,7 +269,7 @@ export interface paths {
         };
         /**
          * Read a visible setup
-         * @description Owner sees every visibility. Other authenticated users see public; accepted friends also see friends-only. Private remains owner-only; pending relationships grant no access. Missing/inaccessible returns the same 404, before protected technical data decoding. Public still requires authentication.
+         * @description Owner sees every visibility. Other authenticated users see public; accepted friends also see friends-only. Private remains owner-only; pending relationships grant no access. Missing/inaccessible returns the same 404, before protected technical data decoding. Guests see public only. Successful public detail is index-eligible; non-public detail and all errors remain noindex.
          */
         get: operations["getSetup"];
         put?: never;
@@ -337,9 +337,49 @@ export interface paths {
         };
         /**
          * Browse/search public setups
-         * @description Authenticated PUBLIC discovery only: even owner/accepted friend never receives private/friends setups here. Filters combine with AND; disagreeing brand/model returns zero results. Custom chassis matches only unfiltered queries. Inactive historical catalog values remain searchable and displayable. Ordered created_at DESC, id DESC with keyset pagination. Empty response is {"items":[],"next_cursor":null}.
+         * @description PUBLIC discovery for guests and authenticated users: even owner/accepted friend never receives private/friends setups here. Filters combine with AND; disagreeing brand/model returns zero results. Custom chassis matches only unfiltered queries. Inactive historical catalog values remain searchable and displayable. Ordered created_at DESC, id DESC with keyset pagination. Empty response is {"items":[],"next_cursor":null}.
          */
         get: operations["searchPublicSetups"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/setups/visible": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Search all setups readable by the current viewer
+         * @description Comparison candidate selection, not Explore. Guests receive public only; signed-in viewers receive all owned setups plus all public setups and friends-visibility setups from accepted friends. Authorization is filtered in SQL before safe summary projections and pagination. No totals, technical data, notes, email or provider identity. Does not grant clone or mutation permissions. Same literal search, historical chassis filters, ordering, default 20/max 50 and keyset pagination as public search. Repeat filters when following next_cursor; access is rechecked on every request.
+         */
+        get: operations["searchVisibleSetups"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/setups/compare": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Read exactly two distinct visible setups atomically
+         * @description Exactly one left_id and one right_id are required; no extra query parameters. UUID-equivalent IDs must be distinct. Returns complete existing Setup objects in request order, including historical chassis/manufacturer projections, optional technical fields and notes. Explicit numeric zero is preserved; missing/null measurements remain unknown, never defaulted. Different chassis and custom chassis are allowed. Both current permissions are evaluated in one PostgreSQL statement snapshot. If either setup is missing or inaccessible, returns the same generic 404 with neither side, before decoding documents. Guests can compare public only; signed-in viewers may also read their own and accepted friends' friends-visibility setups. Read-only and transient, not a persistent comparison, diff calculation, clone or mutation capability. Media URLs retain their independent current-visibility checks. No-store; comparison responses are not SEO-indexable.
+         */
+        get: operations["compareSetups"];
         put?: never;
         post?: never;
         delete?: never;
@@ -449,7 +489,7 @@ export interface paths {
         };
         /**
          * Read authorized processed JPEG
-         * @description Checks current session and setup visibility on every read. No public static media. Cache-Control no-store, private; no ETag/Last-Modified. Lost access and unknown photo are identical 404.
+         * @description Resolves an optional session and checks current setup visibility on every read; guests see public only. No public static media. Cache-Control no-store, private; no ETag/Last-Modified. Lost access and unknown photo are identical 404.
          */
         get: operations["readSetupPhotoImage"];
         put?: never;
@@ -469,9 +509,29 @@ export interface paths {
         };
         /**
          * Read authorized processed JPEG
-         * @description Checks current session and setup visibility on every read. No public static media. Cache-Control no-store, private; no ETag/Last-Modified. Lost access and unknown photo are identical 404.
+         * @description Resolves an optional session and checks current setup visibility on every read; guests see public only. No public static media. Cache-Control no-store, private; no ETag/Last-Modified. Lost access and unknown photo are identical 404.
          */
         get: operations["readSetupPhotoThumbnail"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/users/{user_id}/public-setups": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List public setups for one safe owner profile
+         * @description Public-only for every viewer, including the owner and accepted friends. Returns bounded SetupSearchPage summaries without technical data, email, hidden counts or friendship state. Same validated filters, cursor ordering and 20/default, 50/maximum limit as Explore. Missing user and user without public setups both return an empty page. The existing /users/{user_id}/setups endpoint remains authenticated and visibility-dependent.
+         */
+        get: operations["listPublicUserSetups"];
         put?: never;
         post?: never;
         delete?: never;
@@ -611,9 +671,19 @@ export interface components {
         };
         Suspension: {
             front?: components["schemas"]["AxleSuspension"] | null;
-            rear?: components["schemas"]["AxleSuspension"] | null;
+            rear?: components["schemas"]["RearAxleSuspension"] | null;
+        };
+        /** @description Rear has fixed upper/lower arm values only; no numeric steering tie rod. Null is treated as unset. */
+        RearAxleSuspension: components["schemas"]["AxleSuspension"] & {
+            steering_tie_rod_length_mm?: null;
         };
         AxleSuspension: {
+            /** @description Fixed standard measurement in millimetres; finite and positive when set. Omitted/null stays unknown and is omitted on output. */
+            upper_arm_length_mm?: number | null;
+            /** @description Fixed standard measurement in millimetres; finite and positive when set. Omitted/null stays unknown and is omitted on output. */
+            lower_arm_length_mm?: number | null;
+            /** @description Fixed standard measurement in millimetres; finite and positive when set. Omitted/null stays unknown and is omitted on output. Front only. */
+            steering_tie_rod_length_mm?: number | null;
             lower_arm_mount?: components["schemas"]["LowerArmMount"] | null;
             /** @description Optional finite angle in degrees. Omitted/null means unknown and is omitted in responses; zero is a real value and is preserved. */
             camber_deg?: number | null;
@@ -625,7 +695,7 @@ export interface components {
              * @example -1.5
              */
             toe_deg?: number | null;
-            /** @description Omitted/null/empty lists are omitted in responses. */
+            /** @description Additional custom links and unchanged legacy named links, in original order. Omitted/null/empty lists are omitted on output. Fixed standard values use typed axle properties, not predefined named entries. Legacy arrays are never renamed, promoted or deduplicated automatically. A frontend may explicitly convert a unique exact historical upper_arm/lower_arm (front also steering_tie_rod) row to its typed field and remove that row in the same full-data replacement. Ambiguous/other labels remain untouched. A non-null typed value plus its historical exact-key row is rejected rather than storing duplicate standard values. Spacing is independent. */
             link_lengths?: components["schemas"]["LinkLength"][] | null;
             /** @description Optional top arm spacer totals, symmetric across left/right. */
             top_arm_spacing?: components["schemas"]["ArmSpacing"] | null;
@@ -657,10 +727,25 @@ export interface components {
             /** @description Finite nonnegative total behind the arm; omitted/null means unknown. */
             rear_mm?: number | null;
         };
+        /**
+         * @description Additional custom or preserved legacy named suspension link. Name is required; length is optional. A named entry with unknown length remains in the ordered array. Existing numeric lengths keep their precision and shape. Zero is invalid for a supplied length; do not coerce missing/empty input to zero. Fixed standard arm/tie-rod measurements use typed axle properties; no schema version change is needed.
+         * @example {
+         *       "name": "Additional brace",
+         *       "length_mm": 42.5
+         *     }
+         * @example {
+         *       "name": "Custom unknown"
+         *     }
+         * @example {
+         *       "name": "Legacy custom",
+         *       "length_mm": 16.2
+         *     }
+         */
         LinkLength: {
-            /** @description Trimmed non-empty name without null bytes. */
+            /** @description Trimmed non-empty free-text name without null bytes; not renamed or deduplicated. */
             name: string;
-            length_mm: number;
+            /** @description Optional finite positive millimetres. Omitted/null means unknown and is omitted on output. */
+            length_mm?: number | null;
         };
         Shocks: {
             front?: components["schemas"]["Shock"] | null;
@@ -866,6 +951,10 @@ export interface components {
             owner: components["schemas"]["PublicProfile"];
             chassis: components["schemas"]["SetupSearchChassis"] | null;
         };
+        SetupComparison: {
+            left: components["schemas"]["Setup"];
+            right: components["schemas"]["Setup"];
+        };
         SetupSearchPage: {
             items: components["schemas"]["SetupSearchItem"][];
             /** @description Opaque next-page cursor. Null when no more results exist. Repeat the same filters with this cursor. */
@@ -965,6 +1054,25 @@ export interface components {
         /** @description Unexpected failure; no internal error details. */
         InternalError: {
             headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                "application/json": components["schemas"]["APIError"];
+            };
+        };
+        /** @description Guest request URI exceeds 2048 bytes; authenticated requests retain existing limits. */
+        PublicURITooLong: {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                "application/json": components["schemas"]["APIError"];
+            };
+        };
+        /** @description Anonymous process-wide rate or concurrency budget exhausted. Retry later; no per-IP forwarding header is trusted. */
+        PublicReadsBusy: {
+            headers: {
+                "Retry-After"?: 1;
                 [name: string]: unknown;
             };
             content: {
@@ -1157,8 +1265,9 @@ export interface operations {
                 };
             };
             400: components["responses"]["BadRequest"];
-            401: components["responses"]["Unauthorized"];
             404: components["responses"]["NotFound"];
+            414: components["responses"]["PublicURITooLong"];
+            429: components["responses"]["PublicReadsBusy"];
             500: components["responses"]["InternalError"];
         };
     };
@@ -1313,7 +1422,8 @@ export interface operations {
                     "application/json": components["schemas"]["ChassisBrand"][];
                 };
             };
-            401: components["responses"]["Unauthorized"];
+            414: components["responses"]["PublicURITooLong"];
+            429: components["responses"]["PublicReadsBusy"];
             500: components["responses"]["InternalError"];
         };
     };
@@ -1339,8 +1449,9 @@ export interface operations {
                 };
             };
             400: components["responses"]["BadRequest"];
-            401: components["responses"]["Unauthorized"];
             404: components["responses"]["NotFound"];
+            414: components["responses"]["PublicURITooLong"];
+            429: components["responses"]["PublicReadsBusy"];
             500: components["responses"]["InternalError"];
         };
     };
@@ -1396,8 +1507,9 @@ export interface operations {
                 };
             };
             400: components["responses"]["BadRequest"];
-            401: components["responses"]["Unauthorized"];
             404: components["responses"]["NotFound"];
+            414: components["responses"]["PublicURITooLong"];
+            429: components["responses"]["PublicReadsBusy"];
             500: components["responses"]["InternalError"];
         };
     };
@@ -1538,7 +1650,71 @@ export interface operations {
                 };
             };
             400: components["responses"]["BadRequest"];
-            401: components["responses"]["Unauthorized"];
+            414: components["responses"]["PublicURITooLong"];
+            429: components["responses"]["PublicReadsBusy"];
+            500: components["responses"]["InternalError"];
+        };
+    };
+    searchVisibleSetups: {
+        parameters: {
+            query?: {
+                /** @description Trimmed literal case-insensitive substring of title OR owner nickname. Empty/omitted means no text filter; percent/underscore are literal. No null bytes. Never searches email, notes or technical data. */
+                q?: string;
+                /** @description Filter by historical parent brand. Valid nonexistent UUID yields zero results. */
+                brand_id?: string;
+                /** @description Filter by exact historical chassis model. Valid nonexistent UUID yields zero results. */
+                model_id?: string;
+                /** @description Maximum page size. */
+                limit?: number;
+                /** @description Opaque next-page cursor from the previous response. Invalid cursor returns 400. Repeat q/brand_id/model_id and desired limit on subsequent requests. */
+                cursor?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SetupSearchPage"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            414: components["responses"]["PublicURITooLong"];
+            429: components["responses"]["PublicReadsBusy"];
+            500: components["responses"]["InternalError"];
+        };
+    };
+    compareSetups: {
+        parameters: {
+            query: {
+                left_id: string;
+                right_id: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Both setups are currently readable, in left/right order. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SetupComparison"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            404: components["responses"]["NotFound"];
+            414: components["responses"]["PublicURITooLong"];
+            429: components["responses"]["PublicReadsBusy"];
             500: components["responses"]["InternalError"];
         };
     };
@@ -1583,8 +1759,9 @@ export interface operations {
                 };
             };
             400: components["responses"]["BadRequest"];
-            401: components["responses"]["Unauthorized"];
             404: components["responses"]["NotFound"];
+            414: components["responses"]["PublicURITooLong"];
+            429: components["responses"]["PublicReadsBusy"];
             500: components["responses"]["InternalError"];
         };
     };
@@ -1752,8 +1929,9 @@ export interface operations {
                 };
             };
             400: components["responses"]["BadRequest"];
-            401: components["responses"]["Unauthorized"];
             404: components["responses"]["NotFound"];
+            414: components["responses"]["PublicURITooLong"];
+            429: components["responses"]["PublicReadsBusy"];
             500: components["responses"]["InternalError"];
         };
     };
@@ -1779,8 +1957,46 @@ export interface operations {
                 };
             };
             400: components["responses"]["BadRequest"];
-            401: components["responses"]["Unauthorized"];
             404: components["responses"]["NotFound"];
+            414: components["responses"]["PublicURITooLong"];
+            429: components["responses"]["PublicReadsBusy"];
+            500: components["responses"]["InternalError"];
+        };
+    };
+    listPublicUserSetups: {
+        parameters: {
+            query?: {
+                /** @description Trimmed literal case-insensitive substring of title OR owner nickname. Empty/omitted means no text filter; percent/underscore are literal. No null bytes. Never searches email, notes or technical data. */
+                q?: string;
+                /** @description Filter by historical parent brand. Valid nonexistent UUID yields zero results. */
+                brand_id?: string;
+                /** @description Filter by exact historical chassis model. Valid nonexistent UUID yields zero results. */
+                model_id?: string;
+                /** @description Maximum page size. */
+                limit?: number;
+                /** @description Opaque next-page cursor from the previous response. Invalid cursor returns 400. Repeat q/brand_id/model_id and desired limit on subsequent requests. */
+                cursor?: string;
+            };
+            header?: never;
+            path: {
+                user_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SetupSearchPage"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            414: components["responses"]["PublicURITooLong"];
+            429: components["responses"]["PublicReadsBusy"];
             500: components["responses"]["InternalError"];
         };
     };

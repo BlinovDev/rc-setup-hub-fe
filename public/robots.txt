@@ -1,0 +1,8 @@
+User-agent: *
+Allow: /
+Disallow: /my/
+Disallow: /settings
+Disallow: /friends
+Disallow: /auth/
+Disallow: /users/
+Disallow: /compare

@@ -466,7 +466,7 @@ it("gallery viewer supports close/Escape, previous/next and focus containment/re
   });
   await user.click(opener);
   const dialog = screen.getByRole("dialog", { name: "Enlarged setup photo" });
-  const close = within(dialog).getByRole("button", { name: "Close photo" });
+  const close = within(dialog).getByRole("button", { name: "Close photo 1" });
   expect(close).toHaveFocus();
   await user.tab({ shift: true });
   expect(
@@ -476,6 +476,9 @@ it("gallery viewer supports close/Escape, previous/next and focus containment/re
   expect(close).toHaveFocus();
   await user.click(within(dialog).getByRole("button", { name: "Next photo" }));
   expect(within(dialog).getByText("Photo 2 of 2")).toBeInTheDocument();
+  expect(
+    within(dialog).getByRole("button", { name: "Close photo 2" }),
+  ).toHaveFocus();
   await user.click(
     within(dialog).getByRole("button", { name: "Previous photo" }),
   );
@@ -484,7 +487,7 @@ it("gallery viewer supports close/Escape, previous/next and focus containment/re
   await waitFor(() => expect(opener).toHaveFocus());
   expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
   await user.click(opener);
-  await user.click(setupButton({ name: "Close photo" }));
+  await user.click(setupButton({ name: "Close photo 1" }));
   expect(opener).toHaveFocus();
 });
 
@@ -547,7 +550,7 @@ it("media 401 expires the session; inaccessible media does not pretend to be a z
   await userEvent
     .setup()
     .click(setupButton({ name: "Enlarge photo 1 (cover)" }));
-  await screen.findByRole("button", { name: "Sign in with Google" });
+  await screen.findByRole("button", { name: "Sign in" });
 });
 it("revokes object URLs and gallery state after access is lost", async () => {
   let allowed = true;
@@ -776,6 +779,14 @@ it("navigates the native full-aspect gallery by scroll and keyboard without open
     configurable: true,
     value: 300,
   });
+  Object.defineProperty(track, "scrollWidth", {
+    configurable: true,
+    value: 900,
+  });
+  track.scrollTo = vi.fn((options) => {
+    track.scrollLeft = (options as ScrollToOptions).left ?? 0;
+    fireEvent.scroll(track);
+  });
   track.scrollLeft = 300;
   fireEvent.scroll(track);
   const gallery = screen.getByRole("region", { name: "Setup gallery" });
@@ -809,4 +820,93 @@ it("offers one-photo expansion without redundant carousel navigation", async () 
   expect(
     screen.getByRole("button", { name: "Enlarge photo 1 (cover)" }),
   ).toHaveFocus();
+});
+
+it("has no visible enlarge label, thumbnail strip or separate control rows", async () => {
+  mockSetupGallery([photo(1), photo(2), photo(3), photo(4)]);
+  renderSetupRoute(`/setups/${testSetup.id}`);
+  const gallery = await screen.findByRole("region", { name: "Setup gallery" });
+  expect(
+    within(gallery).queryByText("Enlarge", { exact: true }),
+  ).not.toBeInTheDocument();
+  expect(
+    within(gallery).queryByRole("group", { name: "Choose photo" }),
+  ).not.toBeInTheDocument();
+  expect(gallery.querySelector(".gallery-controls")).toBeNull();
+});
+
+it("suppresses image activation after drag/cancel while keeping keyboard activation", async () => {
+  mockSetupGallery([photo(1), photo(2)]);
+  renderSetupRoute(`/setups/${testSetup.id}`);
+  const opener = await screen.findByRole("button", {
+    name: "Enlarge photo 1 (cover)",
+  });
+  const track = screen.getByRole("group", { name: "Photo slides" });
+  fireEvent.pointerDown(track, { clientX: 250, clientY: 100 });
+  fireEvent.pointerCancel(track);
+  fireEvent.click(opener, { detail: 1 });
+  expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+  opener.focus();
+  const user = userEvent.setup();
+  await user.keyboard("{Enter}");
+  const dialog = screen.getByRole("dialog", { name: "Enlarged setup photo" });
+  const image = within(dialog).getByRole("button", { name: "Close photo 1" });
+  const enlarged = within(dialog).getByRole("group", {
+    name: "Enlarged photo slides",
+  });
+  fireEvent.pointerDown(enlarged, { clientX: 250, clientY: 100 });
+  fireEvent.pointerCancel(enlarged);
+  fireEvent.click(image, { detail: 1 });
+  expect(dialog).toBeVisible();
+  await user.keyboard("{ArrowRight}");
+  expect(within(dialog).getByText("Photo 2 of 2")).toBeInTheDocument();
+  await user.keyboard("{Escape}");
+  expect(opener).toHaveFocus();
+});
+
+it("advances desktop by one slot and bounds navigation at each end", async () => {
+  mockSetupGallery(Array.from({ length: 10 }, (_, i) => photo(i + 1)));
+  renderSetupRoute(`/setups/${testSetup.id}`);
+  const track = await screen.findByRole("group", { name: "Photo slides" });
+  Object.defineProperty(track, "clientWidth", {
+    configurable: true,
+    value: 900,
+  });
+  Object.defineProperty(track, "scrollWidth", {
+    configurable: true,
+    value: 3000,
+  });
+  Array.from(track.children).forEach((slide, i) =>
+    Object.defineProperty(slide, "offsetLeft", {
+      configurable: true,
+      value: i * 300,
+    }),
+  );
+  track.scrollTo = vi.fn((options) => {
+    track.scrollLeft = Math.min(
+      2100,
+      Math.max(0, (options as ScrollToOptions).left ?? 0),
+    );
+    fireEvent.scroll(track);
+  });
+  fireEvent.scroll(track);
+  const gallery = screen.getByRole("region", { name: "Setup gallery" });
+  const next = within(gallery).getByRole("button", {
+    name: "Next gallery photo",
+  });
+  const previous = within(gallery).getByRole("button", {
+    name: "Previous gallery photo",
+  });
+  expect(previous).toBeDisabled();
+  const user = userEvent.setup();
+  await user.click(next);
+  expect(track.scrollLeft).toBe(300);
+  await user.click(next);
+  expect(track.scrollLeft).toBe(600);
+  track.focus();
+  await user.keyboard("{End}");
+  expect(track.scrollLeft).toBe(2100);
+  expect(next).toBeDisabled();
+  await user.click(previous);
+  expect(track.scrollLeft).toBe(1800);
 });

@@ -31,15 +31,34 @@ Read public/friends/private values only as returned; never implement a client gr
 matrix, hidden-count inference or merge mine/friends results into public discovery.
 
 Current-user key is [auth,me], one-minute freshness, no polling/automatic retries,
-with stale focus/reconnection refresh. 401 clears user/protected UI; non-401/network
+with stale focus/reconnection refresh. 401 clears protected state and resolves a
+guest on public routes (protected routes show sign-in); non-401/network
 failures offer retry, not logout. Logout 204 cancels older /me before clearing it;
 failed logout retains identity. AuthGate cancels/removes setup, user and friendship
 queries before a changed viewer renders; catalog/unrelated caches survive. Request
 and mutation completions from an earlier session cannot restore protected data or
-expire a newer session, including sign-out/sign-in to the same account.
+expire a newer session, including sign-out/sign-in to the same account. Persisted
+pagehide sanitizes the BFCache snapshot; persisted pageshow resets /me and resolves
+current cookies before showing protected content again.
 Catalog brands/models have five-minute freshness,
 no polling/retry; models query only for a real brand. A model-list 404 is unavailable,
 not an empty success. Canonical key factories and actual timing are in feature code.
+
+## Anonymous reads
+
+The committed backend contract explicitly permits guest GET search, detail, safe
+profile/public-setups, active catalog and currently public photos. All requests
+still include credentials; media retains no-store and revocable object URLs.
+Gallery/media enable after successful session resolution, including a null guest,
+with guest/viewer identities in keys. Protected reads/writes retain authentication.
+401 on a read clears an existing identity; requests begun under a previous viewer
+cannot populate the next viewer's cache. A guest never renders a non-public detail.
+429/414 and unknown errors use safe retry feedback, never server details; no automatic
+mutation or overload retry. Backend owns the allowlist and current access decision.
+
+OAuth returns to configured APP_URL. The client does not append a return URL or
+persist tokens/destinations; protected deep links remain bookmarkable, but automatic
+return to the original route after OAuth is not supported by this fixed callback.
 
 ## Forms and reads
 
@@ -51,6 +70,16 @@ not an empty success. Canonical key factories and actual timing are in feature c
   fields/parents prune; optional zero remains zero. Unsupported schemas are not editable.
 - Suspension parsers preserve dot/comma precision/signed angles versus positive links;
   optional arm-spacing totals are finite nonnegative, zero/partial unknown permitted.
+  A named link may omit length_mm (or read null); preserve its name/order and all
+  duplicate/custom entries. Supplied new lengths must be finite and positive;
+  existing read-only numeric zero remains specified. Fixed standard properties are
+  upper_arm_length_mm / lower_arm_length_mm on both axles and front-only
+  steering_tie_rod_length_mm. They are independent of custom link names. Only a
+  unique exact legacy upper_arm/lower_arm (front also steering_tie_rod) may populate
+  a fixed input when its typed value is absent. Preserve that row on unrelated
+  edits; changing/clearing its measurement removes only that row in the same full
+  replacement. Never infer aliases or convert duplicate keys. Reject simultaneous
+  typed values and exact-key custom entries instead of silently dropping data.
   No rounding/defaults. Backend/OpenAPI remain authoritative for constraints.
 - Discovery uses search only, URL q/brand_id/model_id, fixed limit 20, opaque per-page
   cursor and repeated filters. Invalid filters avoid requests. Cards use historical
@@ -59,15 +88,17 @@ not an empty success. Canonical key factories and actual timing are in feature c
   unsupported/empty technical data is explicit. Resolve owner via safe public profile
   independently; non-401 owner errors must not hide a readable setup. Share frontend
   detail URL without query; clipboard failure offers a selectable URL.
-- Public profile succeeds before loading its visible setups; empty array is not missing
-  profile. Profile/list errors retry independently. Render returned values only, no
-  visibility filtering, N+1 detail calls or automatic detail-cache seeding.
+- Safe profile succeeds before GET /users/{user_id}/public-setups (paginated
+  SetupSearchPage, limit 20, opaque cursor). This endpoint is public-only for all
+  viewers. Empty page is not a missing profile. Signed-in `view=visible` explicitly
+  uses the unchanged authenticated /users/{user_id}/setups array. Errors retry
+  independently; no hidden counts, N+1 detail calls or detail-cache seeding.
 
 ## Scoped cache and relationship rules
 
 Feature key factories own exact keys; no global invalidate-everything shortcut.
 Setup create/patch refresh mine, affected detail, search and the returned owner's
-visible list; delete uses cached detail/current user for owner and removes detail.
+visible/public lists; delete uses cached detail/current user for owner and removes detail.
 Profile nickname mutation updates current-user data; refresh affected visible public
 identity/search displays when applicable. Preserve unrelated owner/query caches.
 
@@ -113,3 +144,15 @@ Use the [product](product.md) and [UI](ui.md) for interaction rules,
 [testing](testing.md) for regression/physical QA boundaries. Endpoint inventories,
 exact limits/status schemas and decoder implementation are owned by backend contract,
 code and [API guidance](https://github.com/BlinovDev/rc-setup-hub/blob/main/AI/api.md).
+
+## Comparison reads
+
+GET /setups/visible is the bounded server-authorized candidate search for guests and
+members, distinct from public Explore. GET /setups/compare takes exactly left_id and
+right_id and returns an atomic SetupComparison or no sides. Use the committed types;
+never combine independent detail reads into a permission-checked pair. Both requests
+use credentials, no-store, abort signals and withSession; comparison/selection keys
+live below [setups, compare] with viewer identity, zero stale/gc time and no retries.
+Do not seed detail caches. Session changes purge this scope; setup writes invalidate
+it, and accepted-friendship changes reset it to discard/recheck protected results.
+Client display/difference rules live in [UI](ui.md#read-only-setup-comparison).

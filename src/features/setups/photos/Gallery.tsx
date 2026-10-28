@@ -1,11 +1,10 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type CSSProperties } from "react";
 import type { components } from "../../../api/generated/schema";
 import { Button } from "../../../shared/components/Button";
 import {
   InlineNotice,
   LoadingState,
 } from "../../../shared/components/Feedback";
-import { trapDialogTab } from "../form/dialogFocus";
 import { PhotoImage } from "./PhotoImage";
 import { usePhotos } from "./queries";
 type Photo = components["schemas"]["SetupPhoto"];
@@ -24,63 +23,172 @@ export function Gallery({ setupId }: { setupId: string }) {
   return <PhotoCarousel key={setupId} photos={query.data} />;
 }
 
-function PhotoCarousel({ photos }: { photos: Photo[] }) {
-  const [active, setActive] = useState(photos[0]!.id);
-  const activeRef = useRef(active);
-  const index = Math.max(
-    0,
-    photos.findIndex((p) => p.id === active),
+// Native scrolling owns swipe/vertical gestures. Only intentional taps activate
+// an image; pointer cancellation (browser takes over scrolling) also cancels taps.
+function usePhotoTap() {
+  const gesture = useRef({ x: 0, y: 0, moved: false });
+  return {
+    onPointerDownCapture: (e: React.PointerEvent) => {
+      gesture.current = { x: e.clientX, y: e.clientY, moved: !e.isPrimary };
+    },
+    onPointerMoveCapture: (e: React.PointerEvent) => {
+      if (
+        Math.hypot(
+          e.clientX - gesture.current.x,
+          e.clientY - gesture.current.y,
+        ) > 8
+      )
+        gesture.current.moved = true;
+    },
+    onPointerCancelCapture: () => {
+      gesture.current.moved = true;
+    },
+    isTap: (e: React.MouseEvent) => e.detail === 0 || !gesture.current.moved,
+  };
+}
+
+function GalleryChevron({
+  direction,
+  label,
+  onClick,
+  disabled,
+}: {
+  direction: "previous" | "next";
+  label: string;
+  onClick: () => void;
+  disabled: boolean;
+}) {
+  return (
+    <button
+      type="button"
+      className={`gallery-chevron gallery-${direction}`}
+      aria-label={label}
+      onClick={onClick}
+      disabled={disabled}
+    >
+      <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
+        <path
+          d={direction === "previous" ? "m15 5-7 7 7 7" : "m9 5 7 7-7 7"}
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+      </svg>
+    </button>
   );
+}
+
+function PhotoCarousel({ photos }: { photos: Photo[] }) {
+  const [index, setIndex] = useState(0);
+  const [visible, setVisible] = useState(1);
+  const [atEnd, setAtEnd] = useState(photos.length === 1);
   const track = useRef<HTMLDivElement>(null);
-  const [selected, setSelected] = useState<string>();
+  const viewerTrack = useRef<HTMLDivElement>(null);
+  const [selected, setSelected] = useState<number>();
+  const selectedRef = useRef(selected);
+  useEffect(() => {
+    selectedRef.current = selected;
+  }, [selected]);
   const trigger = useRef<HTMLButtonElement | null>(null);
   const dialog = useRef<HTMLDialogElement>(null);
-  const selectedIndex = photos.findIndex((p) => p.id === selected);
-  const current = photos[selectedIndex];
-  useEffect(() => {
-    if (current && !dialog.current?.open) {
-      dialog.current?.showModal();
-      dialog.current?.querySelector<HTMLButtonElement>("button")?.focus();
-    }
-    if (!current && dialog.current?.open) dialog.current.close();
-  }, [current]);
-  useEffect(() => {
-    const element = dialog.current;
-    const dismiss = element?.close.bind(element);
-    return () => dismiss?.();
-  }, []);
+  const inlineTap = usePhotoTap();
+  const viewerTap = usePhotoTap();
+  const open = selected !== undefined && !!photos[selected];
+
+  function step(element: HTMLDivElement) {
+    const first = element.children[0] as HTMLElement | undefined;
+    const second = element.children[1] as HTMLElement | undefined;
+    return (
+      (second && first && second.offsetLeft - first.offsetLeft) ||
+      element.clientWidth
+    );
+  }
+  function updateInline(element: HTMLDivElement) {
+    const size = step(element);
+    if (!size) return;
+    setIndex(
+      Math.min(
+        photos.length - 1,
+        Math.max(0, Math.round(element.scrollLeft / size)),
+      ),
+    );
+    setVisible(Math.max(1, Math.round(element.clientWidth / size)));
+    setAtEnd(
+      element.scrollLeft >= element.scrollWidth - element.clientWidth - 2,
+    );
+  }
   useEffect(() => {
     const element = track.current;
-    if (!element || typeof ResizeObserver === "undefined") return;
-    const observer = new ResizeObserver(() => {
-      const next = Math.max(
-        0,
-        photos.findIndex((p) => p.id === activeRef.current),
-      );
-      element.scrollTo({
-        left: next * element.clientWidth,
-        behavior: "instant",
-      });
-    });
+    if (!element) return;
+    updateInline(element);
+    if (typeof ResizeObserver === "undefined") return;
+    const observer = new ResizeObserver(() => updateInline(element));
     observer.observe(element);
     return () => observer.disconnect();
-  }, [photos]);
-  function go(next: number) {
-    const bounded = (next + photos.length) % photos.length;
-    activeRef.current = photos[bounded]!.id;
-    setActive(activeRef.current);
-    track.current?.scrollTo?.({
-      left: bounded * track.current.clientWidth,
+    // Geometry is remeasured for a changed list; scrolling updates the same state.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [photos.length]);
+  useEffect(() => {
+    if (!open) return;
+    const modal = dialog.current!;
+    modal.showModal();
+    const element = viewerTrack.current!;
+    element.scrollTo?.({
+      left: selectedRef.current! * element.clientWidth,
       behavior: "instant",
     });
+    modal
+      .querySelector<HTMLButtonElement>(".photo-viewer-image")
+      ?.focus({ preventScroll: true });
+    const previous = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    const observer =
+      typeof ResizeObserver === "undefined"
+        ? undefined
+        : new ResizeObserver(() => {
+            element.scrollTo?.({
+              left: (selectedRef.current ?? 0) * element.clientWidth,
+              behavior: "instant",
+            });
+          });
+    observer?.observe(element);
+    return () => {
+      observer?.disconnect();
+      modal.close();
+      document.body.style.overflow = previous;
+      if (trigger.current?.isConnected)
+        trigger.current.focus({ preventScroll: true });
+    };
+  }, [open]);
+  useEffect(() => {
+    if (selected === undefined) return;
+    if (document.activeElement?.classList.contains("photo-viewer-image"))
+      viewerTrack.current
+        ?.querySelectorAll<HTMLButtonElement>(".photo-viewer-image")
+        [selected]?.focus({ preventScroll: true });
+  }, [selected]);
+  function go(next: number) {
+    const element = track.current;
+    if (!element) return;
+    const bounded = Math.max(0, Math.min(photos.length - 1, next));
+    element.scrollTo?.({ left: bounded * step(element), behavior: "instant" });
   }
   function close() {
     setSelected(undefined);
-    if (trigger.current?.isConnected)
-      trigger.current.focus({ preventScroll: true });
   }
   function view(next: number) {
-    setSelected(photos[(next + photos.length) % photos.length]!.id);
+    const bounded = Math.max(0, Math.min(photos.length - 1, next));
+    setSelected(bounded);
+    viewerTrack.current?.scrollTo?.({
+      left: bounded * viewerTrack.current.clientWidth,
+      behavior: "instant",
+    });
+    // Move focus with the image so it never remains on an offscreen slide.
+    viewerTrack.current
+      ?.querySelectorAll<HTMLButtonElement>(".photo-viewer-image")
+      [bounded]?.focus({ preventScroll: true });
   }
   return (
     <section
@@ -90,103 +198,102 @@ function PhotoCarousel({ photos }: { photos: Photo[] }) {
     >
       <h3 className="font-semibold">Photos</h3>
       <div
-        ref={track}
-        className="photo-slides"
-        role="group"
-        aria-label="Photo slides"
-        tabIndex={0}
-        onScroll={(e) => {
-          const width = e.currentTarget.clientWidth;
-          if (!width) return;
-          const next = Math.max(
-            0,
-            Math.min(
-              photos.length - 1,
-              Math.round(e.currentTarget.scrollLeft / width),
-            ),
-          );
-          activeRef.current = photos[next]!.id;
-          setActive(activeRef.current);
-        }}
-        onKeyDown={(e) => {
-          const next = {
-            ArrowLeft: index - 1,
-            ArrowRight: index + 1,
-            Home: 0,
-            End: photos.length - 1,
-          }[e.key];
-          if (next === undefined) return;
-          e.preventDefault();
-          e.currentTarget.focus({ preventScroll: true });
-          go(next);
-        }}
+        className="gallery-strip"
+        style={
+          {
+            "--last-ratio":
+              (photos[index + visible - 1]?.width ?? 1) /
+              (photos[index + visible - 1]?.height ?? 1),
+          } as CSSProperties
+        }
       >
-        {photos.map((photo, i) => (
-          <div
-            key={photo.id}
-            className="photo-slide"
-            role="group"
-            aria-roledescription="slide"
-            aria-label={`${i + 1} of ${photos.length}`}
-            aria-hidden={i !== index}
-          >
-            <Button
-              className="photo-hero"
-              tabIndex={i === index ? 0 : -1}
-              aria-label={`Enlarge photo ${i + 1}${photo.is_cover ? " (cover)" : ""}`}
-              onClick={(e) => {
-                trigger.current = e.currentTarget;
-                setSelected(photo.id);
-              }}
-            >
-              {Math.abs(i - index) <= 1 && (
-                <PhotoImage
-                  photo={photo}
-                  alt={`Setup photo ${i + 1}`}
-                  thumbnail={false}
-                />
-              )}
-              <span className="photo-expand-hint">Enlarge</span>
-            </Button>
-          </div>
-        ))}
-      </div>
-      <div className="gallery-controls">
-        {photos.length > 1 && (
-          <Button
-            onClick={() => go(index - 1)}
-            aria-label="Previous gallery photo"
-          >
-            ←
-          </Button>
-        )}
-        <p role="status" aria-live="polite" aria-atomic="true">
-          Photo {index + 1} of {photos.length}
-        </p>
-        {photos.length > 1 && (
-          <Button onClick={() => go(index + 1)} aria-label="Next gallery photo">
-            →
-          </Button>
-        )}
-      </div>
-      {photos.length > 1 && (
         <div
-          className="gallery-thumbnails"
+          ref={track}
+          className="photo-slides"
+          style={
+            {
+              "--gallery-aspect": `${photos[index]?.width ?? 1} / ${photos[index]?.height ?? 1}`,
+            } as CSSProperties
+          }
           role="group"
-          aria-label="Choose photo"
+          aria-label="Photo slides"
+          tabIndex={0}
+          onPointerDownCapture={inlineTap.onPointerDownCapture}
+          onPointerMoveCapture={inlineTap.onPointerMoveCapture}
+          onPointerCancelCapture={inlineTap.onPointerCancelCapture}
+          onScroll={(e) => updateInline(e.currentTarget)}
+          onKeyDown={(e) => {
+            const next = {
+              ArrowLeft: index - 1,
+              ArrowRight: index + 1,
+              Home: 0,
+              End: photos.length - 1,
+            }[e.key];
+            if (next === undefined) return;
+            e.preventDefault();
+            e.currentTarget.focus({ preventScroll: true });
+            go(next);
+          }}
         >
           {photos.map((photo, i) => (
-            <Button
+            <div
               key={photo.id}
-              aria-label={`Show photo ${i + 1}`}
-              aria-pressed={i === index}
-              onClick={() => go(i)}
+              className="photo-slide"
+              role="group"
+              aria-roledescription="slide"
+              aria-label={`${i + 1} of ${photos.length}`}
             >
-              <PhotoImage photo={photo} alt={`Photo ${i + 1} thumbnail`} />
-            </Button>
+              <button
+                type="button"
+                className="photo-hero"
+                style={
+                  {
+                    "--photo-ratio": photo.width / photo.height,
+                  } as CSSProperties
+                }
+                aria-label={`Enlarge photo ${i + 1}${photo.is_cover ? " (cover)" : ""}`}
+                onClick={(e) => {
+                  if (!inlineTap.isTap(e)) return;
+                  trigger.current = e.currentTarget;
+                  setSelected(i);
+                }}
+              >
+                {i >= index - 1 && i <= index + visible && (
+                  <PhotoImage
+                    photo={photo}
+                    alt={`Setup photo ${i + 1}`}
+                    thumbnail={false}
+                  />
+                )}
+              </button>
+            </div>
           ))}
         </div>
-      )}
+        {photos.length > visible && (
+          <>
+            <GalleryChevron
+              direction="previous"
+              label="Previous gallery photo"
+              onClick={() => go(index - 1)}
+              disabled={index === 0}
+            />
+            <GalleryChevron
+              direction="next"
+              label="Next gallery photo"
+              onClick={() => go(index + 1)}
+              disabled={atEnd}
+            />
+          </>
+        )}
+      </div>
+      <p
+        className="gallery-position"
+        role="status"
+        aria-live="polite"
+        aria-atomic="true"
+      >
+        Photo {index + 1} of {photos.length}
+      </p>
       <dialog
         ref={dialog}
         aria-label="Enlarged setup photo"
@@ -196,49 +303,126 @@ function PhotoCarousel({ photos }: { photos: Photo[] }) {
           close();
         }}
         onClose={close}
+        onClick={(e) => {
+          if (e.target === e.currentTarget && viewerTap.isTap(e)) close();
+        }}
         onKeyDown={(e) => {
-          trapDialogTab(e);
+          // Native modal inertness plus explicit wrap of currently visible controls.
+          if (e.key === "Tab") {
+            const controls = Array.from(
+              e.currentTarget.querySelectorAll<HTMLButtonElement>(
+                "button:not(:disabled)",
+              ),
+            ).filter(
+              (el) =>
+                el.tabIndex >= 0 && getComputedStyle(el).display !== "none",
+            );
+            const first = controls[0],
+              last = controls.at(-1);
+            if (e.shiftKey && document.activeElement === first) {
+              e.preventDefault();
+              last?.focus();
+            } else if (!e.shiftKey && document.activeElement === last) {
+              e.preventDefault();
+              first?.focus();
+            }
+          }
           if (e.key === "Escape") {
             e.preventDefault();
             close();
-          } else if (
-            ["ArrowLeft", "ArrowRight", "Home", "End"].includes(e.key)
-          ) {
-            e.preventDefault();
-            view(
-              e.key === "Home"
-                ? 0
-                : e.key === "End"
-                  ? photos.length - 1
-                  : selectedIndex + (e.key === "ArrowRight" ? 1 : -1),
-            );
+          } else {
+            const next = {
+              ArrowLeft: (selected ?? 0) - 1,
+              ArrowRight: (selected ?? 0) + 1,
+              Home: 0,
+              End: photos.length - 1,
+            }[e.key];
+            if (next !== undefined) {
+              e.preventDefault();
+              view(next);
+            }
           }
         }}
       >
-        {current && (
+        {open && (
           <>
-            <div className="flex flex-wrap justify-between gap-3">
-              <p role="status" aria-live="polite">
-                Photo {selectedIndex + 1} of {photos.length}
-              </p>
-              <Button autoFocus onClick={close}>
-                Close photo
-              </Button>
+            <div
+              ref={viewerTrack}
+              className="viewer-slides"
+              role="group"
+              aria-label="Enlarged photo slides"
+              onPointerDownCapture={viewerTap.onPointerDownCapture}
+              onPointerMoveCapture={viewerTap.onPointerMoveCapture}
+              onPointerCancelCapture={viewerTap.onPointerCancelCapture}
+              onScroll={(e) => {
+                const element = e.currentTarget;
+                if (!element.clientWidth) return;
+                const next = Math.max(
+                  0,
+                  Math.min(
+                    photos.length - 1,
+                    Math.round(element.scrollLeft / element.clientWidth),
+                  ),
+                );
+                setSelected(next);
+              }}
+            >
+              {photos.map((photo, i) => (
+                <div
+                  className="viewer-slide"
+                  key={photo.id}
+                  aria-hidden={i !== selected}
+                >
+                  <button
+                    type="button"
+                    className="photo-viewer-image"
+                    style={
+                      {
+                        "--photo-ratio": photo.width / photo.height,
+                      } as CSSProperties
+                    }
+                    aria-label={`Close photo ${i + 1}`}
+                    tabIndex={i === selected ? 0 : -1}
+                    onClick={(e) => {
+                      if (viewerTap.isTap(e)) close();
+                    }}
+                  >
+                    {Math.abs(i - selected) <= 1 && (
+                      <PhotoImage
+                        photo={photo}
+                        alt={`Enlarged setup photo ${i + 1}`}
+                        thumbnail={false}
+                      />
+                    )}
+                  </button>
+                </div>
+              ))}
             </div>
-            <PhotoImage
-              key={current.id}
-              photo={current}
-              alt={`Enlarged setup photo ${selectedIndex + 1}`}
-              thumbnail={false}
-            />
+            <p className="sr-only" role="status" aria-live="polite">
+              Photo {selected + 1} of {photos.length}
+            </p>
             {photos.length > 1 && (
-              <div className="flex justify-between gap-3">
-                <Button onClick={() => view(selectedIndex - 1)}>
-                  Previous photo
-                </Button>
-                <Button onClick={() => view(selectedIndex + 1)}>
-                  Next photo
-                </Button>
+              <div
+                className="viewer-navigation"
+                style={
+                  {
+                    "--photo-ratio":
+                      photos[selected]!.width / photos[selected]!.height,
+                  } as CSSProperties
+                }
+              >
+                <GalleryChevron
+                  direction="previous"
+                  label="Previous photo"
+                  onClick={() => view(selected - 1)}
+                  disabled={selected === 0}
+                />
+                <GalleryChevron
+                  direction="next"
+                  label="Next photo"
+                  onClick={() => view(selected + 1)}
+                  disabled={selected === photos.length - 1}
+                />
               </div>
             )}
           </>

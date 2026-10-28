@@ -44,5 +44,6 @@ is not independent review. No mandatory chain of all six skills.
 
 Docs: `python3 scripts/verify-docs.py`; instruction/provenance changes also run
 `python3 scripts/verify-engineering-skills.py` and the tests in [testing](AI/testing.md).
-For code use the Node 24 sequence and browser gate documented there; start locally
+Select the shared [Light / Standard / Critical tiers](AI/testing.md#agent-side-verification);
+targeted local feedback is separate from full mandatory PR CI. For code use Node 24; start locally
 with [README](README.md). Report actual results and unavailable prerequisites.

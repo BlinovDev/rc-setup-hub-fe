@@ -31,8 +31,8 @@ export function usePhotos(id: string, enabled = true) {
   const client = useQueryClient();
   const session = useQuery(currentUserOptions);
   return useQuery({
-    queryKey: [...photosKey(id), session.data?.id],
-    enabled: enabled && !!session.data,
+    queryKey: [...photosKey(id), session.data?.id ?? "guest"],
+    enabled: enabled && session.isSuccess,
     queryFn: ({ signal }) => withSession(client, () => getPhotos(id, signal)),
     retry: false,
     gcTime: 0,

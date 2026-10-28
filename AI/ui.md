@@ -8,15 +8,15 @@ owns enduring client behavior; [API](api.md) owns transport/caches, not this rou
 
 | Route | Interaction |
 | --- | --- |
-| /login | Google browser-navigation CTA; authenticated users enter app |
-| / | Authenticated public discovery: explicit text search, URL filters, newest-first cursor load-more |
+| / | Public Explore for guests and signed-in users: explicit text search, URL filters, newest-first cursor load-more |
 | /setups/:setupId | Stable read-only technical detail/gallery/share; owner-only separate Edit link |
 | /my/setups | Own list: sibling title/cover view links, separate Edit/Delete, create CTA and visibility |
 | /my/setups/new | Save setup once, then optional photo uploads |
 | /my/setups/:setupId/edit | Owner editor, generic unavailable for foreign/unsupported setup |
 | /friends | Find people, Incoming Accept/Reject, Outgoing Cancel, accepted Remove with confirmation |
-| /users/:userId | Safe nickname/avatar, loaded friendship action, backend-returned visible setups |
+| /users/:userId | Safe nickname/avatar and paginated public setups; signed-in users can explicitly select Setups visible to you |
 | /settings | Nickname editing, current-user email read-only, optional avatar, shell logout |
+| /compare | Select exactly two visible setups; optional left_id/right_id bookmarkable selection |
 
 Discovery clears model when brand changes. All brands/models differ from Custom
 setup selection; no Custom filter. Invalid URL filters offer Reset without requests;
@@ -24,6 +24,14 @@ load-more retains cards with independent retry. Detail shows historical chassis 
 present technical values including zero; missing/private/friendship-denied look alike.
 Copy link has success feedback or selectable fallback. Profile/list/friendship load/
 error states remain independent; no hidden counts or email/provider identity.
+
+Guests have a global header Sign in action and explicit CTAs at protected routes,
+setup creation and friendship actions. No automatic OAuth navigation. Public pages
+wait for session resolution; 401 is guest, other session failures offer retry.
+Viewer changes remount content/metadata and discard old queues/dialogs/blob URLs.
+Guest profile URLs ignore the authenticated `view=visible` mode; public is always
+the default. Visible-to-you lists remain an explicit authenticated mode, never
+mixed into public discovery or public profile results.
 
 ## Forms and numeric interaction
 
@@ -146,11 +154,28 @@ not only jsdom shims. Owner view navigation performs no setup/photo mutation.
 
 ## Responsive shell and social links
 
-Below 768px keep fixed Home/My setups/Friends/Settings bottom navigation and account
-menu/avatar in header. The modal drawer puts avatar/nickname at top, future navigation
-space in middle, canonical social icons then Sign out at bottom. Focus Close on open;
-keep outside navigation inert; desktop resize dismisses; scroll/safe areas remain usable.
-At desktop retain compact header identity/Sign out and add the social footer.
+Below 768px keep a single-row header: branding and Sign in for guests, existing
+avatar/account menu for members. The fixed bottom row has exactly three actions:
+guests see Explore, My setups, Help & Feedback; members see Explore, My setups,
+Friends. My setups always links to /my/setups; guests see the existing explicit
+Google sign-in UI there, with no private list request, empty-list substitute or
+automatic OAuth redirect. Login/logout update navigation with the session boundary.
+
+Both guest and member hamburger drawers include Compare; it is also in desktop
+navigation. Guest branding/Sign in remain on one row beside the menu control.
+The member drawer contains Account settings (the unchanged /settings route) and
+Help & Feedback, followed by canonical social icons and Sign out. Selecting Account
+settings closes the drawer. Focus Close on open; outside navigation stays inert;
+closing nested Help restores its trigger and leaves the drawer open. Desktop resize
+dismisses the drawer. Reserve safe-area padding below the bar and above fixed Save
+controls; viewport-fit=cover enables iOS insets, with branding below the top inset.
+Desktop navigation, identity, Sign out and social footer remain unchanged.
+
+Help & Feedback is the guest bottom-bar action, member drawer action and quiet
+desktop-footer action.
+Its compact native dialog shows selectable support email, mailto, Close/Escape,
+backdrop dismissal and contained/restored focus. Feature copy is centralized under
+src/features/help for later translation; no response-time or account-creation promise.
 
 Canonical URLs live in src/shared/social/profiles.ts; links have accessible names,
 new-tab opener isolation and no tracking parameters. Active nav has current-page
@@ -175,17 +200,23 @@ All thumbnail slots are square. Mobile Home/My/profile cards use 88px squares be
 wrapping metadata/actions; at >=768px grid cards are <=360px, covers <=300px. The
 existing 600x400 monochrome WebP is center-fitted, FE-only, not an uploaded photo.
 No photo/decode/server failure can use fallback; permission/session failure instead
-shows unavailable. Full viewer keeps natural aspect/contain fitting, Close/Escape,
-previous/next/arrow/Home/End keys, focus containment and restoration. Detail places a
-full-available-width native scroll-snap carousel immediately after title/author.
-Only the current slide is exposed to assistive technology; a polite position counter,
-44px buttons and keyboard navigation supplement native horizontal swipe. Vertical
-page scrolling and browser pinch remain available. No autoplay or scripted smooth
-scroll; reduced motion stays native/instant. Desktop adds square thumbnail selectors
-and a bounded contain-fit lightbox; inline full images retain natural content/aspect,
-not the list cover crop. Zero/one photos have explicit states without redundant arrows.
-Only active/adjacent full images mount; cover/list thumbnails and photo-manager layout
-stay unchanged. Session/setup/access-loss boundaries unmount viewers and revoke blobs.
+shows unavailable. Full photos retain natural aspect/contain fitting without decorative backgrounds,
+frames, padding, visible Enlarge labels or thumbnail selectors. The read-only gallery
+follows title/author and aligns to the content's left edge. Mobile (<768px) shows
+one full-width native scroll-snap slide; vertical page scrolling remains available.
+A quiet position counter and keyboard navigation supplement swipe, without visible
+mobile arrows. Tap opens a viewport-sized viewer; tap the enlarged photo closes it.
+Native fullscreen swipe changes photos without dismissing; drag/cancel is never tap.
+Desktop shows 3–4 modest equal-height slots when space permits, with subtle edge
+chevrons advancing exactly one photo. No separate navigation row or thumbnail strip.
+The enlarged viewer shows one contain-fit image, overlay chevrons, ArrowLeft/Right,
+Home/End and Escape, with modal focus containment/restoration and scroll preservation.
+Icon controls have accessible names/44px hit areas; arrows hide at strip boundaries
+or when redundant. No autoplay or scripted smooth scroll; reduced motion is instant.
+Zero/one photos have explicit states without redundant arrows. Inline visible/adjacent
+full images and viewer current/adjacent full images mount through existing protected
+media hooks; cover/list/manager crops remain unchanged. Session/setup/access-loss
+boundaries unmount viewers and revoke blobs.
 Covers lazy-load without metadata N+1.
 
 Crop editor always previews authorized normalized full JPEG. Drag/touch pans, arrows
@@ -202,3 +233,52 @@ subsequent queue items. Pending writes suppress duplicates and delay dismissal u
 outcome; retry is explicit, 409 requires Reload crop/discard draft, 404 disables Apply.
 Revisions refresh thumbnails and joined covers; never destructively crop full photos.
 No captions, manual sorting, new permissions or original-image editing by assumption.
+
+## Read-only setup comparison
+
+Every accessible detail has Compare to, preselecting that setup and opening the
+second selector. Standalone Compare selects both sides; either can be replaced.
+The visible-setups search is server-filtered across the viewer's full readable scope,
+with explicit title/nickname search, pagination/retry and disabled self-selection.
+Selection summaries are never seeded into detail or treated as authorization.
+
+Use the shared technical section inventory for aligned parameter/first/second table
+rows, including notes, historical chassis/manufacturers and every optional field.
+Default missing/null/empty values display **Not specified**; explicit zero and numeric
+precision survive. Standard suspension lengths have stable typed row identities;
+unique exact historical keys can supply missing typed values without duplicate
+rows. Other legacy/custom links match by trimmed/collapsed/case-folded name,
+not array index; duplicate names pair in sorted-value order because they have no IDs.
+Trim text boundaries/normalize Unicode and line endings; do not round measurements.
+Catalog manufacturer equality uses identity even when the name is unavailable.
+
+Only differences includes a row only when both values are specified and unequal.
+Hide sections with no remaining rows; if all are empty show **No comparable
+differences found.** Disabling the toggle restores sections and missing placeholders.
+Flag different/custom chassis prominently. Tables keep both setup columns, scoped
+headers and textual difference markers; focusable horizontal scrolling and sticky
+parameter labels keep values readable on narrow screens. Selection focuses its
+search input; a completed result focuses its heading. No comparison photos or writes.
+
+Recheck both permissions atomically on result loads/refresh/focus. Hide cached values
+while checking and after errors; unavailable never displays a partial side. Existing
+session/BFCache boundaries discard comparison UI, queries and selection dialogs on
+viewer changes. Comparison URLs/metadata remain non-indexable; IDs grant no access.
+
+## Suspension input views
+
+Front and Rear each have mutually exclusive Angles / Link lengths tabs. Keep both
+panels mounted in the same React Hook Form state; changing tabs or setup sections
+never clears data. Existing angle values select Angles initially (also when both
+views have values); otherwise existing links select Link lengths. New setups open
+Angles. Save validates both views, reveals the affected section/tab and focuses the
+invalid input.
+
+Link lengths always renders regular Upper arm / Lower arm inputs on both axles
+and Steering tie rod on Front, using the same fields as angles. Values can remain
+empty; no optional cards, rename/remove controls or Add/Edit/Done workflow for
+standard measurements. Only custom links use Add link and named dynamic rows.
+Existing spacing/shim cards and their independent add/edit/remove UX are unchanged.
+Legacy mapping/conversion follows [API](api.md#forms-and-reads); it must not migrate
+an array during a title-only edit. Fixed detail/Compare rows show Not specified for
+missing values; custom rows stay separate even when their display names coincide.

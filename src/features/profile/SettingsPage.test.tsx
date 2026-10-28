@@ -1,4 +1,4 @@
-import { act, fireEvent, render, screen } from "@testing-library/react";
+import { act, fireEvent, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { createMemoryRouter, RouterProvider } from "react-router";
@@ -111,7 +111,14 @@ it("normalizes the PATCH body and updates settings, shell and affected public id
   expect(client.getQueryData(otherKey)).toEqual({ nickname: "Other driver" });
   expect(client.getQueryState(otherKey)?.isInvalidated).toBe(false);
   expect(client.getQueryData(["unrelated"])).toBe("keep");
-  await userEvent.setup().click(screen.getByRole("link", { name: "Home" }));
+  await userEvent
+    .setup()
+    .click(
+      within(screen.getByRole("navigation", { name: "Main" })).getByRole(
+        "link",
+        { name: "Explore" },
+      ),
+    );
   expect(screen.getByText("New Driver")).toBeInTheDocument();
   expect(
     screen.queryByRole("textbox", { name: "Nickname" }),

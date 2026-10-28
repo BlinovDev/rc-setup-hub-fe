@@ -142,6 +142,7 @@ export function focusPath(root: HTMLFormElement | null, path: string) {
     Array.from(
       root?.querySelectorAll<HTMLElement>("[data-error-path]") ?? [],
     ).find((el) => el.dataset.errorPath === path);
+  destination?.closest("details")?.setAttribute("open", "");
   destination?.focus();
   destination?.scrollIntoView?.({ block: "center" });
 }

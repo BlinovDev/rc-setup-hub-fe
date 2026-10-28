@@ -141,3 +141,15 @@ metadata N+1; old null crops remain centered until adjusted, no backfill/re-uplo
 Photo limits, privacy, idempotent uploads and unsaved setup fields remain intact.
 Mobile lists use compact square rows; desktop uses bounded square cards. Production
 requires reviewed physical/paired live QA under the shared workflow/release gates.
+
+## F016 — Public Explore and safe profiles
+
+Status: accepted (backend #42 / frontend #45; product design backend #32).
+
+Explore is `/` for guests and signed-in users. Public detail and safe owner profiles
+reuse backend-authorized reads; owned/account/friendship/write routes stay protected.
+Profiles default to the new public-only paginated endpoint for every viewer; an explicit
+authenticated visible-to-you mode preserves owner/friend lists. Session transitions
+purge/remount all viewer-dependent content and ephemeral media. Only successful
+public setup detail receives index-eligible rendered metadata. See [SEO](seo.md) for
+static HTML/crawler limits; SSR/prerender is a separate architectural decision.

@@ -1,3 +1,4 @@
+import { checkGallery } from "./gallery-browser-check.mjs";
 import { setupFormDriver } from "./setup-form-driver.mjs";
 import { chromium } from "playwright";
 import { spawn } from "node:child_process";
@@ -40,9 +41,11 @@ const center = (p) => {
 };
 const scenarios = process.env.PHOTO_BROWSER_SCENARIO
   ? [process.env.PHOTO_BROWSER_SCENARIO]
-  : ["lifecycle", "compact-edit"];
+  : ["lifecycle", "compact-edit", "gallery"];
 assert(
-  scenarios.every((name) => ["lifecycle", "compact-edit"].includes(name)),
+  scenarios.every((name) =>
+    ["lifecycle", "compact-edit", "gallery"].includes(name),
+  ),
   "Unknown PHOTO_BROWSER_SCENARIO",
 );
 let browser;
@@ -56,7 +59,10 @@ try {
       if (attempt === 99) throw Error("Vite unavailable");
     }
   }
-  browser = await chromium.launch({ headless: true });
+  browser = await chromium.launch({
+    headless: true,
+    executablePath: process.env.PHOTO_BROWSER_EXECUTABLE_PATH,
+  });
   // Keep fixture rendering independent of app navigation and cancelled media reads.
   const mediaRenderer = await browser.newPage();
   const runScenario = async (scenario, width, height) => {
@@ -548,7 +554,29 @@ try {
           );
         }
       };
-      if (scenario === "lifecycle") {
+      if (scenario === "gallery") {
+        await checkGallery(page, context, {
+          width,
+          height,
+          load: async (count, owner) => {
+            await page.goto("about:blank");
+            while (pendingRoutes.size) await Promise.all([...pendingRoutes]);
+            photos = Array.from({ length: count }, (_, i) => photo(i + 1));
+            setup = {
+              ...setup,
+              title: "Gallery " + "long title ".repeat(14),
+              owner_id: owner === "owner" ? user.id : otherOwner,
+              visibility: owner === "friends" ? "friends" : "public",
+            };
+            await page.goto(`http://127.0.0.1:5173/setups/${id}`);
+          },
+        });
+        assert.equal(
+          mutationCalls,
+          0,
+          "read-only gallery must never mutate photos or setup",
+        );
+      } else if (scenario === "lifecycle") {
         await page.goto("http://127.0.0.1:5173/my/setups");
         await page.getByAltText("No setup photo — placeholder").waitFor();
         // Visibility does not guarantee decoding has completed on a fresh context.
@@ -1055,10 +1083,11 @@ try {
           );
           await touch.detach();
         } else {
-          await carousel
-            .getByRole("button", { name: "Show photo 2", exact: true })
-            .click();
-          await carousel.getByText("Photo 2 of 2", { exact: true }).waitFor();
+          // Both photos fit desktop; no redundant strip navigation/thumbnail row.
+          assert.equal(
+            await carousel.locator(".gallery-thumbnails").count(),
+            0,
+          );
         }
         await slides.focus();
         await page.keyboard.press("Home");
@@ -1180,16 +1209,25 @@ try {
         );
         assert(
           await viewer
-            .getByRole("button", { name: "Close photo" })
+            .getByRole("button", { name: "Close photo 1" })
             .evaluate((el) => document.activeElement === el),
         );
         await page.keyboard.press("Shift+Tab");
-        assert(
-          await viewer
-            .getByRole("button", { name: "Next photo" })
-            .evaluate((el) => document.activeElement === el),
-        );
-        await viewer.getByRole("button", { name: "Next photo" }).click();
+        if (mobile) {
+          assert(
+            await viewer
+              .getByRole("button", { name: "Close photo 1" })
+              .evaluate((el) => el === document.activeElement),
+          );
+          await page.keyboard.press("ArrowRight");
+        } else {
+          assert(
+            await viewer
+              .getByRole("button", { name: "Next photo" })
+              .evaluate((el) => el === document.activeElement),
+          );
+          await viewer.getByRole("button", { name: "Next photo" }).click();
+        }
         await viewer.getByText("Photo 2 of 2", { exact: true }).waitFor();
         await page.keyboard.press("Escape");
         await viewer.waitFor({ state: "hidden" });
@@ -1291,7 +1329,11 @@ try {
           path: `artifacts/photo-qa/differential-edit-${width}x${height}.png`,
           fullPage: true,
         });
-        for (const destination of ["/", "/my/setups", `/users/${user.id}`]) {
+        for (const destination of [
+          "/",
+          "/my/setups",
+          `/users/${user.id}?view=visible`,
+        ]) {
           await page.goto("http://127.0.0.1:5173" + destination);
           await page.getByAltText(`Cover of ${setup.title}`).waitFor();
           const frame = await page
@@ -1608,7 +1650,11 @@ try {
         }
         // Cover projections need no gallery metadata calls; error and denied states reserve the same square slot.
         setup = { ...setup, cover_photo: photos[1] };
-        for (const destination of ["/", "/my/setups", `/users/${user.id}`]) {
+        for (const destination of [
+          "/",
+          "/my/setups",
+          `/users/${user.id}?view=visible`,
+        ]) {
           const metadataBefore = metadataReads;
           await page.goto("http://127.0.0.1:5173" + destination);
           const coverImage = page.getByAltText(`Cover of ${setup.title}`);
@@ -2680,6 +2726,7 @@ try {
     [320, 900],
     [375, 900],
     [390, 900],
+    [430, 900],
     [768, 900],
     [1280, 900],
     [640, 360],
