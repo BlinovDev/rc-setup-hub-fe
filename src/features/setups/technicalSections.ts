@@ -1,8 +1,4 @@
-import {
-  standardLinks,
-  standardLinkIndices,
-  linkLabel,
-} from "./suspensionLinks";
+import { suspensionLengths } from "./suspensionLinks";
 import { differentialLabels, manufacturerLabel } from "./differential";
 import type { components } from "../../api/generated/schema";
 export type TechnicalValue = [
@@ -10,6 +6,7 @@ export type TechnicalValue = [
   value: string | number | null | undefined,
   identity?: string | undefined,
   showMissing?: boolean | undefined,
+  key?: string | undefined,
 ];
 export type TechnicalSection = { title: string; values: TechnicalValue[] };
 export type TechnicalProps = {
@@ -46,23 +43,36 @@ export function technicalSections({
         ["Toe (deg)", suspension?.toe_deg],
         ...(() => {
           const links = suspension?.link_lengths ?? [];
-          const indices = standardLinkIndices(links, axle),
-            used = new Set(indices.values());
-          const value = (name: string, index?: number): TechnicalValue => {
-            const link = index === undefined ? undefined : links[index];
-            return [
-              name,
-              link?.length_mm == null ? undefined : `${link.length_mm} mm`,
-              undefined,
-              !!link && link.length_mm == null,
-            ];
-          };
+          const standard = suspensionLengths(suspension, axle);
+          const used = new Set(
+            standard.flatMap((item) =>
+              item.index === undefined ? [] : [item.index],
+            ),
+          );
           return [
-            ...standardLinks(axle).map((standard) =>
-              value(standard.label, indices.get(standard.name)),
+            ...standard.map(
+              (item) =>
+                [
+                  item.label,
+                  item.value == null ? undefined : `${item.value} mm`,
+                  undefined,
+                  true,
+                  `standard:${item.field}`,
+                ] as TechnicalValue,
             ),
             ...links.flatMap((link, index) =>
-              used.has(index) ? [] : [value(linkLabel(link.name, axle), index)],
+              used.has(index)
+                ? []
+                : [
+                    [
+                      link.name,
+                      link.length_mm == null
+                        ? undefined
+                        : `${link.length_mm} mm`,
+                      undefined,
+                      link.length_mm == null,
+                    ] as TechnicalValue,
+                  ],
             ),
           ];
         })(),

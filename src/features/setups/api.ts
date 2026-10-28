@@ -21,8 +21,28 @@ export async function getSetup(id: string, signal: AbortSignal) {
   if (response.status !== 200 || !data) throw new SetupError(response.status);
   return data;
 }
+// Rear's null-only front-field constraint intersects the shared axle schema.
+// Normalize its unset slot to omission at the write boundary (same contract
+// meaning); openapi-fetch's Writable mapping otherwise treats that slot as never.
+function writableData(data: components["schemas"]["SetupDataV1"]) {
+  const { suspension, ...rest } = data;
+  if (suspension == null)
+    return { ...rest, ...(suspension === null ? { suspension: null } : {}) };
+  const { rear, ...axles } = suspension;
+  if (rear == null)
+    return {
+      ...rest,
+      suspension: { ...axles, ...(rear === null ? { rear: null } : {}) },
+    };
+  const { steering_tie_rod_length_mm, ...rearOnly } = rear;
+  if (steering_tie_rod_length_mm != null)
+    throw new Error("Steering tie rod length is front only.");
+  return { ...rest, suspension: { ...axles, rear: rearOnly } };
+}
 export async function createSetup(body: components["schemas"]["CreateSetup"]) {
-  const { data, response } = await apiClient.POST("/api/v1/setups", { body });
+  const { data, response } = await apiClient.POST("/api/v1/setups", {
+    body: { ...body, data: writableData(body.data) },
+  });
   if (response.status !== 201 || !data) throw new SetupError(response.status);
   return data;
 }
@@ -30,9 +50,13 @@ export async function patchSetup(
   id: string,
   body: components["schemas"]["PatchSetup"],
 ) {
+  const { data: technical, ...fields } = body;
   const { data, response } = await apiClient.PATCH("/api/v1/setups/{id}", {
     params: { path: { id } },
-    body,
+    body: {
+      ...fields,
+      ...(technical === undefined ? {} : { data: writableData(technical) }),
+    },
   });
   if (response.status !== 200 || !data) throw new SetupError(response.status);
   return data;

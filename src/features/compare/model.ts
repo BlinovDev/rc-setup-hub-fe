@@ -42,11 +42,13 @@ function entries(section: TechnicalSection) {
       identity: string | number | null;
     }[]
   >();
-  section.values.forEach(([label, raw, canonical], index) => {
+  section.values.forEach(([label, raw, canonical, , stableKey], index) => {
     const link = section.title.endsWith(" suspension") && index >= 3;
-    const key = link
-      ? `link:${label.normalize("NFC").trim().replace(/\s+/g, " ").toLowerCase()}`
-      : label;
+    const key =
+      stableKey ??
+      (link
+        ? `link:${label.normalize("NFC").trim().replace(/\s+/g, " ").toLowerCase()}`
+        : label);
     const value = normalize(raw);
     const group = groups.get(key) ?? [];
     group.push({

@@ -1,4 +1,9 @@
 import {
+  standardLinks,
+  suspensionLengths,
+  type SuspensionSide,
+} from "../suspensionLinks";
+import {
   selectedChassisModelId,
   type ChassisSelection,
 } from "../../chassis/selection";
@@ -41,22 +46,45 @@ export function setupToForm(setup?: Schemas["Setup"]): SetupFormValues {
           front_mm: numberInput(value.front_mm),
           rear_mm: numberInput(value.rear_mm),
         };
-  const axle = (value?: Schemas["AxleSuspension"] | null) => ({
-    lowerArmMount: {
-      manufacturerId: value?.lower_arm_mount?.manufacturer_id ?? null,
-      model: value?.lower_arm_mount?.model ?? "",
-      configurationNotes: value?.lower_arm_mount?.configuration_notes ?? "",
-    },
-    top_arm_spacing: spacing(value?.top_arm_spacing),
-    lower_arm_spacing: spacing(value?.lower_arm_spacing),
-    camber_deg: numberInput(value?.camber_deg),
-    caster_deg: numberInput(value?.caster_deg),
-    toe_deg: numberInput(value?.toe_deg),
-    link_lengths: (value?.link_lengths ?? []).map((link) => ({
-      name: link.name,
-      length_mm: numberInput(link.length_mm),
-    })),
-  });
+  const axle = (
+    side: SuspensionSide,
+    value?: Schemas["AxleSuspension"] | null,
+  ) => {
+    const measurements = suspensionLengths(value, side);
+    return {
+      upper_arm_length_mm: "",
+      lower_arm_length_mm: "",
+      steering_tie_rod_length_mm: "",
+      ...Object.fromEntries(
+        measurements.map((item) => [item.field, numberInput(item.value)]),
+      ),
+      lowerArmMount: {
+        manufacturerId: value?.lower_arm_mount?.manufacturer_id ?? null,
+        model: value?.lower_arm_mount?.model ?? "",
+        configurationNotes: value?.lower_arm_mount?.configuration_notes ?? "",
+      },
+      top_arm_spacing: spacing(value?.top_arm_spacing),
+      lower_arm_spacing: spacing(value?.lower_arm_spacing),
+      camber_deg: numberInput(value?.camber_deg),
+      caster_deg: numberInput(value?.caster_deg),
+      toe_deg: numberInput(value?.toe_deg),
+      link_lengths: (value?.link_lengths ?? []).map((link, index) => {
+        const original = measurements.find((item) => item.index === index);
+        return {
+          name: link.name,
+          length_mm: numberInput(link.length_mm),
+          ...(original
+            ? {
+                legacyStandard: {
+                  field: original.field,
+                  value: numberInput(original.value),
+                },
+              }
+            : {}),
+        };
+      }),
+    };
+  };
   const shock = (
     value?: Schemas["Shock"] | null,
   ): SetupFormValues["frontShock"] => ({
@@ -104,8 +132,8 @@ export function setupToForm(setup?: Schemas["Setup"]): SetupFormValues {
       model: setup?.data.rear_differential?.model ?? "",
       tuningNotes: setup?.data.rear_differential?.tuning_notes ?? "",
     },
-    front: axle(setup?.data.suspension?.front),
-    rear: axle(setup?.data.suspension?.rear),
+    front: axle("front", setup?.data.suspension?.front),
+    rear: axle("rear", setup?.data.suspension?.rear),
     frontShock: shock(setup?.data.shocks?.front),
     rearShock: shock(setup?.data.shocks?.rear),
     electronics: {
@@ -120,7 +148,10 @@ export function setupToForm(setup?: Schemas["Setup"]): SetupFormValues {
 export function serializeData(values: SetupFormValues): Schemas["SetupDataV1"] {
   function axle(
     value: SetupFormValues["front"],
+    side: SuspensionSide,
   ): Schemas["AxleSuspension"] | undefined {
+    if (side === "rear" && value.steering_tie_rod_length_mm.trim())
+      throw new Error("Steering tie rod length is front only.");
     const result: Schemas["AxleSuspension"] = {};
     const mount: Schemas["LowerArmMount"] = manufacturerModel(
       value.lowerArmMount,
@@ -142,8 +173,52 @@ export function serializeData(values: SetupFormValues): Schemas["SetupDataV1"] {
       const number = parseSuspensionNumber(value[key]);
       if (number !== undefined) result[key] = number;
     }
-    if (value.link_lengths.length)
-      result.link_lengths = value.link_lengths.map((link) => {
+    const converted = new Set<number>();
+    for (const standard of standardLinks(side)) {
+      const originalIndex = value.link_lengths.findIndex(
+        (link) => link.legacyStandard?.field === standard.field,
+      );
+      const original = value.link_lengths[originalIndex]?.legacyStandard?.value;
+      const rows = value.link_lengths.flatMap((link, index) =>
+        link.name.trim() === standard.name ? [index] : [],
+      );
+      const backed =
+        rows.length === 1 &&
+        rows[0] === originalIndex &&
+        value.link_lengths[originalIndex]?.length_mm === original;
+      if (original !== undefined && rows.length && !backed)
+        throw new Error(
+          "Resolve duplicate standard/custom link values before saving.",
+        );
+      if (
+        original !== undefined &&
+        original === value[standard.field] &&
+        backed
+      )
+        continue;
+      if (
+        original !== undefined &&
+        original !== value[standard.field] &&
+        rows.length > 1
+      )
+        throw new Error(
+          "Resolve duplicate standard/custom link values before saving.",
+        );
+      const number = parseSuspensionNumber(value[standard.field]);
+      if (number !== undefined && number <= 0)
+        throw new Error("Enter a finite length greater than zero.");
+      if (original !== undefined && backed) converted.add(originalIndex);
+      else if (number !== undefined && rows.length)
+        throw new Error(
+          "Resolve duplicate standard/custom link values before saving.",
+        );
+      if (number !== undefined) result[standard.field] = number;
+    }
+    const links = value.link_lengths.filter(
+      (_, index) => !converted.has(index),
+    );
+    if (links.length)
+      result.link_lengths = links.map((link) => {
         const length = parseSuspensionNumber(link.length_mm);
         if (length !== undefined && length <= 0)
           throw new Error("Enter a finite length greater than zero.");
@@ -219,12 +294,17 @@ export function serializeData(values: SetupFormValues): Schemas["SetupDataV1"] {
   const suspension: Schemas["Suspension"] = {},
     shocks: Schemas["Shocks"] = {},
     electronics: Schemas["Electronics"] = {};
-  const front = axle(values.front),
-    rear = axle(values.rear),
+  const front = axle(values.front, "front"),
+    rear = axle(values.rear, "rear"),
     frontShock = shock(values.frontShock),
     rearShock = shock(values.rearShock);
   if (front) suspension.front = front;
-  if (rear) suspension.rear = rear;
+  if (rear) {
+    const { steering_tie_rod_length_mm, ...rearOnly } = rear;
+    if (steering_tie_rod_length_mm != null)
+      throw new Error("Steering tie rod length is front only.");
+    suspension.rear = rearOnly;
+  }
   if (frontShock) shocks.front = frontShock;
   if (rearShock) shocks.rear = rearShock;
   for (const key of ["motor", "esc", "servo", "gyro", "radio"] as const) {

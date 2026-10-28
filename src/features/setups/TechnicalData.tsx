@@ -31,20 +31,19 @@ function Values({
 }
 export function TechnicalData(props: TechnicalProps) {
   const sections = technicalSections(props);
-  if (
-    !sections.some((section) =>
-      section.values.some(
-        ([, value, , showMissing]) =>
-          showMissing || (value !== undefined && value !== null),
-      ),
-    )
-  )
-    return <p>No technical setup data yet.</p>;
+  const hasData = sections.some((section) =>
+    section.values.some(
+      ([, value, , showMissing, key]) => value != null || (showMissing && !key),
+    ),
+  );
   return (
-    <div className="grid gap-4 sm:grid-cols-2">
-      {sections.map((section) => (
-        <Values key={section.title} {...section} />
-      ))}
-    </div>
+    <>
+      {!hasData && <p>No technical setup data yet.</p>}
+      <div className="grid gap-4 sm:grid-cols-2">
+        {sections.map((section) => (
+          <Values key={section.title} {...section} />
+        ))}
+      </div>
+    </>
   );
 }

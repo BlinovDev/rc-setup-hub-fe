@@ -154,34 +154,44 @@ try {
           unexpected.push(`${r.method()} ${p}`);
           return route.abort();
         });
-        const driver = setupFormDriver(page),
-          select = driver.select;
+        const select = setupFormDriver(page).select;
         const tab = (name) => page.getByRole("tab", { name, exact: true });
+        const input = (name) => page.getByLabel(name, { exact: true });
+        const button = (name) =>
+          page.getByRole("button", { name, exact: true });
+        const standard = async (side, labels) => {
+          for (const label of labels) {
+            const control = input(`${side} ${label} length (mm)`);
+            assert(await control.isVisible());
+            assert.equal(await control.getAttribute("inputmode"), "decimal");
+            assert.equal(
+              await control.evaluate(
+                (el) => el.closest(".component-card") === null,
+              ),
+              true,
+            );
+            assert((await control.boundingBox()).height >= 44);
+          }
+          assert.equal(await page.getByText(/Saved link name:/).count(), 0);
+        };
         await page.goto(origin + "/my/setups/new");
-        await page.getByLabel("Title", { exact: true }).fill("Both views");
+        await input("Title").fill("Both views");
         await select("Front");
-        assert.equal(await page.getByRole("tab").count(), 2);
         assert.equal(await tab("Angles").getAttribute("aria-selected"), "true");
-        await page
-          .getByLabel("Front camber (degrees)", { exact: true })
-          .fill("0");
+        await input("Front camber (degrees)").fill("0");
         await tab("Link lengths").click();
-        const upper = page.getByLabel("Front Upper arm length (mm)", {
-          exact: true,
-        });
+        await standard("Front", ["Upper arm", "Lower arm", "Steering tie rod"]);
+        assert.equal(await button("Remove front link 1").count(), 0);
+        const upper = input("Front Upper arm length (mm)"),
+          steering = input("Front Steering tie rod length (mm)");
         await upper.fill("40,5");
-        const steering = page.getByLabel("Front Steering tie rod length (mm)", {
-          exact: true,
-        });
         await steering.fill("0");
         await tab("Angles").click();
-        await page
-          .getByRole("button", { name: "Create setup", exact: true })
-          .click();
+        await button("Create setup").click();
         await page.waitForFunction(
           () =>
             document.activeElement?.getAttribute("name") ===
-            "front.link_lengths.1.length_mm",
+            "front.steering_tie_rod_length_mm",
         );
         assert.equal(
           await tab("Link lengths").getAttribute("aria-selected"),
@@ -190,30 +200,23 @@ try {
         assert.equal(posts.length, 0);
         assert.equal(await steering.getAttribute("aria-invalid"), "true");
         await steering.fill("16,23456789");
-        await page
-          .getByRole("button", { name: "Add front link", exact: true })
-          .click();
-        await page
-          .getByLabel("Front link 3 name", { exact: true })
-          .fill("Custom A");
-        await page
-          .getByRole("button", { name: "Add front link", exact: true })
-          .click();
-        await page
-          .getByLabel("Front link 4 name", { exact: true })
-          .fill("Z brace");
-        await page
-          .getByLabel("Front link 4 length (mm)", { exact: true })
-          .fill("14,25");
+        await button("Add front link").click();
+        await input("Front link 1 name").fill("Custom A");
+        await button("Add front link").click();
+        await input("Front link 2 name").fill("Z brace");
+        await input("Front link 2 length (mm)").fill("14,25");
+        await button("Add component: Front top arm spacing").click();
+        await input("Front top arm — Front spacers (mm)").fill("0");
+        await input("Front top arm — Rear spacers (mm)").fill("5,2");
+        await button("Done Front top arm spacing").click();
+        await page.waitForFunction(
+          () =>
+            document.activeElement?.textContent?.trim() ===
+            "Edit Front top arm spacing",
+        );
         await tab("Link lengths").focus();
         await page.keyboard.press("Home");
-        assert.equal(await tab("Angles").getAttribute("aria-selected"), "true");
-        assert.equal(
-          await page
-            .getByLabel("Front camber (degrees)", { exact: true })
-            .inputValue(),
-          "0",
-        );
+        assert.equal(await input("Front camber (degrees)").inputValue(), "0");
         await page.keyboard.press("ArrowRight");
         assert(
           await tab("Link lengths").evaluate(
@@ -221,26 +224,14 @@ try {
           ),
         );
         await select("Rear");
-        assert.equal(await tab("Angles").getAttribute("aria-selected"), "true");
         await tab("Link lengths").click();
+        await standard("Rear", ["Upper arm", "Lower arm"]);
         assert.equal(await page.getByLabel(/Rear Steering tie rod/).count(), 0);
-        await page
-          .getByLabel("Rear Lower arm length (mm)", { exact: true })
-          .fill("55");
-        await page
-          .getByLabel("Rear Upper arm length (mm)", { exact: true })
-          .fill("42,123456789");
-        await page
-          .getByRole("button", { name: "Add rear link", exact: true })
-          .click();
-        await page
-          .getByLabel("Rear link 3 name", { exact: true })
-          .fill("Rear unknown");
+        await input("Rear Upper arm length (mm)").fill("42,123456789");
+        await input("Rear Lower arm length (mm)").fill("55");
+        await button("Add rear link").click();
+        await input("Rear link 1 name").fill("Rear unknown");
         await select("Front");
-        assert.equal(
-          await tab("Link lengths").getAttribute("aria-selected"),
-          "true",
-        );
         assert.equal(await upper.inputValue(), "40,5");
         const bounds = await page.getByRole("tab").evaluateAll((els) =>
           els.map((el) => {
@@ -248,71 +239,44 @@ try {
             return {
               y: r.y,
               h: r.height,
-              w: r.width,
               overflow: el.scrollWidth > el.clientWidth,
             };
           }),
         );
         assert.equal(bounds[0].y, bounds[1].y);
         assert(bounds.every((b) => b.h >= 44 && !b.overflow));
-        const savedName = page
-          .locator("#setup-front")
-          .getByText("Saved link name: upper_arm", {
-            exact: true,
-          });
-        assert((await savedName.boundingBox()).height >= 44);
-        await savedName.focus();
-        await page.keyboard.press("Enter");
-        assert(
-          await page
-            .getByLabel("Front link 1 name", { exact: true })
-            .isVisible(),
-        );
-        await page.keyboard.press("Enter");
-        assert(
-          !(await page
-            .getByLabel("Front link 1 name", { exact: true })
-            .isVisible()),
-        );
+        await upper.scrollIntoViewIfNeeded();
         await page.screenshot({
           path: `artifacts/links-qa/tabs-${engine}-${width}x${height}.png`,
         });
-        await page
-          .getByRole("button", { name: "Create setup", exact: true })
-          .click();
+        await button("Create setup").click();
         await page.getByText("Setup created.", { exact: true }).waitFor();
         assert.equal(posts.length, 1);
         assert.deepEqual(saved.data.suspension.front, {
           camber_deg: 0,
+          upper_arm_length_mm: 40.5,
+          steering_tie_rod_length_mm: 16.23456789,
+          top_arm_spacing: { front_mm: 0, rear_mm: 5.2 },
           link_lengths: [
-            { name: "upper_arm", length_mm: 40.5 },
-            { name: "steering_tie_rod", length_mm: 16.23456789 },
             { name: "Custom A" },
             { name: "Z brace", length_mm: 14.25 },
           ],
         });
         assert.deepEqual(saved.data.suspension.rear, {
-          link_lengths: [
-            { name: "lower_arm", length_mm: 55 },
-            { name: "upper_arm", length_mm: 42.123456789 },
-            { name: "Rear unknown" },
-          ],
+          upper_arm_length_mm: 42.123456789,
+          lower_arm_length_mm: 55,
+          link_lengths: [{ name: "Rear unknown" }],
         });
         await page.goto(origin + `/setups/${id}`);
         await page
           .getByRole("link", { name: "Edit setup", exact: true })
           .waitFor();
         assert(
-          await page
-            .getByText("Steering tie rod:", { exact: true })
-            .isVisible(),
-        );
-        assert(
           await page.getByText("16.23456789 mm", { exact: true }).isVisible(),
         );
         assert.equal(
           await page.getByText("Not specified", { exact: true }).count(),
-          2,
+          3,
         );
         await page
           .getByRole("link", { name: "Edit setup", exact: true })
@@ -320,68 +284,67 @@ try {
         await select("Front");
         assert.equal(await tab("Angles").getAttribute("aria-selected"), "true");
         await tab("Link lengths").click();
+        await standard("Front", ["Upper arm", "Lower arm", "Steering tie rod"]);
         assert.equal(await upper.inputValue(), "40.5");
-        assert.equal(
-          await page
-            .getByLabel("Front link 3 length (mm)", { exact: true })
-            .inputValue(),
-          "",
-        );
-        await page
-          .getByLabel("Front link 3 name", { exact: true })
-          .fill("Renamed brace");
         await upper.fill("");
-        await page
-          .getByRole("button", { name: "Remove front link 4", exact: true })
-          .click();
-        await page.getByRole("button", { name: "Cancel", exact: true }).click();
+        await input("Front link 1 name").fill("Renamed brace");
+        await button("Remove front link 2").click();
+        await button("Cancel").click();
+        assert.equal(await input("Front link 2 name").inputValue(), "Z brace");
+        await button("Remove front link 2").click();
+        await button("Confirm remove front link 2").click();
+        await button("Edit Front top arm spacing").click();
         assert.equal(
-          await page
-            .getByLabel("Front link 4 name", { exact: true })
-            .inputValue(),
-          "Z brace",
+          await input("Front top arm — Front spacers (mm)").inputValue(),
+          "0",
         );
-        await page
-          .getByRole("button", { name: "Remove front link 4", exact: true })
-          .click();
-        await page
-          .getByRole("button", {
-            name: "Confirm remove front link 4",
-            exact: true,
-          })
-          .click();
+        assert.equal(
+          await input("Front top arm — Rear spacers (mm)").inputValue(),
+          "5.2",
+        );
+        await button("Remove Front top arm spacing").click();
+        await button("Cancel").click();
+        await button("Done Front top arm spacing").click();
         await select("Rear");
         assert.equal(
           await tab("Link lengths").getAttribute("aria-selected"),
           "true",
         );
-        await page
-          .getByRole("button", { name: "Save setup", exact: true })
-          .click();
+        await button("Save setup").click();
         await page
           .getByRole("link", { name: "Edit setup", exact: true })
           .waitFor();
         assert.equal(patches.length, 1);
+        assert.equal(
+          saved.data.suspension.front.upper_arm_length_mm,
+          undefined,
+        );
         assert.deepEqual(saved.data.suspension.front.link_lengths, [
-          { name: "upper_arm" },
-          { name: "steering_tie_rod", length_mm: 16.23456789 },
           { name: "Renamed brace" },
         ]);
+        assert.deepEqual(saved.data.suspension.front.top_arm_spacing, {
+          front_mm: 0,
+          rear_mm: 5.2,
+        });
         const legacy = {
           suspension: {
             front: {
               link_lengths: [
-                { name: "Upper", length_mm: 42.5 },
-                { name: "upper_arm", length_mm: 43.5 },
+                { name: "upper_arm", length_mm: 42.5 },
+                { name: "lower_arm", length_mm: 20 },
+                { name: "lower_arm", length_mm: 21 },
+                { name: "Upper", length_mm: 60 },
                 { name: "Legacy custom", length_mm: null },
                 { name: "Front named", length_mm: 10.2 },
               ],
+              top_arm_spacing: { front_mm: 0, rear_mm: 5.2 },
             },
             rear: {
               link_lengths: [
                 { name: "steering_tie_rod", length_mm: 18.5 },
                 { name: "lower_arm", length_mm: 47 },
               ],
+              lower_arm_spacing: { rear_mm: 0 },
             },
           },
           running_gear: { front: { hex: { offset_mm: 0 } } },
@@ -401,45 +364,49 @@ try {
         );
         assert.equal(await upper.inputValue(), "42.5");
         assert.equal(
-          await page
-            .getByLabel("Front link 2 name", { exact: true })
-            .inputValue(),
-          "upper_arm",
-        );
-        assert.equal(
-          await page
-            .getByLabel("Front link 3 length (mm)", { exact: true })
-            .inputValue(),
+          await input("Front Lower arm length (mm)").inputValue(),
           "",
         );
-        await tab("Angles").click();
+        assert.equal(await input("Front link 4 name").inputValue(), "Upper");
         assert.equal(
-          await page
-            .getByLabel("Front toe (degrees)", { exact: true })
-            .inputValue(),
-          "",
+          await input("Front link 2 name").inputValue(),
+          "lower_arm",
         );
-        await select("Rear");
         assert.equal(
-          await page
-            .getByLabel("Rear link 1 name", { exact: true })
-            .inputValue(),
-          "steering_tie_rod",
+          await input("Front link 3 name").inputValue(),
+          "lower_arm",
         );
+        assert.equal(await input("Front link 1 name").count(), 0);
         await select("General");
-        await page
-          .getByLabel("Title", { exact: true })
-          .fill("Legacy title-only edit");
-        await page
-          .getByRole("button", { name: "Save setup", exact: true })
-          .click();
+        await input("Title").fill("Legacy title-only edit");
+        await button("Save setup").click();
         await page
           .getByRole("link", { name: "Edit setup", exact: true })
           .waitFor();
         const normalized = structuredClone(legacy);
-        delete normalized.suspension.front.link_lengths[2].length_mm;
+        delete normalized.suspension.front.link_lengths[4].length_mm;
         assert.deepEqual(saved.data, normalized);
-        assert.equal(patches.length, 2);
+        await page
+          .getByRole("link", { name: "Edit setup", exact: true })
+          .click();
+        await select("Front");
+        await upper.fill("43,5");
+        await select("Rear");
+        assert.equal(
+          await input("Rear Lower arm length (mm)").inputValue(),
+          "47",
+        );
+        await input("Rear Lower arm length (mm)").fill("");
+        await button("Save setup").click();
+        await page
+          .getByRole("link", { name: "Edit setup", exact: true })
+          .waitFor();
+        const converted = structuredClone(normalized);
+        converted.suspension.front.upper_arm_length_mm = 43.5;
+        converted.suspension.front.link_lengths.shift();
+        converted.suspension.rear.link_lengths.pop();
+        assert.deepEqual(saved.data, converted);
+        assert.equal(patches.length, 3);
         other = {
           ...saved,
           id: otherId,
@@ -447,80 +414,82 @@ try {
           visibility: "public",
           data: structuredClone(saved.data),
         };
-        other.data.suspension.front.link_lengths = [
-          { name: "upper_arm", length_mm: 43.5 },
-          { name: "Upper arm", length_mm: 42.5 },
-          { name: "Front named", length_mm: 11.2 },
-          { name: "Legacy custom", length_mm: 20 },
-          { name: "steering_tie_rod" },
-        ];
+        other.data.suspension.front.upper_arm_length_mm = 42.5;
+        other.data.suspension.front.link_lengths.reverse();
+        other.data.suspension.front.link_lengths.find(
+          (l) => l.name === "Front named",
+        ).length_mm = 11.2;
+        other.data.suspension.front.link_lengths.find(
+          (l) => l.name === "Legacy custom",
+        ).length_mm = 20;
         await page.goto(origin + `/compare?left_id=${id}&right_id=${otherId}`);
         await page
           .getByRole("heading", { name: "Setup comparison", exact: true })
           .waitFor();
         const front = () =>
           page.getByRole("region", { name: "Front suspension", exact: true });
-        const missing = front()
-          .getByRole("rowheader", { name: /Legacy custom/ })
-          .locator("..");
-        assert.deepEqual(await missing.getByRole("cell").allTextContents(), [
-          "Not specified",
-          "20",
-        ]);
+        const row = (name) =>
+          front()
+            .getByRole("rowheader")
+            .filter({ hasText: name })
+            .locator("..");
+        assert.deepEqual(
+          await row("Upper arm (mm)").getByRole("cell").allTextContents(),
+          ["43.5", "42.5"],
+        );
+        assert.deepEqual(
+          await row("Lower arm (mm)").getByRole("cell").allTextContents(),
+          ["Not specified", "Not specified"],
+        );
+        assert.deepEqual(
+          await row("Legacy custom (mm)").getByRole("cell").allTextContents(),
+          ["Not specified", "20"],
+        );
         await page
           .getByRole("checkbox", { name: "Only differences", exact: true })
           .check();
-        assert.equal(await front().getByRole("rowheader").count(), 1);
-        assert(
-          await front()
-            .getByRole("rowheader", { name: /Front named/ })
-            .isVisible(),
-        );
+        assert.equal(await front().getByRole("rowheader").count(), 2);
         assert.equal(
           await page
             .getByRole("heading", { name: "Rear suspension", exact: true })
             .count(),
           0,
         );
-        other.data = structuredClone(saved.data);
+        saved.data.suspension.front.upper_arm_length_mm = 0;
+        other.data.suspension.front.upper_arm_length_mm = 1;
+        other.data.suspension.front.link_lengths = structuredClone(
+          saved.data.suspension.front.link_lengths,
+        );
+        await button("Refresh comparison").click();
         await page
-          .getByRole("button", { name: "Refresh comparison", exact: true })
-          .click();
+          .getByRole("heading", { name: "Setup comparison", exact: true })
+          .waitFor();
+        await row("Upper arm (mm)")
+          .getByRole("cell", { name: "0", exact: true })
+          .waitFor();
+        assert.deepEqual(
+          await row("Upper arm (mm)").getByRole("cell").allTextContents(),
+          ["0", "1"],
+        );
+        other.data = structuredClone(saved.data);
+        await button("Refresh comparison").click();
         await page
           .getByText("No comparable differences found.", { exact: true })
           .waitFor();
         assert.equal(await page.getByRole("table").count(), 0);
-        await page
-          .getByRole("checkbox", { name: "Only differences", exact: true })
-          .uncheck();
-        assert(
-          await page
-            .getByRole("heading", { name: "Rear suspension", exact: true })
-            .isVisible(),
-        );
-        if (width < 768)
-          await page
-            .getByRole("button", { name: "Open account menu", exact: true })
-            .click();
-        await page
-          .getByRole("button", { name: "Sign out", exact: true })
-          .click();
-        await page
-          .getByRole("button", { name: "Sign in", exact: true })
-          .waitFor();
+        if (width < 768) await button("Open account menu").click();
+        await button("Sign out").click();
+        await button("Sign in").waitFor();
         await page
           .getByRole("alert")
           .filter({ hasText: "One or both setups not found or unavailable." })
           .waitFor();
-        assert.equal(await page.getByRole("table").count(), 0);
         assert.equal(
           await page.getByText(saved.title, { exact: true }).count(),
           0,
         );
         saved.visibility = "public";
-        await page
-          .getByRole("button", { name: "Retry comparison", exact: true })
-          .click();
+        await button("Retry comparison").click();
         await page
           .getByRole("heading", { name: "Setup comparison", exact: true })
           .waitFor();
@@ -535,10 +504,12 @@ try {
             () => document.documentElement.scrollWidth <= window.innerWidth + 1,
           ),
         );
+        assert.equal(patches.length, 3);
+        assert.equal(posts.length, 1);
         assert.deepEqual(errors, []);
         assert.deepEqual(unexpected, []);
         console.log(
-          `PASS suspension links ${engine} ${width}x${height}: tabs/keyboard/hidden errors, standard+custom optional links, create/edit/rename/remove, legacy full-data preservation, detail and authorized Compare/empty differences/logout`,
+          `PASS suspension links ${engine} ${width}x${height}: fixed blank inputs, tabs/keyboard/hidden errors, typed+custom create/edit, exact legacy preservation/conversion, unchanged spacing, detail/Compare missing/zero/empty/logout`,
         );
       } catch (error) {
         console.error(

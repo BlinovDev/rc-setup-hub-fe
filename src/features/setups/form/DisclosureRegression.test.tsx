@@ -161,7 +161,7 @@ it("saving retains presentation state while resetting dirty baseline and preserv
       ...testSetup.data.suspension,
       front: {
         ...testSetup.data.suspension.front,
-        link_lengths: [{ name: "Upper", length_mm: 25.123456789 }],
+        upper_arm_length_mm: 25.123456789,
       },
     },
   });

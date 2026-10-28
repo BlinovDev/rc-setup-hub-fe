@@ -53,6 +53,7 @@ const a = make(1, "Alpha public", "public", {
   suspension: {
     front: {
       camber_deg: 0,
+      upper_arm_length_mm: 42.5,
       toe_deg: 1,
       link_lengths: [
         { name: "Upper", length_mm: 25 },
@@ -73,6 +74,7 @@ const b = {
   ...make(2, "Beta public", "public", {
     suspension: {
       front: {
+        upper_arm_length_mm: 42.5,
         toe_deg: 2,
         link_lengths: [
           { name: "tie rod", length_mm: 16.23456789 },

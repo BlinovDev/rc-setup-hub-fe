@@ -1,3 +1,4 @@
+import { standardLinks } from "../suspensionLinks";
 import { z } from "zod";
 import { differentialTypes } from "../differential";
 
@@ -85,7 +86,16 @@ const spacerTotal = optionalMeasurement(
   "Enter a finite spacer total greater than or equal to zero.",
 );
 const armSpacing = z.object({ front_mm: spacerTotal, rear_mm: spacerTotal });
+const length = z
+  .string()
+  .refine(
+    (value) => validNumber(value, true, false, parseSuspensionNumber),
+    "Enter a finite length greater than zero.",
+  );
 const axle = z.object({
+  upper_arm_length_mm: length,
+  lower_arm_length_mm: length,
+  steering_tie_rod_length_mm: length,
   lowerArmMount: z.object({
     manufacturerId: z.string().uuid().nullable(),
     model: text(200),
@@ -100,12 +110,19 @@ const axle = z.object({
     .array(
       z.object({
         name: text(200, true),
-        length_mm: z
-          .string()
-          .refine(
-            (value) => validNumber(value, true, false, parseSuspensionNumber),
-            "Enter a finite length greater than zero.",
-          ),
+        length_mm: length,
+        // Form-only provenance for the unique original legacy row. New custom
+        // rows never acquire this marker through user-entered names.
+        legacyStandard: z
+          .object({
+            field: z.enum([
+              "upper_arm_length_mm",
+              "lower_arm_length_mm",
+              "steering_tie_rod_length_mm",
+            ]),
+            value: z.string(),
+          })
+          .optional(),
       }),
     )
     .max(100, "Use at most 100 links."),
@@ -189,7 +206,13 @@ export const setupFormSchema = z
     }),
     runningGear: z.object({ front: runningGearAxle, rear: runningGearAxle }),
     front: axle,
-    rear: axle,
+    rear: axle.refine(
+      (value) => value.steering_tie_rod_length_mm.trim() === "",
+      {
+        message: "Steering tie rod length is front only.",
+        path: ["steering_tie_rod_length_mm"],
+      },
+    ),
     frontShock: shock,
     rearShock: shock,
     electronics: z.object({
@@ -199,6 +222,38 @@ export const setupFormSchema = z
       gyro: text(200),
       radio: text(200),
     }),
+  })
+  .superRefine((values, context) => {
+    for (const side of ["front", "rear"] as const) {
+      const value = values[side];
+      for (const standard of standardLinks(side)) {
+        const originalIndex = value.link_lengths.findIndex(
+          (link) => link.legacyStandard?.field === standard.field,
+        );
+        const original =
+          value.link_lengths[originalIndex]?.legacyStandard?.value;
+        if (
+          !value[standard.field].trim() &&
+          (original === undefined || original === value[standard.field])
+        )
+          continue;
+        const rows = value.link_lengths.flatMap((link, index) =>
+          link.name.trim() === standard.name ? [index] : [],
+        );
+        if (
+          !rows.length ||
+          (rows.length === 1 &&
+            rows[0] === originalIndex &&
+            value.link_lengths[originalIndex]?.length_mm === original)
+        )
+          continue;
+        context.addIssue({
+          code: "custom",
+          path: [side, "link_lengths", rows[rows.length - 1]!, "name"],
+          message: `Rename this custom link before setting the standard ${standard.label.toLowerCase()} length.`,
+        });
+      }
+    }
   })
   .refine(
     (value) =>

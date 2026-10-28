@@ -124,9 +124,11 @@ fixtures model authorization; they do not establish real backend/OAuth/device QA
 Screenshots are under artifacts/compare-qa in the existing browser CI artifact.
 
 The suspension-links browser gate runs the same seven Chromium/WebKit layouts,
-including emulated iPhone Safari. It exercises both tabs/axles, optional standard and
-custom links, comma precision, hidden validation/focus, keyboard tabs, create/edit
-payloads, initial view selection, rename/removal confirmation, legacy duplicates and
-unknown lengths, detail/Compare equality/missing/empty behavior and guest/member
+including emulated iPhone Safari. It exercises both tabs/axles, always-visible fixed inputs and
+additional custom links, comma precision, hidden validation/focus, keyboard tabs,
+create/edit payloads, initial view selection, custom rename/removal confirmation,
+exact-key legacy conversion versus unchanged title edits, ambiguous/other labels,
+unchanged spacing/shim controls and zero/precision, fixed/custom identity alignment,
+detail/Compare equality/missing/empty behavior and guest/member
 revocation. Screenshots are under artifacts/links-qa. HTTP authorization is mocked;
 physical iPhone and paired live backend QA remain separate.

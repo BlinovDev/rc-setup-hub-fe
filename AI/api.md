@@ -72,8 +72,14 @@ return to the original route after OAuth is not supported by this fixed callback
   optional arm-spacing totals are finite nonnegative, zero/partial unknown permitted.
   A named link may omit length_mm (or read null); preserve its name/order and all
   duplicate/custom entries. Supplied new lengths must be finite and positive;
-  existing read-only numeric zero remains specified. Standard names upper_arm,
-  lower_arm and front steering_tie_rod are conventions, not an enum or migration.
+  existing read-only numeric zero remains specified. Fixed standard properties are
+  upper_arm_length_mm / lower_arm_length_mm on both axles and front-only
+  steering_tie_rod_length_mm. They are independent of custom link names. Only a
+  unique exact legacy upper_arm/lower_arm (front also steering_tie_rod) may populate
+  a fixed input when its typed value is absent. Preserve that row on unrelated
+  edits; changing/clearing its measurement removes only that row in the same full
+  replacement. Never infer aliases or convert duplicate keys. Reject simultaneous
+  typed values and exact-key custom entries instead of silently dropping data.
   No rounding/defaults. Backend/OpenAPI remain authoritative for constraints.
 - Discovery uses search only, URL q/brand_id/model_id, fixed limit 20, opaque per-page
   cursor and repeated filters. Invalid filters avoid requests. Cards use historical

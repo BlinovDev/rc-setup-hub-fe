@@ -103,11 +103,16 @@ export function SetupForm({
         : null;
     if (
       side &&
-      /\.(?:link_lengths|camber_deg|caster_deg|toe_deg)(?:\.|$)/.test(path)
+      /\.(?:link_lengths|upper_arm_length_mm|lower_arm_length_mm|steering_tie_rod_length_mm|camber_deg|caster_deg|toe_deg)(?:\.|$)/.test(
+        path,
+      )
     )
       setSuspensionViews((old) => ({
         ...old,
-        [side]: path.includes(".link_lengths") ? "links" : "angles",
+        [side]:
+          path.includes(".link_lengths") || path.endsWith("_length_mm")
+            ? "links"
+            : "angles",
       }));
     if (setup) onSectionViewChange?.(sectionForPath(path) !== "general");
     setActive(sectionForPath(path));

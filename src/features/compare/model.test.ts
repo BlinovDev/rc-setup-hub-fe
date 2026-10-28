@@ -196,7 +196,7 @@ describe("section filtering and chassis", () => {
   });
 });
 
-it("renders a malformed missing link measurement as missing rather than text or zero", () => {
+it("renders an optional missing custom link measurement as missing rather than text or zero", () => {
   const a = setup({
     suspension: {
       front: { link_lengths: [{ name: "Upper", length_mm: null }] },
@@ -205,7 +205,7 @@ it("renders a malformed missing link measurement as missing rather than text or 
   const b = setup({
     suspension: { front: { link_lengths: [{ name: "Upper", length_mm: 25 }] } },
   });
-  expect(row(a, b, "Upper arm (mm)")).toMatchObject({
+  expect(row(a, b, "Upper (mm)")).toMatchObject({
     left: null,
     right: "25",
   });

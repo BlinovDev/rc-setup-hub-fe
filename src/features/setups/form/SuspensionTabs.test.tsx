@@ -91,7 +91,7 @@ it.each(["Front", "Rear"])(
       suspension: {
         [side.toLowerCase()]: {
           camber_deg: 0,
-          link_lengths: [{ name: "lower_arm", length_mm: 42.123456789 }],
+          lower_arm_length_mm: 42.123456789,
         },
       },
     });
@@ -151,17 +151,17 @@ it("preserves legacy names/order/duplicates, supports rename, unknown values and
   section("Front");
   expect(tab("Link lengths")).toHaveAttribute("aria-selected", "true");
   expect(screen.getByLabelText("Front Upper arm length (mm)")).toHaveValue(
-    "25",
+    "26",
   );
-  expect(screen.getByLabelText("Front link 2 name")).toHaveValue("upper_arm");
+  expect(screen.getByLabelText("Front link 1 name")).toHaveValue("Upper");
   await user.clear(screen.getByLabelText("Front link 3 name"));
   await user.type(screen.getByLabelText("Front link 3 name"), "Renamed custom");
-  await user.click(screen.getByRole("button", { name: "Remove front link 2" }));
+  await user.click(screen.getByRole("button", { name: "Remove front link 1" }));
   await user.click(screen.getByRole("button", { name: "Cancel" }));
-  expect(screen.getByLabelText("Front link 2 name")).toHaveValue("upper_arm");
-  await user.click(screen.getByRole("button", { name: "Remove front link 2" }));
+  expect(screen.getByLabelText("Front link 1 name")).toHaveValue("Upper");
+  await user.click(screen.getByRole("button", { name: "Remove front link 1" }));
   await user.click(
-    screen.getByRole("button", { name: "Confirm remove front link 2" }),
+    screen.getByRole("button", { name: "Confirm remove front link 1" }),
   );
   expect(screen.getByLabelText("Front link 2 name")).toHaveValue(
     "Renamed custom",
@@ -177,7 +177,7 @@ it("preserves legacy names/order/duplicates, supports rename, unknown values and
     suspension: {
       front: {
         link_lengths: [
-          { name: "Upper", length_mm: 25 },
+          { name: "upper_arm", length_mm: 26 },
           { name: "Renamed custom" },
         ],
       },
@@ -259,8 +259,8 @@ it("keeps missing/null lengths blank through form, validation, serialization, de
     },
   });
   render(<TechnicalData data={setup.data} />);
-  expect(screen.getByText("Upper arm:")).toBeVisible();
-  expect(screen.getAllByText("Not specified")).toHaveLength(2);
+  expect(screen.getAllByText("Upper arm:")).toHaveLength(2);
+  expect(screen.getAllByText("Not specified")).toHaveLength(4);
   const b = {
     ...setup,
     id: testSetup.owner_id,
@@ -269,8 +269,8 @@ it("keeps missing/null lengths blank through form, validation, serialization, de
         front: {
           camber_deg: 0,
           link_lengths: [
-            { name: "Tie rod", length_mm: 17 },
-            { name: "Upper arm", length_mm: 25 },
+            { name: "steering_tie_rod", length_mm: 17 },
+            { name: "upper_arm", length_mm: 25 },
           ],
         },
       },
@@ -297,10 +297,7 @@ it("matches standard aliases without rewriting rear custom steering identities",
       [{ name: "Upper" }, { name: "upper_arm" }, { name: "Steering tie rod" }],
       "front",
     ),
-  ]).toEqual([
-    ["upper_arm", 0],
-    ["steering_tie_rod", 2],
-  ]);
+  ]).toEqual([["upper_arm", 1]]);
   expect(standardLinkIndices([{ name: "steering_tie_rod" }], "rear").size).toBe(
     0,
   );
@@ -339,25 +336,22 @@ it.each(["front", "rear"] as const)(
       }
   },
 );
-it("reveals a hidden invalid saved name and opens its disclosure before focusing", async () => {
+it("reveals a hidden invalid saved name before focusing the custom input", async () => {
   const { save } = show({
     suspension: {
-      front: { link_lengths: [{ name: "upper_arm", length_mm: 42 }] },
+      front: { link_lengths: [{ name: "Custom", length_mm: 42 }] },
     },
   });
   section("Front");
   const name = document.querySelector<HTMLInputElement>(
     '[name="front.link_lengths.0.name"]',
   )!;
-  name.closest("details")!.open = true;
   fireEvent.change(name, { target: { value: "" } });
-  name.closest("details")!.open = false;
   fireEvent.click(tab("Angles"));
   section("General");
   fireEvent.click(screen.getByRole("button", { name: "Save setup" }));
   await waitFor(() => expect(name).toHaveFocus());
   expect(tab("Link lengths")).toHaveAttribute("aria-selected", "true");
-  expect(name.closest("details")).toHaveAttribute("open");
   expect(save).not.toHaveBeenCalled();
 });
 it("uses the freshly loaded suspension values after an explicit conflict reload", () => {
@@ -415,14 +409,14 @@ it("keeps legacy numeric zero specified in detail and Compare while unknown leng
   };
   render(<TechnicalData data={setup.data} />);
   expect(screen.getByText("0 mm")).toBeVisible();
-  expect(screen.getByText("Not specified")).toBeVisible();
+  expect(screen.getAllByText("Not specified")).toHaveLength(5);
   const other = {
     ...setup,
     data: {
       suspension: {
         front: {
           link_lengths: [
-            { name: "Upper arm", length_mm: 1 },
+            { name: "upper_arm", length_mm: 1 },
             { name: "Custom unknown", length_mm: 0 },
           ],
         },
