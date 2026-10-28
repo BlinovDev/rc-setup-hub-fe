@@ -671,9 +671,19 @@ export interface components {
         };
         Suspension: {
             front?: components["schemas"]["AxleSuspension"] | null;
-            rear?: components["schemas"]["AxleSuspension"] | null;
+            rear?: components["schemas"]["RearAxleSuspension"] | null;
+        };
+        /** @description Rear has fixed upper/lower arm values only; no numeric steering tie rod. Null is treated as unset. */
+        RearAxleSuspension: components["schemas"]["AxleSuspension"] & {
+            steering_tie_rod_length_mm?: null;
         };
         AxleSuspension: {
+            /** @description Fixed standard measurement in millimetres; finite and positive when set. Omitted/null stays unknown and is omitted on output. */
+            upper_arm_length_mm?: number | null;
+            /** @description Fixed standard measurement in millimetres; finite and positive when set. Omitted/null stays unknown and is omitted on output. */
+            lower_arm_length_mm?: number | null;
+            /** @description Fixed standard measurement in millimetres; finite and positive when set. Omitted/null stays unknown and is omitted on output. Front only. */
+            steering_tie_rod_length_mm?: number | null;
             lower_arm_mount?: components["schemas"]["LowerArmMount"] | null;
             /** @description Optional finite angle in degrees. Omitted/null means unknown and is omitted in responses; zero is a real value and is preserved. */
             camber_deg?: number | null;
@@ -685,7 +695,7 @@ export interface components {
              * @example -1.5
              */
             toe_deg?: number | null;
-            /** @description Omitted/null/empty lists are omitted in responses. */
+            /** @description Additional custom links and unchanged legacy named links, in original order. Omitted/null/empty lists are omitted on output. Fixed standard values use typed axle properties, not predefined named entries. Legacy arrays are never renamed, promoted or deduplicated automatically. A frontend may explicitly convert a unique exact historical upper_arm/lower_arm (front also steering_tie_rod) row to its typed field and remove that row in the same full-data replacement. Ambiguous/other labels remain untouched. A non-null typed value plus its historical exact-key row is rejected rather than storing duplicate standard values. Spacing is independent. */
             link_lengths?: components["schemas"]["LinkLength"][] | null;
             /** @description Optional top arm spacer totals, symmetric across left/right. */
             top_arm_spacing?: components["schemas"]["ArmSpacing"] | null;
@@ -717,10 +727,25 @@ export interface components {
             /** @description Finite nonnegative total behind the arm; omitted/null means unknown. */
             rear_mm?: number | null;
         };
+        /**
+         * @description Additional custom or preserved legacy named suspension link. Name is required; length is optional. A named entry with unknown length remains in the ordered array. Existing numeric lengths keep their precision and shape. Zero is invalid for a supplied length; do not coerce missing/empty input to zero. Fixed standard arm/tie-rod measurements use typed axle properties; no schema version change is needed.
+         * @example {
+         *       "name": "Additional brace",
+         *       "length_mm": 42.5
+         *     }
+         * @example {
+         *       "name": "Custom unknown"
+         *     }
+         * @example {
+         *       "name": "Legacy custom",
+         *       "length_mm": 16.2
+         *     }
+         */
         LinkLength: {
-            /** @description Trimmed non-empty name without null bytes. */
+            /** @description Trimmed non-empty free-text name without null bytes; not renamed or deduplicated. */
             name: string;
-            length_mm: number;
+            /** @description Optional finite positive millimetres. Omitted/null means unknown and is omitted on output. */
+            length_mm?: number | null;
         };
         Shocks: {
             front?: components["schemas"]["Shock"] | null;

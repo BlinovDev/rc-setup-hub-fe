@@ -53,6 +53,7 @@ const a = make(1, "Alpha public", "public", {
   suspension: {
     front: {
       camber_deg: 0,
+      upper_arm_length_mm: 42.5,
       toe_deg: 1,
       link_lengths: [
         { name: "Upper", length_mm: 25 },
@@ -73,6 +74,7 @@ const b = {
   ...make(2, "Beta public", "public", {
     suspension: {
       front: {
+        upper_arm_length_mm: 42.5,
         toe_deg: 2,
         link_lengths: [
           { name: "tie rod", length_mm: 16.23456789 },
@@ -322,7 +324,7 @@ try {
           page.getByRole("region", { name: "Front suspension", exact: true });
         const row = (name) =>
           front()
-            .getByRole("rowheader", { name: new RegExp(name) })
+            .getByRole("rowheader", { name: new RegExp(name, "i") })
             .locator("..");
         const search = async (q) => {
           await page
@@ -407,8 +409,16 @@ try {
           ["0", "Not specified"],
         );
         assert.deepEqual(
-          await row("Tie rod").getByRole("cell").allTextContents(),
+          await row("^Tie rod").getByRole("cell").allTextContents(),
           ["16.23456789", "16.23456789"],
+        );
+        assert.deepEqual(
+          await row("^Steering tie rod").getByRole("cell").allTextContents(),
+          ["Not specified", "Not specified"],
+        );
+        assert.deepEqual(
+          await row("^Upper arm").getByRole("cell").allTextContents(),
+          ["42.5", "42.5"],
         );
         assert(await page.getByText(/Different or custom chassis/).isVisible());
         assert.equal(

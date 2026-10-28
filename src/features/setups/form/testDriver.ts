@@ -74,6 +74,7 @@ function prepare(matcher: Matcher | ByRoleOptions["name"] | undefined) {
   if (
     d.spec &&
     d.id !== "notes" &&
+    !d.id?.endsWith("-links") &&
     document.querySelector(".setup-edit-layout") &&
     !document.querySelector(`[data-component="${d.id}"]`)
   ) {
@@ -88,6 +89,16 @@ function prepare(matcher: Matcher | ByRoleOptions["name"] | undefined) {
         name: d.spec.label,
       }),
     );
+  }
+  const tabName = /camber|caster|toe/.test(String(matcher).toLowerCase())
+    ? "Angles"
+    : d.id?.endsWith("-links")
+      ? "Link lengths"
+      : undefined;
+  if (tabName) {
+    const tab = screen.queryByRole("tab", { name: tabName });
+    if (tab?.getAttribute("aria-selected") !== "true" && tab)
+      fireEvent.click(tab);
   }
   if (
     d.spec &&
@@ -111,6 +122,18 @@ export function setupControl(
   options?: SelectorMatcherOptions,
 ) {
   prepare(matcher);
+  if (typeof matcher === "string") {
+    const link = /^(Front|Rear) link (\d+) (name|length \(mm\))$/.exec(matcher);
+    if (link) {
+      const field = document.querySelector<HTMLInputElement>(
+        `[name="${link[1]!.toLowerCase()}.link_lengths.${Number(link[2]) - 1}.${link[3] === "name" ? "name" : "length_mm"}"]`,
+      );
+      if (field) {
+        field.closest("details")?.setAttribute("open", "");
+        return field;
+      }
+    }
+  }
   return screen.getByLabelText(matcher, options);
 }
 export function setupButton(options: ByRoleOptions) {

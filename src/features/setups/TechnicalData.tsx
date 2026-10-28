@@ -11,7 +11,8 @@ function Values({
   values: TechnicalValue[];
 }) {
   const present = values.filter(
-    ([, value]) => value !== undefined && value !== null,
+    ([, value, , showMissing]) =>
+      showMissing || (value !== undefined && value !== null),
   );
   if (!present.length) return null;
   return (
@@ -21,7 +22,7 @@ function Values({
         {present.map(([label, value], index) => (
           <div key={index}>
             <dt>{label}:</dt>
-            <dd className="whitespace-pre-wrap">{value}</dd>
+            <dd className="whitespace-pre-wrap">{value ?? "Not specified"}</dd>
           </div>
         ))}
       </dl>
@@ -30,17 +31,19 @@ function Values({
 }
 export function TechnicalData(props: TechnicalProps) {
   const sections = technicalSections(props);
-  if (
-    !sections.some((section) =>
-      section.values.some(([, value]) => value !== undefined && value !== null),
-    )
-  )
-    return <p>No technical setup data yet.</p>;
+  const hasData = sections.some((section) =>
+    section.values.some(
+      ([, value, , showMissing, key]) => value != null || (showMissing && !key),
+    ),
+  );
   return (
-    <div className="grid gap-4 sm:grid-cols-2">
-      {sections.map((section) => (
-        <Values key={section.title} {...section} />
-      ))}
-    </div>
+    <>
+      {!hasData && <p>No technical setup data yet.</p>}
+      <div className="grid gap-4 sm:grid-cols-2">
+        {sections.map((section) => (
+          <Values key={section.title} {...section} />
+        ))}
+      </div>
+    </>
   );
 }

@@ -1,3 +1,7 @@
+import {
+  preferredSuspensionView,
+  type SuspensionView,
+} from "../suspensionLinks";
 import { EditorPresentation, type FormIssue } from "./editorPresentation";
 import { AddComponent } from "./AddComponent";
 import { ComponentCard } from "./ComponentCard";
@@ -61,6 +65,12 @@ export function SetupForm({
 }) {
   const isEdit = !!setup;
   const form = useForm<SetupFormValues>({ defaultValues: setupToForm(setup) });
+  const [suspensionViews, setSuspensionViews] = useState<
+    Record<"front" | "rear", SuspensionView>
+  >(() => ({
+    front: preferredSuspensionView(form.getValues().front),
+    rear: preferredSuspensionView(form.getValues().rear),
+  }));
   const root = useRef<HTMLFormElement>(null);
   const saving = useRef(false);
   const [savedVersion, setSavedVersion] = useState(0);
@@ -86,6 +96,24 @@ export function SetupForm({
     setFocusRequest({ section });
   }
   function reveal(path: string) {
+    const side = path.startsWith("front.")
+      ? "front"
+      : path.startsWith("rear.")
+        ? "rear"
+        : null;
+    if (
+      side &&
+      /\.(?:link_lengths|upper_arm_length_mm|lower_arm_length_mm|steering_tie_rod_length_mm|camber_deg|caster_deg|toe_deg)(?:\.|$)/.test(
+        path,
+      )
+    )
+      setSuspensionViews((old) => ({
+        ...old,
+        [side]:
+          path.includes(".link_lengths") || path.endsWith("_length_mm")
+            ? "links"
+            : "angles",
+      }));
     if (setup) onSectionViewChange?.(sectionForPath(path) !== "general");
     setActive(sectionForPath(path));
     const component = componentForPath(path);
@@ -160,6 +188,10 @@ export function SetupForm({
     if (previousReset.current === resetVersion) return;
     previousReset.current = resetVersion;
     form.reset(setupToForm(setup));
+    setSuspensionViews({
+      front: preferredSuspensionView(form.getValues().front),
+      rear: preferredSuspensionView(form.getValues().rear),
+    });
     setActive("general");
     setOpened({});
     setAdded({});
@@ -357,7 +389,14 @@ export function SetupForm({
                       <h2 id="section-front" tabIndex={-1}>
                         Front
                       </h2>
-                      <SuspensionSection side="front" setup={setup} />
+                      <SuspensionSection
+                        side="front"
+                        setup={setup}
+                        view={suspensionViews.front}
+                        onViewChange={(view) =>
+                          setSuspensionViews((old) => ({ ...old, front: view }))
+                        }
+                      />
                       <ComponentCard id="knuckle">
                         <FrontSteeringKnuckleSection setup={setup} />
                       </ComponentCard>
@@ -370,7 +409,14 @@ export function SetupForm({
                       <h2 id="section-rear" tabIndex={-1}>
                         Rear
                       </h2>
-                      <SuspensionSection side="rear" setup={setup} />
+                      <SuspensionSection
+                        side="rear"
+                        setup={setup}
+                        view={suspensionViews.rear}
+                        onViewChange={(view) =>
+                          setSuspensionViews((old) => ({ ...old, rear: view }))
+                        }
+                      />
                       <ComponentCard id="differential">
                         <RearDifferentialSection setup={setup} />
                       </ComponentCard>

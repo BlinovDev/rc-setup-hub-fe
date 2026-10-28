@@ -42,6 +42,7 @@ npm run test:photos:browser
 npm run test:public:browser
 node scripts/help-browser-check.mjs
 npm run test:compare:browser
+npm run test:links:browser
 ```
 
 The Help & Feedback check runs Chromium and WebKit with iPhone emulation below
@@ -73,7 +74,7 @@ six viewports. It verifies Explore filters/pagination/error/empty, public profil
 public detail/gallery/keyboard, protected CTAs, login/logout/private blob cleanup,
 history and no overflow. It checks rendered metadata **and raw static HTML**;
 mocked OAuth/cookies are not a real Google login or proof of crawler indexing.
-Screenshots are CI artifacts under artifacts/public-qa. All four browser commands are
+Screenshots are CI artifacts under artifacts/public-qa. All five browser commands are
 required; the photo gate continues to exercise authenticated visible-to-you lists.
 
 ## Mandatory regressions
@@ -121,3 +122,13 @@ keyboard horizontal scroll, error/retry/direct refresh, own/private/accepted-fri
 pairs, visibility revocation, late member responses after logout and history. HTTP
 fixtures model authorization; they do not establish real backend/OAuth/device QA.
 Screenshots are under artifacts/compare-qa in the existing browser CI artifact.
+
+The suspension-links browser gate runs the same seven Chromium/WebKit layouts,
+including emulated iPhone Safari. It exercises both tabs/axles, always-visible fixed inputs and
+additional custom links, comma precision, hidden validation/focus, keyboard tabs,
+create/edit payloads, initial view selection, custom rename/removal confirmation,
+exact-key legacy conversion versus unchanged title edits, ambiguous/other labels,
+unchanged spacing/shim controls and zero/precision, fixed/custom identity alignment,
+detail/Compare equality/missing/empty behavior and guest/member
+revocation. Screenshots are under artifacts/links-qa. HTTP authorization is mocked;
+physical iPhone and paired live backend QA remain separate.

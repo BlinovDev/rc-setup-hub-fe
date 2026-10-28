@@ -1,9 +1,12 @@
+import { suspensionLengths } from "./suspensionLinks";
 import { differentialLabels, manufacturerLabel } from "./differential";
 import type { components } from "../../api/generated/schema";
 export type TechnicalValue = [
   label: string,
   value: string | number | null | undefined,
   identity?: string | undefined,
+  showMissing?: boolean | undefined,
+  key?: string | undefined,
 ];
 export type TechnicalSection = { title: string; values: TechnicalValue[] };
 export type TechnicalProps = {
@@ -38,13 +41,41 @@ export function technicalSections({
         ["Camber (deg)", suspension?.camber_deg],
         ["Caster (deg)", suspension?.caster_deg],
         ["Toe (deg)", suspension?.toe_deg],
-        ...(suspension?.link_lengths?.map(
-          (link) =>
-            [
-              link.name,
-              link.length_mm == null ? undefined : `${link.length_mm} mm`,
-            ] as TechnicalValue,
-        ) ?? []),
+        ...(() => {
+          const links = suspension?.link_lengths ?? [];
+          const standard = suspensionLengths(suspension, axle);
+          const used = new Set(
+            standard.flatMap((item) =>
+              item.index === undefined ? [] : [item.index],
+            ),
+          );
+          return [
+            ...standard.map(
+              (item) =>
+                [
+                  item.label,
+                  item.value == null ? undefined : `${item.value} mm`,
+                  undefined,
+                  true,
+                  `standard:${item.field}`,
+                ] as TechnicalValue,
+            ),
+            ...links.flatMap((link, index) =>
+              used.has(index)
+                ? []
+                : [
+                    [
+                      link.name,
+                      link.length_mm == null
+                        ? undefined
+                        : `${link.length_mm} mm`,
+                      undefined,
+                      link.length_mm == null,
+                    ] as TechnicalValue,
+                  ],
+            ),
+          ];
+        })(),
       ],
     });
     const gear = data.running_gear?.[axle];
