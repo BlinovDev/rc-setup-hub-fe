@@ -22,7 +22,10 @@ export function RouteMetadata({
     gcTime: 0,
   });
   const setup =
-    !unresolved && detail.isSuccess && detail.data?.visibility === "public"
+    !unresolved &&
+    detail.isSuccess &&
+    detail.data?.visibility === "public" &&
+    detail.data.moderation_status === "approved"
       ? detail.data
       : undefined;
   const title = setup

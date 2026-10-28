@@ -34,6 +34,7 @@ const make = (n, title, visibility, data) => ({
   data,
   notes: null,
   schema_version: 1,
+  moderation_status: "approved",
   chassis_model_id: id(5),
   chassis: {
     brand_id: id(6),

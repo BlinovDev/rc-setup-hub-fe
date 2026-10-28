@@ -493,3 +493,41 @@ it("guest detail stays readable with no photos and an unavailable owner", async 
   expect(screen.getByRole("button", { name: "Sign in" })).toBeInTheDocument();
   expect(robots()).toBe("index, follow");
 });
+
+it.each(["pending", "rejected"] as const)(
+  "member can read a %s public setup without indexing or social metadata disclosure",
+  async (moderation_status) => {
+    me = testUser;
+    server.use(
+      http.get(`${apiUrl}/api/v1/setups/${setup.id}`, () =>
+        HttpResponse.json({ ...setup, moderation_status }),
+      ),
+    );
+    show(`/setups/${setup.id}`);
+    await screen.findByRole("heading", { name: setup.title });
+    expect(robots()).toBe("noindex, nofollow");
+    expect(document.title).toBe("RC Setup Hub");
+    expect(
+      document.head
+        .querySelector('meta[property="og:description"]')
+        ?.getAttribute("content"),
+    ).not.toContain(setup.notes);
+  },
+);
+
+it.each(["pending", "rejected"] as const)(
+  "guest cannot reuse a %s public detail payload",
+  async (moderation_status) => {
+    server.use(
+      http.get(`${apiUrl}/api/v1/setups/${setup.id}`, () =>
+        HttpResponse.json({ ...setup, moderation_status }),
+      ),
+    );
+    show(`/setups/${setup.id}`);
+    await screen.findByText("Setup not found or unavailable.");
+    expect(
+      screen.queryByRole("heading", { name: setup.title }),
+    ).not.toBeInTheDocument();
+    expect(robots()).toBe("noindex, nofollow");
+  },
+);

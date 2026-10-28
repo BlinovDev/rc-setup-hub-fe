@@ -269,7 +269,7 @@ export interface paths {
         };
         /**
          * Read a visible setup
-         * @description Owner sees every visibility. Other authenticated users see public; accepted friends also see friends-only. Private remains owner-only; pending relationships grant no access. Missing/inaccessible returns the same 404, before protected technical data decoding. Guests see public only. Successful public detail is index-eligible; non-public detail and all errors remain noindex.
+         * @description Owner sees every visibility. Other authenticated users see approved public; accepted friends also see pending/rejected public and friends-only. Private remains owner-only; pending relationships grant no access. Missing/inaccessible returns the same 404, before protected technical data decoding. Guests see approved public only. Only approved public detail is index-eligible; all other detail and errors remain noindex.
          */
         get: operations["getSetup"];
         put?: never;
@@ -317,7 +317,7 @@ export interface paths {
         };
         /**
          * List a user’s visible setups
-         * @description Owner sees all; accepted friend sees public+friends; unrelated/pending sees public only. Private never appears for another user. Newest first (created_at DESC, id DESC). No pagination. A valid unknown user UUID returns [].
+         * @description Owner sees all; accepted friend sees public+friends; unrelated/pending sees approved public only. Private never appears for another user. Newest first (created_at DESC, id DESC). No pagination. A valid unknown user UUID returns [].
          */
         get: operations["listUserSetups"];
         put?: never;
@@ -357,7 +357,7 @@ export interface paths {
         };
         /**
          * Search all setups readable by the current viewer
-         * @description Comparison candidate selection, not Explore. Guests receive public only; signed-in viewers receive all owned setups plus all public setups and friends-visibility setups from accepted friends. Authorization is filtered in SQL before safe summary projections and pagination. No totals, technical data, notes, email or provider identity. Does not grant clone or mutation permissions. Same literal search, historical chassis filters, ordering, default 20/max 50 and keyset pagination as public search. Repeat filters when following next_cursor; access is rechecked on every request.
+         * @description Comparison candidate selection, not Explore. Guests receive approved public only; signed-in viewers receive all owned setups plus approved public setups and public/friends-visibility setups from accepted friends. Authorization is filtered in SQL before safe summary projections and pagination. No totals, technical data, notes, email or provider identity. Does not grant clone or mutation permissions. Same literal search, historical chassis filters, ordering, default 20/max 50 and keyset pagination as public search. Repeat filters when following next_cursor; access is rechecked on every request.
          */
         get: operations["searchVisibleSetups"];
         put?: never;
@@ -377,7 +377,7 @@ export interface paths {
         };
         /**
          * Read exactly two distinct visible setups atomically
-         * @description Exactly one left_id and one right_id are required; no extra query parameters. UUID-equivalent IDs must be distinct. Returns complete existing Setup objects in request order, including historical chassis/manufacturer projections, optional technical fields and notes. Explicit numeric zero is preserved; missing/null measurements remain unknown, never defaulted. Different chassis and custom chassis are allowed. Both current permissions are evaluated in one PostgreSQL statement snapshot. If either setup is missing or inaccessible, returns the same generic 404 with neither side, before decoding documents. Guests can compare public only; signed-in viewers may also read their own and accepted friends' friends-visibility setups. Read-only and transient, not a persistent comparison, diff calculation, clone or mutation capability. Media URLs retain their independent current-visibility checks. No-store; comparison responses are not SEO-indexable.
+         * @description Exactly one left_id and one right_id are required; no extra query parameters. UUID-equivalent IDs must be distinct. Returns complete existing Setup objects in request order, including historical chassis/manufacturer projections, optional technical fields and notes. Explicit numeric zero is preserved; missing/null measurements remain unknown, never defaulted. Different chassis and custom chassis are allowed. Both current permissions are evaluated in one PostgreSQL statement snapshot. If either setup is missing or inaccessible, returns the same generic 404 with neither side, before decoding documents. Guests can compare approved public only; signed-in viewers may also read their own and accepted friends' public/friends-visibility setups. Read-only and transient, not a persistent comparison, diff calculation, clone or mutation capability. Media URLs retain their independent current-visibility checks. No-store; comparison responses are not SEO-indexable.
          */
         get: operations["compareSetups"];
         put?: never;
@@ -489,7 +489,7 @@ export interface paths {
         };
         /**
          * Read authorized processed JPEG
-         * @description Resolves an optional session and checks current setup visibility on every read; guests see public only. No public static media. Cache-Control no-store, private; no ETag/Last-Modified. Lost access and unknown photo are identical 404.
+         * @description Resolves an optional session and checks current setup visibility on every read; guests see approved public only. No public static media. Cache-Control no-store, private; no ETag/Last-Modified. Lost access and unknown photo are identical 404.
          */
         get: operations["readSetupPhotoImage"];
         put?: never;
@@ -509,7 +509,7 @@ export interface paths {
         };
         /**
          * Read authorized processed JPEG
-         * @description Resolves an optional session and checks current setup visibility on every read; guests see public only. No public static media. Cache-Control no-store, private; no ETag/Last-Modified. Lost access and unknown photo are identical 404.
+         * @description Resolves an optional session and checks current setup visibility on every read; guests see approved public only. No public static media. Cache-Control no-store, private; no ETag/Last-Modified. Lost access and unknown photo are identical 404.
          */
         get: operations["readSetupPhotoThumbnail"];
         put?: never;
@@ -848,6 +848,11 @@ export interface components {
         };
         /** @description Complete setup with application owner UUID and read-only historical chassis display. No owner email or provider identity is exposed. */
         Setup: {
+            /**
+             * @description Public access requires approved. Pending/rejected public setups are readable only by their owner and accepted friends. New setups start pending. Photo changes invalidate approval even while non-public; text and technical edits preserve status. Refresh setup after photo mutations.
+             * @enum {string}
+             */
+            readonly moderation_status: "pending" | "approved" | "rejected";
             /** @description Read-only historical catalogue display; null when no reference resolves. Never stored in data or accepted in writes. */
             running_gear_manufacturers: components["schemas"]["RunningGearManufacturers"] | null;
             /** @description Read-only historical catalog display; null when neither axle has a resolvable manufacturer. Never stored in technical data or accepted in writes. */

@@ -45,7 +45,10 @@ export async function compareSetups(
     data.left.id.toLowerCase() !== left ||
     data.right.id.toLowerCase() !== right ||
     (guest &&
-      (data.left.visibility !== "public" || data.right.visibility !== "public"))
+      (data.left.visibility !== "public" ||
+        data.right.visibility !== "public" ||
+        data.left.moderation_status !== "approved" ||
+        data.right.moderation_status !== "approved"))
   )
     throw new SetupError(404);
   return data;
