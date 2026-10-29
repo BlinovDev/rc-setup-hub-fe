@@ -62,3 +62,34 @@ it.each([
     ).rejects.toMatchObject({ status: 404 });
   },
 );
+
+it.each(["pending", "rejected"] as const)(
+  "guest cannot reuse a %s public comparison payload",
+  async (moderation_status) => {
+    const payload = {
+      left: { ...testSetup, visibility: "public", moderation_status },
+      right: { ...testSetup, id: testUser.id, visibility: "public" },
+    };
+    server.use(
+      http.get(`${apiUrl}/api/v1/setups/compare`, () =>
+        HttpResponse.json(payload),
+      ),
+    );
+    await expect(
+      compareSetups(
+        testSetup.id,
+        testUser.id,
+        true,
+        new AbortController().signal,
+      ),
+    ).rejects.toMatchObject({ status: 404 });
+    await expect(
+      compareSetups(
+        testSetup.id,
+        testUser.id,
+        false,
+        new AbortController().signal,
+      ),
+    ).resolves.toEqual(payload);
+  },
+);

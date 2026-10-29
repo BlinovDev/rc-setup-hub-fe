@@ -18,6 +18,7 @@ export const testSetup = {
   visibility: "friends",
   notes: "Old note",
   schema_version: 1,
+  moderation_status: "approved" as const,
   chassis_model_id: "c61393b6-daa0-4eb8-923c-57aedbb46a48",
   chassis: {
     brand_id: "c61393b6-daa0-4eb8-923c-57aedbb46a49",

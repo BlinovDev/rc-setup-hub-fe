@@ -41,7 +41,10 @@ export function SetupDetailPage({
   >("idle");
   if (
     !valid ||
-    (!user && query.data && query.data.visibility !== "public") ||
+    (!user &&
+      query.data &&
+      (query.data.visibility !== "public" ||
+        query.data.moderation_status !== "approved")) ||
     (query.error instanceof SetupError &&
       [400, 404].includes(query.error.status))
   )

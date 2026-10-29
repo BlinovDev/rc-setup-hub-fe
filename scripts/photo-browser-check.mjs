@@ -157,6 +157,7 @@ try {
         visibility: "public",
         notes: null,
         schema_version: 1,
+        moderation_status: "approved",
         chassis: null,
         chassis_model_id: null,
         cover_photo: null,

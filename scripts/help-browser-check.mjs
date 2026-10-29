@@ -123,6 +123,7 @@ try {
                     title: privateTitle,
                     visibility: "private",
                     schema_version: 1,
+                    moderation_status: "approved",
                     chassis_model_id: null,
                     chassis: null,
                     notes: null,

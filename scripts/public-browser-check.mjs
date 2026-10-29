@@ -35,6 +35,7 @@ const publicSetup = {
   data: { suspension: { front: { camber_deg: 0, toe_deg: -1.25 } } },
   notes: "Public track notes",
   schema_version: 1,
+  moderation_status: "approved",
   created_at: user.created_at,
   updated_at: user.created_at,
   cover_photo: null,
