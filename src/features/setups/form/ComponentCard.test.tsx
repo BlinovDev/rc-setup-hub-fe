@@ -25,7 +25,7 @@ const section = (name: string) =>
       screen.getByRole("navigation", { name: "Setup sections" }),
     ).getByRole("button", { name }),
   );
-it("unused controls stay undisclosed; Add keeps an empty editor open and does not focus a keyboard input", async () => {
+it("unused controls stay undisclosed; Add keeps an empty editor open and focuses its first input", async () => {
   form();
   section("Wheels & tires");
   const user = userEvent.setup();
@@ -33,10 +33,10 @@ it("unused controls stay undisclosed; Add keeps an empty editor open and does no
     screen.queryByLabelText("Front hex offset (mm)"),
   ).not.toBeInTheDocument();
   await user.click(screen.getByRole("button", { name: "Add component" }));
-  await user.click(screen.getByRole("button", { name: "Front hex" }));
+  await user.click(screen.getByRole("button", { name: "Add front hex" }));
   const input = screen.getByLabelText("Front hex offset (mm)");
   expect(input).toBeVisible();
-  expect(input).not.toHaveFocus();
+  expect(input).toHaveFocus();
   fireEvent.change(input, { target: { value: "-" } });
   section("Front");
   section("Wheels & tires");
@@ -98,7 +98,7 @@ it("summaries preserve manufacturer/notes/zero-only data and save the whole unse
     screen.getByRole("button", { name: "Confirm remove Front hex" }),
   );
   await user.click(screen.getByRole("button", { name: "Add component" }));
-  await user.click(screen.getByRole("button", { name: "Front hex" }));
+  await user.click(screen.getByRole("button", { name: "Add front hex" }));
   expect(screen.getByLabelText("Front hex offset (mm)")).toHaveValue("");
   await user.click(screen.getByRole("button", { name: "Save setup" }));
   expect(save).toHaveBeenCalled();

@@ -2453,7 +2453,7 @@ try {
         );
         assert.deepEqual(await choices.getByRole("button").allTextContents(), [
           "Front hex",
-          "Rear hex",
+          "Add rear hex",
         ]);
         const disclosure = page.getByRole("button", {
           name: "Add component",
@@ -2473,7 +2473,7 @@ try {
         await disclosure.click();
         await choices.waitFor({ state: "visible" });
         await choices
-          .getByRole("button", { name: "Front hex", exact: true })
+          .getByRole("button", { name: "Add front hex", exact: true })
           .focus();
         await page.keyboard.press("Escape");
         await choices.waitFor({ state: "hidden" });
@@ -2491,7 +2491,7 @@ try {
         if (mobile) await disclosure.tap();
         else await disclosure.click();
         const chosenComponent = choices.getByRole("button", {
-          name: "Front hex",
+          name: "Add front hex",
           exact: true,
         });
         if (mobile) await chosenComponent.tap();
@@ -2501,7 +2501,7 @@ try {
           .waitFor({ state: "visible" });
         await choices.waitFor({ state: "hidden" });
         await page
-          .getByRole("button", { name: "Close Front hex editor", exact: true })
+          .getByRole("button", { name: "Done Front hex", exact: true })
           .click();
         await page
           .getByLabel("Front hex offset (mm)", { exact: true })
@@ -2509,7 +2509,7 @@ try {
         await disclosure.click();
         await choices.waitFor({ state: "visible" });
         assert.deepEqual(await choices.getByRole("button").allTextContents(), [
-          "Rear hex",
+          "Add rear hex",
         ]);
         await disclosure.click();
         await choices.waitFor({ state: "hidden" });
@@ -2528,7 +2528,7 @@ try {
         });
         await page
           .getByRole("button", {
-            name: "Close Front wheel editor",
+            name: "Done Front wheel",
             exact: true,
           })
           .click();

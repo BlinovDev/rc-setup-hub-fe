@@ -4,7 +4,7 @@ import { startGoogleLogin } from "./navigation";
 export function LoginPage() {
   return (
     <section className="login-panel">
-      <h2 className="text-xl font-semibold">Sign in to RC Setup Hub</h2>
+      <h2 className="page-title">Sign in to RC Setup Hub</h2>
       <p>Manage and share your RC drift setups.</p>
       <Button
         variant="primary"

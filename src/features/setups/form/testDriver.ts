@@ -86,7 +86,8 @@ function prepare(matcher: Matcher | ByRoleOptions["name"] | undefined) {
       fireEvent.click(trigger);
     fireEvent.click(
       within(pane as HTMLElement).getByRole("button", {
-        name: d.spec.label,
+        name:
+          "Add " + d.spec.label.charAt(0).toLowerCase() + d.spec.label.slice(1),
       }),
     );
   }
@@ -161,7 +162,12 @@ export function setupButton(options: ByRoleOptions) {
           });
         const chooser = screen.getByRole("button", { name: "Add component" });
         fireEvent.click(chooser);
-        return screen.getByRole("button", { name: d.spec!.label });
+        return screen.getByRole("button", {
+          name:
+            "Add " +
+            d.spec!.label.charAt(0).toLowerCase() +
+            d.spec!.label.slice(1),
+        });
       })()
     );
   }

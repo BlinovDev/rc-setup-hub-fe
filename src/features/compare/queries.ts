@@ -1,3 +1,4 @@
+import type { SetupScope } from "../search/SetupPresets";
 import {
   useInfiniteQuery,
   useQuery,
@@ -6,12 +7,20 @@ import {
 import { withSession } from "../setups/queries";
 import { visibleSetups, compareSetups } from "./api";
 export const compareKey = ["setups", "compare"] as const;
-export function useCandidates(q: string, viewer: string, enabled: boolean) {
+export function useCandidates(
+  q: string,
+  viewer: string,
+  enabled: boolean,
+  modelId?: string | null,
+  scope: SetupScope = "all",
+) {
   const client = useQueryClient();
   return useInfiniteQuery({
-    queryKey: [...compareKey, "visible", viewer, q],
+    queryKey: [...compareKey, "visible", viewer, q, modelId ?? null, scope],
     queryFn: ({ pageParam, signal }) =>
-      withSession(client, () => visibleSetups(q, pageParam, signal)),
+      withSession(client, () =>
+        visibleSetups(q, pageParam, signal, modelId, scope),
+      ),
     initialPageParam: null as string | null,
     getNextPageParam: (page) => page.next_cursor ?? undefined,
     enabled,

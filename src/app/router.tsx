@@ -65,8 +65,8 @@ export const routes: RouteObject[] = [
     element: (
       <AuthGate publicPage>
         {() => (
-          <section className="mx-auto max-w-3xl px-6 py-12">
-            <h1 className="text-3xl font-semibold">Page not found</h1>
+          <section>
+            <h2 className="page-title">Page not found</h2>
             <Link className="mt-4 inline-block underline" to="/">
               Return home
             </Link>

@@ -1,3 +1,7 @@
+import { FilterPanel } from "../search/FilterPanel";
+import { SetupPresets, type SetupScope } from "../search/SetupPresets";
+import { PhotoImage } from "../setups/photos/PhotoImage";
+import { useSetup } from "../setups/queries";
 import { useEffect, useRef, useState } from "react";
 import { Link, useSearchParams } from "react-router";
 import { Button } from "../../shared/components/Button";
@@ -23,6 +27,20 @@ export function ComparePage({ viewer }: { viewer: string }) {
   // Never render cached technical values while authorization is being rechecked,
   // or after a failed recheck. No partial result or detail-cache seeding.
   const result = pair.isSuccess && !pair.isFetching ? pair.data : undefined;
+  const singleLeft = useSetup(left, valid && !!left && !right);
+  const singleRight = useSetup(right, valid && !!right && !left);
+  const selected = {
+    left:
+      result?.left ??
+      (!right && singleLeft.isSuccess && !singleLeft.isFetching
+        ? singleLeft.data
+        : undefined),
+    right:
+      result?.right ??
+      (!left && singleRight.isSuccess && !singleRight.isFetching
+        ? singleRight.data
+        : undefined),
+  };
   const heading = useRef<HTMLHeadingElement>(null);
   const lastFocusedPair = useRef("");
   useEffect(() => {
@@ -49,7 +67,7 @@ export function ComparePage({ viewer }: { viewer: string }) {
     (result.left.schema_version !== 1 || result.right.schema_version !== 1);
   return (
     <section className="space-y-4" aria-labelledby="compare-title">
-      <h2 id="compare-title" className="text-2xl font-semibold">
+      <h2 id="compare-title" className="page-title">
         Compare setups
       </h2>
       <p>
@@ -74,14 +92,32 @@ export function ComparePage({ viewer }: { viewer: string }) {
             {(["left", "right"] as const).map((side) => (
               <Button
                 key={side}
+                className="comparison-slot"
                 aria-pressed={activeSide === side}
                 onClick={() => setEditing(side)}
               >
-                {side === "left" ? "First setup" : "Second setup"}:{" "}
-                {result?.[side].title ??
-                  ((side === "left" ? left : right)
-                    ? "Selected"
-                    : "Choose setup")}
+                <span className="comparison-slot-label">
+                  {side === "left" ? "First setup" : "Second setup"}
+                </span>
+                {selected[side] ? (
+                  <>
+                    <PhotoImage
+                      photo={selected[side]?.cover_photo}
+                      alt={`Cover of ${selected[side]?.title}`}
+                    />
+                    <strong>{selected[side]?.title}</strong>
+                    <span className="text-sm">
+                      {chassisLabel(selected[side]!)}
+                    </span>
+                    <span className="comparison-slot-action">Change setup</span>
+                  </>
+                ) : (
+                  <span>
+                    {(side === "left" ? left : right)
+                      ? "Checking selected setup…"
+                      : "+ Choose setup"}
+                  </span>
+                )}
               </Button>
             ))}
           </div>
@@ -91,6 +127,10 @@ export function ComparePage({ viewer }: { viewer: string }) {
               side={activeSide}
               viewer={viewer}
               otherId={activeSide === "left" ? right : left}
+              otherModelId={
+                selected[activeSide === "left" ? "right" : "left"]
+                  ?.chassis_model_id ?? null
+              }
               onSelect={select}
               onCancel={left && right ? () => setEditing(null) : undefined}
             />
@@ -161,22 +201,33 @@ function SetupSelector({
   side,
   viewer,
   otherId,
+  otherModelId,
   onSelect,
   onCancel,
 }: {
   side: Side;
   viewer: string;
   otherId: string;
+  otherModelId: string | null;
   onSelect: (id: string) => void;
   onCancel?: (() => void) | undefined;
 }) {
   const [text, setText] = useState("");
   const [q, setQ] = useState("");
   const [invalid, setInvalid] = useState(false);
-  const search = useCandidates(q, viewer, true);
+  const [scope, setScope] = useState<SetupScope>("all");
+  const [sameModel, setSameModel] = useState(false);
+  const search = useCandidates(
+    q,
+    viewer,
+    true,
+    sameModel ? otherModelId : null,
+    scope,
+  );
   const input = useRef<HTMLInputElement>(null);
   useEffect(() => {
-    input.current?.focus();
+    if (window.matchMedia?.("(min-width: 768px)").matches)
+      input.current?.focus();
   }, []);
   // An error/recheck must not leave old protected candidate titles on screen.
   const items =
@@ -194,36 +245,66 @@ function SetupSelector({
       <h3 className="font-semibold">
         Choose {side === "left" ? "first" : "second"} setup
       </h3>
-      <form
-        className="flex flex-wrap items-end gap-2"
-        onSubmit={(event) => {
-          event.preventDefault();
-          const value = text.trim();
-          if (value.length > 100 || value.includes("\0")) {
-            setInvalid(true);
-            return;
-          }
-          setInvalid(false);
-          setQ(value);
-        }}
-      >
-        <label className="grid flex-1 gap-1">
-          Title or owner nickname
-          <input
-            ref={input}
-            className="rounded border p-2"
-            value={text}
-            onChange={(event) => setText(event.target.value)}
-            aria-invalid={invalid || undefined}
-            aria-describedby={invalid ? "candidate-validation" : undefined}
-          />
-        </label>
-        <Button type="submit">Search setups</Button>
-      </form>
-      {invalid && (
-        <InlineNotice id="candidate-validation" tone="error">
-          Use at most 100 characters without null characters.
-        </InlineNotice>
+      <SetupPresets
+        scope={scope}
+        onChange={setScope}
+        signedIn={viewer !== "guest"}
+        allLabel="All available"
+      />
+      {otherModelId && (
+        <div className="filter-presets" aria-label="Chassis preset">
+          <Button aria-pressed={!sameModel} onClick={() => setSameModel(false)}>
+            All models
+          </Button>
+          <Button aria-pressed={sameModel} onClick={() => setSameModel(true)}>
+            Same model
+          </Button>
+        </div>
+      )}
+      <FilterPanel active={!!q}>
+        <form
+          className="flex flex-wrap items-end gap-2"
+          onSubmit={(event) => {
+            event.preventDefault();
+            const value = text.trim();
+            if (value.length > 100 || value.includes("\0")) {
+              setInvalid(true);
+              return;
+            }
+            setInvalid(false);
+            setQ(value);
+          }}
+        >
+          <label className="grid flex-1 gap-1">
+            Title or owner nickname
+            <input
+              ref={input}
+              className="rounded border p-2"
+              value={text}
+              onChange={(event) => setText(event.target.value)}
+              aria-invalid={invalid || undefined}
+              aria-describedby={invalid ? "candidate-validation" : undefined}
+            />
+          </label>
+          <Button type="submit">Search setups</Button>
+        </form>
+        {invalid && (
+          <InlineNotice id="candidate-validation" tone="error">
+            Use at most 100 characters without null characters.
+          </InlineNotice>
+        )}
+      </FilterPanel>
+      {q && (
+        <div className="filter-presets">
+          <Button
+            onClick={() => {
+              setQ("");
+              setText("");
+            }}
+          >
+            Search: {q} ×
+          </Button>
+        </div>
       )}
       {(search.isPending || search.isRefetching) && (
         <LoadingState>Loading visible setups…</LoadingState>
@@ -246,6 +327,10 @@ function SetupSelector({
               onClick={() => onSelect(item.id)}
               aria-label={`Select ${item.title} as ${side === "left" ? "first" : "second"} setup`}
             >
+              <PhotoImage
+                photo={item.cover_photo}
+                alt={`Cover of ${item.title}`}
+              />
               <span>
                 {item.title}
                 {item.id.toLowerCase() === otherId ? " — Already selected" : ""}

@@ -12,16 +12,15 @@ export function MySetupsPage() {
   const location = useLocation();
   const message: unknown = location.state?.message;
   return (
-    <section className="mt-8" aria-labelledby="my-setups-title">
-      <h2 id="my-setups-title" className="text-2xl font-semibold">
-        My setups
-      </h2>
-      <Link
-        className="my-4 inline-block min-h-11 underline"
-        to="/my/setups/new"
-      >
-        New setup
-      </Link>
+    <section aria-labelledby="my-setups-title">
+      <header className="page-heading-row">
+        <h2 id="my-setups-title" className="page-title">
+          My setups
+        </h2>
+        <Link className="action-link action-link-primary" to="/my/setups/new">
+          New setup
+        </Link>
+      </header>
       {typeof message === "string" && <InlineNotice>{message}</InlineNotice>}
       {setups.isPending ? (
         <LoadingState>Loading setups…</LoadingState>
@@ -57,7 +56,7 @@ export function MySetupsPage() {
               <div className="setup-card-content space-y-2">
                 <h3 className="text-xl font-semibold break-words">
                   <Link
-                    className="inline-flex min-h-11 items-center underline"
+                    className="setup-title-link inline-flex min-h-11 items-center"
                     to={`/setups/${setup.id}`}
                   >
                     {setup.title}

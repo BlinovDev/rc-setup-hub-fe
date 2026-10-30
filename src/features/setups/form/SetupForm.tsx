@@ -74,7 +74,6 @@ export function SetupForm({
   const root = useRef<HTMLFormElement>(null);
   const saving = useRef(false);
   const [savedVersion, setSavedVersion] = useState(0);
-  const [added, setAdded] = useState<Record<string, boolean>>({});
   const [active, setActive] = useState<SectionId>("general");
   const [focusRequest, setFocusRequest] = useState<{
     section?: SectionId;
@@ -194,7 +193,6 @@ export function SetupForm({
     });
     setActive("general");
     setOpened({});
-    setAdded({});
     setIssues([]);
     setFocusRequest(null);
     setSavedVersion((value) => value + 1);
@@ -205,45 +203,43 @@ export function SetupForm({
       <EditorPresentation.Provider
         value={{
           open: opened,
-          added,
-          setAdded: (id, value) => setAdded((old) => ({ ...old, [id]: value })),
-          setOpen: (id, open) => {
-            if (open) setAdded((old) => ({ ...old, [id]: true }));
-            setOpened((current) => ({ ...current, [id]: open }));
-          },
+          remove: (id) =>
+            setOpened((current) => {
+              const next = { ...current };
+              delete next[id];
+              return next;
+            }),
+          setOpen: (id, open) =>
+            setOpened((current) => ({ ...current, [id]: open })),
           issues,
           validate: validateComponent,
           setup,
           savedVersion,
         }}
       >
-        <div className={setup ? "setup-edit-layout" : undefined}>
-          {setup && (
-            <SectionNavigation
-              active={active}
-              select={select}
-              counts={counts}
-              sticky
-            />
-          )}
-          <div className={setup ? "setup-edit-content" : undefined}>
-            {setup && (
-              <div
-                hidden={active !== "general"}
-                className="general-photos"
-                aria-label="General photos"
-              >
-                <h2 id="section-general" tabIndex={-1}>
-                  General
-                </h2>
-                {generalPhotos}
-              </div>
-            )}
+        <div className="setup-edit-layout">
+          <SectionNavigation
+            active={active}
+            select={select}
+            counts={counts}
+            sticky
+          />
+          <div className="setup-edit-content">
+            <div
+              hidden={active !== "general"}
+              className="general-photos"
+              aria-label="General photos"
+            >
+              <h2 id="section-general" tabIndex={-1}>
+                General
+              </h2>
+              {generalPhotos}
+            </div>
             <form
               key={resetVersion}
               ref={root}
               noValidate
-              className={setup ? "edit-setup-form space-y-4" : "mt-6 space-y-6"}
+              className="edit-setup-form space-y-4"
               onSubmit={async (event) => {
                 event.preventDefault();
                 const values = form.getValues();
@@ -274,7 +270,7 @@ export function SetupForm({
               <fieldset disabled={pending} className="space-y-6">
                 <fieldset
                   id="setup-essentials"
-                  hidden={!!setup && active !== "general"}
+                  hidden={active !== "general"}
                   className="space-y-3 rounded border p-4"
                 >
                   <legend className="font-semibold">Setup essentials</legend>
@@ -318,7 +314,7 @@ export function SetupForm({
                       )}
                     />
                   )}
-                  {setup && <SetupField name="notes" label="Notes" multiline />}
+                  <SetupField name="notes" label="Notes" multiline />
                   <label className="block" htmlFor="setup-visibility">
                     Visibility
                   </label>
@@ -359,29 +355,7 @@ export function SetupForm({
                   </section>
                 )}
                 <div className="setup-workspace">
-                  {!setup && (
-                    <SectionNavigation
-                      active={active}
-                      select={select}
-                      counts={counts}
-                    />
-                  )}
                   <div className="setup-section-pane">
-                    <section
-                      hidden={active !== "general"}
-                      aria-labelledby="section-general"
-                    >
-                      {!setup && (
-                        <>
-                          <h2 id="section-general" tabIndex={-1}>
-                            General
-                          </h2>
-                          <ComponentCard id="notes">
-                            <SetupField name="notes" label="Notes" multiline />
-                          </ComponentCard>
-                        </>
-                      )}
-                    </section>
                     <section
                       hidden={active !== "front"}
                       aria-labelledby="section-front"
@@ -400,7 +374,7 @@ export function SetupForm({
                       <ComponentCard id="knuckle">
                         <FrontSteeringKnuckleSection setup={setup} />
                       </ComponentCard>
-                      {setup && <AddComponent section="front" />}
+                      <AddComponent section="front" />
                     </section>
                     <section
                       hidden={active !== "rear"}
@@ -420,7 +394,7 @@ export function SetupForm({
                       <ComponentCard id="differential">
                         <RearDifferentialSection setup={setup} />
                       </ComponentCard>
-                      {setup && <AddComponent section="rear" />}
+                      <AddComponent section="rear" />
                     </section>
                     <section
                       hidden={active !== "shocks"}
@@ -469,7 +443,7 @@ export function SetupForm({
                           </fieldset>
                         ),
                       )}
-                      {setup && <AddComponent section="shocks" />}
+                      <AddComponent section="shocks" />
                     </section>
                     <section
                       hidden={active !== "wheels"}
@@ -480,7 +454,7 @@ export function SetupForm({
                       </h2>
                       <RunningGearSection side="front" setup={setup} />
                       <RunningGearSection side="rear" setup={setup} />
-                      {setup && <AddComponent section="wheels" />}
+                      <AddComponent section="wheels" />
                     </section>
                     <section
                       hidden={active !== "electronics"}
@@ -510,16 +484,23 @@ export function SetupForm({
                           ))}
                         </fieldset>
                       </ComponentCard>
-                      {setup && <AddComponent section="electronics" />}
+                      <AddComponent section="electronics" />
                     </section>
                   </div>
                 </div>
                 <div className="form-actions">
+                  <p className="form-save-status" role="status">
+                    {pending
+                      ? "Saving your setup…"
+                      : form.formState.isDirty
+                        ? "Unsaved setup changes"
+                        : "Setup details"}
+                  </p>
                   <Button
                     variant="primary"
                     type="submit"
                     disabled={pending || blocked}
-                    className="min-h-11 rounded bg-slate-800 px-4 py-2 text-white disabled:opacity-60"
+                    className="min-h-11 rounded px-4 py-2 disabled:opacity-60"
                   >
                     {pending
                       ? "Saving…"

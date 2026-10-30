@@ -16,8 +16,8 @@ import { TechnicalData } from "./TechnicalData";
 function Owner({ id }: { id: string }) {
   const owner = usePublicUser(id);
   return (
-    <p>
-      Owner:{" "}
+    <p className="flex items-center gap-2">
+      <span className="shrink-0">Owner:</span>{" "}
       {owner.data ? (
         <PublicIdentity user={owner.data} />
       ) : owner.isPending ? (
@@ -60,52 +60,28 @@ export function SetupDetailPage({
   const setup = query.data;
   const url = setupShareUrl(setup.id);
   return (
-    <article className="space-y-4">
-      <h2 className="text-2xl font-semibold">{setup.title}</h2>
-      <Owner id={setup.owner_id} />
-      <Gallery key={setup.id} setupId={setup.id} />
-      <Link
-        className="inline-flex min-h-11 items-center underline"
-        to={`/compare?left_id=${setup.id}`}
-      >
-        Compare to
-      </Link>
-      <p>{chassisLabel(setup)}</p>
-      <VisibilityBadge value={setup.visibility} />
-      <p>
-        Created:{" "}
-        <time dateTime={setup.created_at}>
-          {new Date(setup.created_at).toLocaleString()}
-        </time>
-      </p>
-      <p>
-        Updated:{" "}
-        <time dateTime={setup.updated_at}>
-          {new Date(setup.updated_at).toLocaleString()}
-        </time>
-      </p>
-      {setup.notes && (
-        <section>
-          <h3 className="font-semibold">Notes</h3>
-          <p className="whitespace-pre-wrap">{setup.notes}</p>
-        </section>
-      )}
-      {setup.owner_id === user?.id && (
-        <Link
-          className="inline-block underline"
-          to={`/my/setups/${setup.id}/edit`}
-        >
-          Edit setup
+    <article className="setup-detail space-y-4">
+      <header className="setup-detail-header">
+        <div className="setup-detail-heading">
+          <p className="eyebrow">{chassisLabel(setup)}</p>
+          <h2 className="page-title">{setup.title}</h2>
+          <Owner id={setup.owner_id} />
+        </div>
+        <VisibilityBadge value={setup.visibility} />
+      </header>
+      <div className="setup-detail-actions">
+        {setup.owner_id === user?.id && (
+          <Link
+            className="action-link action-link-primary"
+            to={`/my/setups/${setup.id}/edit`}
+          >
+            Edit setup
+          </Link>
+        )}
+        <Link className="action-link" to={`/compare?left_id=${setup.id}`}>
+          Compare to
         </Link>
-      )}
-      {!user && (
-        <p>
-          <SignInButton>Sign in to create your own setup</SignInButton>
-        </p>
-      )}
-      <div>
         <Button
-          className="rounded border px-4 py-2"
           disabled={copyState === "pending"}
           onClick={async () => {
             setCopyState("pending");
@@ -132,6 +108,32 @@ export function SetupDetailPage({
             className="w-full rounded border p-2"
           />
         </InlineNotice>
+      )}
+      <Gallery key={setup.id} setupId={setup.id} />
+      <div className="setup-dates">
+        <span>
+          Updated:{" "}
+          <time dateTime={setup.updated_at}>
+            {new Date(setup.updated_at).toLocaleDateString()}
+          </time>
+        </span>
+        <span>
+          Created:{" "}
+          <time dateTime={setup.created_at}>
+            {new Date(setup.created_at).toLocaleDateString()}
+          </time>
+        </span>
+      </div>
+      {setup.notes && (
+        <section>
+          <h3 className="font-semibold">Notes</h3>
+          <p className="whitespace-pre-wrap">{setup.notes}</p>
+        </section>
+      )}
+      {!user && (
+        <p>
+          <SignInButton>Sign in to create your own setup</SignInButton>
+        </p>
       )}
       {setup.schema_version === 1 ? (
         <TechnicalData

@@ -59,10 +59,10 @@ it("uses one associated disclosure trigger, keyboard toggle/Escape and only actu
       .getAllByRole("button")
       .map((button) => button.textContent),
   ).toEqual([
-    "Front steering knuckle",
-    "Front lower arm mount",
-    "Front top arm spacing",
-    "Front lower arm spacing",
+    "Add front steering knuckle",
+    "Add front lower arm mount",
+    "Add front top arm spacing",
+    "Add front lower arm spacing",
   ]);
   expect(
     within(panel).queryByRole("button", { name: /close/i }),
@@ -72,7 +72,9 @@ it("uses one associated disclosure trigger, keyboard toggle/Escape and only actu
   expect(trigger).toHaveAttribute("aria-expanded", "false");
   await user.keyboard(" ");
   expect(panel).toBeVisible();
-  within(panel).getByRole("button", { name: "Front lower arm mount" }).focus();
+  within(panel)
+    .getByRole("button", { name: "Add front lower arm mount" })
+    .focus();
   await user.keyboard("{Escape}");
   expect(panel).not.toBeVisible();
   expect(trigger).toHaveFocus();
@@ -87,7 +89,7 @@ it("selection closes choices and opens only its editor while retaining other dra
   const trigger = screen.getByRole("button", { name: "Add component" });
   await user.click(trigger);
   await user.click(
-    screen.getByRole("button", { name: "Front lower arm mount" }),
+    screen.getByRole("button", { name: "Add front lower arm mount" }),
   );
   expect(trigger).toHaveAttribute("aria-expanded", "false");
   expect(
@@ -97,16 +99,16 @@ it("selection closes choices and opens only its editor while retaining other dra
     "Front lower arm mount model / part number",
   );
   expect(model).toBeVisible();
-  expect(model).not.toHaveFocus();
+  expect(model).toHaveFocus();
   fireEvent.change(model, { target: { value: "Added mount" } });
   await user.click(
-    screen.getByRole("button", { name: "Close Front lower arm mount editor" }),
+    screen.getByRole("button", { name: "Done Front lower arm mount" }),
   );
   await user.click(trigger);
   expect(
     within(
       screen.getByRole("group", { name: "Available components" }),
-    ).queryByRole("button", { name: "Front lower arm mount" }),
+    ).queryByRole("button", { name: "Add front lower arm mount" }),
   ).not.toBeInTheDocument();
   await user.click(trigger);
   select("Rear");

@@ -72,6 +72,7 @@ export function useAcceptRequest(
         client.invalidateQueries({ queryKey: friendshipsKey, exact: true }),
         client.invalidateQueries({ queryKey: ["setups", "detail"] }),
         client.resetQueries({ queryKey: ["setups", "compare"] }),
+        client.resetQueries({ queryKey: ["setups", "search", "personal"] }),
         client.invalidateQueries({
           queryKey: userSetupsKey(otherUserId),
           exact: true,
@@ -92,6 +93,9 @@ export function useAcceptRequest(
           exact: true,
         });
         await client.resetQueries({ queryKey: ["setups", "compare"] });
+        await client.resetQueries({
+          queryKey: ["setups", "search", "personal"],
+        });
         await client.invalidateQueries({
           queryKey: friendshipsKey,
           exact: true,
@@ -123,6 +127,7 @@ export function useDeleteRelationship(
       });
       client.removeQueries({ queryKey: ["setups", "detail"] });
       await client.resetQueries({ queryKey: ["setups", "compare"] });
+      await client.resetQueries({ queryKey: ["setups", "search", "personal"] });
     }
     await client.invalidateQueries({ queryKey: friendshipsKey, exact: true });
   }

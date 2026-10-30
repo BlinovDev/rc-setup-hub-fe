@@ -24,7 +24,7 @@ export function AddComponent({ section }: { section: SectionId }) {
       spec.section === section &&
       spec.id !== "notes" &&
       !spec.id.endsWith("-links") &&
-      !presentation.added[spec.id] &&
+      !(spec.id in presentation.open) &&
       !spec.paths.some((path) => hasValue(valueAt(values, path))),
   );
   return (
@@ -72,12 +72,11 @@ export function AddComponent({ section }: { section: SectionId }) {
                   front_mm: "",
                   rear_mm: "",
                 } as never);
-              presentation.setAdded(spec.id, true);
               presentation.setOpen(spec.id, true);
               setOpen(false);
             }}
           >
-            {spec.label}
+            Add {spec.label.charAt(0).toLowerCase() + spec.label.slice(1)}
           </Button>
         ))}
       </div>
