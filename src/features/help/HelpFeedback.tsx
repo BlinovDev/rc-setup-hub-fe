@@ -57,21 +57,18 @@ export function HelpFeedback() {
             close();
         }}
         onKeyDown={(event) => {
-          // Keep focus on the two actions rather than the browser document.
           if (event.key !== "Tab") return;
-          if (
-            event.shiftKey &&
-            document.activeElement === closeButton.current
-          ) {
-            event.preventDefault();
-            emailLink.current?.focus();
-          } else if (
-            !event.shiftKey &&
-            document.activeElement === emailLink.current
-          ) {
-            event.preventDefault();
-            closeButton.current?.focus();
-          }
+          const active = document.activeElement;
+          const next = event.shiftKey
+            ? active === closeButton.current
+              ? emailLink.current
+              : closeButton.current
+            : active === emailLink.current
+              ? closeButton.current
+              : emailLink.current;
+          // Own both transitions so nested native dialogs behave the same in Safari.
+          event.preventDefault();
+          next?.focus();
         }}
       >
         <div className="help-heading">

@@ -18,14 +18,15 @@ export async function checkGallery(page, context, { width, height, load }) {
       (el) => el.complete && el.naturalWidth > 0,
       await image.elementHandle(),
     );
+    await image.evaluate((el) => el.decode());
     const dimensions = await image.evaluate((el) => {
-        const box = el.getBoundingClientRect();
-        return {
-          box: [box.width, box.height],
-          natural: [el.naturalWidth, el.naturalHeight],
-          objectFit: getComputedStyle(el).objectFit,
-        };
-      });
+      const box = el.getBoundingClientRect();
+      return {
+        box: [box.width, box.height],
+        natural: [el.naturalWidth, el.naturalHeight],
+        objectFit: getComputedStyle(el).objectFit,
+      };
+    });
     assert(
       dimensions.box[0] > 0 &&
         dimensions.box[1] > 0 &&

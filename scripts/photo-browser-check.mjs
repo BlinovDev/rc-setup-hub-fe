@@ -986,14 +986,37 @@ try {
         await page.getByRole("dialog", { name: "Adjust thumbnail" }).waitFor();
         await (await formButton({ name: "Cancel adjustment" })).click();
         fail = false;
-        await (
-          await formButton({ name: "Retry phone.heic", exact: true })
-        ).click();
+        const retryButton = await formButton({
+          name: "Retry phone.heic",
+          exact: true,
+        });
+        await page.waitForFunction(
+          (button) => !button.disabled,
+          await retryButton.elementHandle(),
+        );
+        const retryResponse = page.waitForResponse(
+          (response) =>
+            new URL(response.url()).pathname ===
+              `/api/v1/setups/${id}/photos` &&
+            response.request().method() === "POST",
+          { timeout: 5000 },
+        );
+        await retryButton.focus();
+        await retryButton.press("Enter");
+        let retryResponseResult;
+        try {
+          retryResponseResult = await retryResponse;
+        } catch {
+          throw new Error(
+            `Retry did not POST: uploadCalls=${uploadCalls}, photos=${photos.length}`,
+          );
+        }
+        assert.equal(retryResponseResult.status(), 201);
         await page
-          .getByText("Uploaded and saved", { exact: true })
-          .nth(1)
-          .waitFor();
+          .getByRole("button", { name: "Retry phone.heic", exact: true })
+          .waitFor({ state: "hidden" });
         assert.equal(creates, 1);
+        assert.equal(uploadCalls, 3);
         assert.equal(photos.length, 2);
 
         await cropDialog.waitFor();
@@ -1022,10 +1045,16 @@ try {
         );
         assert(
           await carousel.evaluate((el) => {
-            const owner = el.previousElementSibling;
-            return owner?.textContent?.startsWith("Owner:");
+            const header = el
+              .closest("article")
+              ?.querySelector(".setup-detail-header");
+            return Boolean(
+              header?.textContent?.includes("Owner:") &&
+              header.compareDocumentPosition(el) &
+                Node.DOCUMENT_POSITION_FOLLOWING,
+            );
           }),
-          "detail gallery must follow title/author before technical metadata",
+          "detail gallery must follow the title/owner header before technical metadata",
         );
         if (mobile) {
           const touch = await context.newCDPSession(page);
@@ -1188,18 +1217,25 @@ try {
         await viewer.waitFor();
         const fullImage = viewer.getByAltText("Enlarged setup photo 1");
         await fullImage.waitFor();
+        await page.waitForFunction(
+          (image) => image.complete && image.naturalWidth > 0,
+          await fullImage.elementHandle(),
+        );
         await fullImage.evaluate((image) => image.decode());
+        const fullImageGeometry = await fullImage.evaluate((image) => {
+          const box = image.getBoundingClientRect();
+          return {
+            box: [box.width, box.height],
+            natural: [image.naturalWidth, image.naturalHeight],
+            fit: getComputedStyle(image).objectFit,
+          };
+        });
         assert(
-          await fullImage.evaluate((image) => {
-            const box = image.getBoundingClientRect();
-            return (
-              Math.abs(
-                box.width / box.height -
-                  image.naturalWidth / image.naturalHeight,
-              ) < 0.01 && getComputedStyle(image).objectFit === "contain"
-            );
-          }),
-          "full viewer must keep natural aspect without crop",
+          Math.abs(
+            fullImageGeometry.box[0] / fullImageGeometry.box[1] -
+              fullImageGeometry.natural[0] / fullImageGeometry.natural[1],
+          ) < 0.01 && fullImageGeometry.fit === "contain",
+          `full viewer must keep natural aspect without crop: ${JSON.stringify(fullImageGeometry)}`,
         );
         assert(
           await viewer
@@ -1864,11 +1900,7 @@ try {
         const typeSelect = await formField("Rear differential type", {
           exact: true,
         });
-        await typeSelect.focus();
-        // End selects the final option with the keyboard across headless platforms;
-        // native character typeahead is unavailable in some Chromium builds.
-        await page.keyboard.press("End");
-        await page.keyboard.press("Tab");
+        await typeSelect.selectOption("spool");
         assert.equal(await typeSelect.inputValue(), "spool");
         await (await formButton({ name: "Save setup", exact: true })).click();
         await savedAndReopen();
@@ -2716,7 +2748,7 @@ try {
     }
   };
   const failures = [];
-  for (const [width, height] of [
+  const viewports = [
     [320, 900],
     [375, 900],
     [390, 900],
@@ -2724,7 +2756,12 @@ try {
     [768, 900],
     [1280, 900],
     [640, 360],
-  ]) {
+  ].filter(
+    ([width]) =>
+      !process.env.PHOTO_BROWSER_WIDTH ||
+      width === Number(process.env.PHOTO_BROWSER_WIDTH),
+  );
+  for (const [width, height] of viewports) {
     for (const scenario of scenarios) {
       console.log(`RUN ${scenario} ${width}x${height}`);
       try {

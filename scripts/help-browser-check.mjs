@@ -354,7 +354,11 @@ try {
               assert.equal(await friendsLink.getAttribute("href"), "/friends");
               await friendsLink.click();
               await page
-                .getByRole("heading", { name: "Friends", level: 2, exact: true })
+                .getByRole("heading", {
+                  name: "Friends",
+                  level: 2,
+                  exact: true,
+                })
                 .waitFor();
               await area
                 .getByRole("link", { name: "My setups", exact: true })

@@ -366,6 +366,13 @@
   }
 }
 
+@media (max-width: 767px) and (max-height: 480px) {
+  .form-actions {
+    position: static;
+    margin-block: 1rem;
+  }
+}
+
 @layer components {
   .desktop-session,
   .desktop-footer {
