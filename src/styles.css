@@ -1785,6 +1785,14 @@
 .comparison-table th:first-child {
   width: 8rem;
 }
+@media (max-width: 767px) {
+  .comparison-table {
+    min-width: 26rem;
+  }
+  .comparison-table th:first-child {
+    width: 7rem;
+  }
+}
 .form-save-status {
   font-size: 0.75rem;
   color: var(--muted);

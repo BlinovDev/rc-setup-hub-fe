@@ -103,47 +103,51 @@ it("is available to guests in the shared bottom navigation and desktop footer wi
     </QueryClientProvider>,
   );
   await screen.findByRole("button", { name: "Sign in" });
-  await screen.findByText("No public setups match these filters.");
+  await screen.findByText("No setups match these filters.");
   expect(
     within(
       screen.getByRole("navigation", { name: "Public navigation" }),
     ).getByRole("link", { name: "Explore" }),
   ).toBeInTheDocument();
   expect(
-    within(screen.getByRole("banner")).queryByRole("button", {
+    within(document.querySelector(".app-header")!).queryByRole("button", {
       name: "Help & Feedback",
     }),
   ).not.toBeInTheDocument();
+  const user = userEvent.setup();
+  await user.click(
+    screen.getByRole("button", { name: "Open navigation menu" }),
+  );
+  const guestMenu = within(
+    screen.getByRole("dialog", { name: "Account and navigation" }),
+  );
+  expect(
+    guestMenu.getByRole("button", { name: "Help & Feedback" }),
+  ).toBeVisible();
+  await user.click(
+    guestMenu.getByRole("button", { name: "Close account menu" }),
+  );
   const mobileNav = screen.getByRole("navigation", {
     name: "Mobile navigation",
   });
   expect(
-    within(mobileNav)
-      .getAllByRole("link")
-      .map((link) => link.textContent),
-  ).toEqual(["Explore", "My setups"]);
+    Array.from(mobileNav.querySelectorAll(":scope > a, :scope > button")).map(
+      (item) => item.textContent,
+    ),
+  ).toEqual(["Explore", "Sign up", "Compare"]);
   expect(
-    within(mobileNav).getByRole("link", { name: "My setups" }),
-  ).toHaveAttribute("href", "/my/setups");
-  const user = userEvent.setup();
-  await user.click(within(mobileNav).getByRole("link", { name: "My setups" }));
-  expect(
-    await screen.findByRole("button", { name: "Sign in with Google" }),
+    within(mobileNav).getByRole("button", { name: "Sign up" }),
   ).toBeVisible();
-  expect(screen.queryByText("No setups yet.")).not.toBeInTheDocument();
   expect(
-    within(mobileNav).getByRole("link", { name: "My setups" }),
-  ).toHaveAttribute("aria-current", "page");
-  for (const area of [
-    screen.getByRole("navigation", { name: "Mobile navigation" }),
-    screen.getByRole("contentinfo"),
-  ]) {
-    await user.click(
-      within(area).getByRole("button", { name: "Help & Feedback" }),
-    );
-    assertContent();
-    await user.click(screen.getByRole("button", { name: "Close help" }));
-  }
+    screen.getByRole("button", { name: "Open navigation menu" }),
+  ).toBeVisible();
+  await user.click(
+    within(screen.getByRole("contentinfo")).getByRole("button", {
+      name: "Help & Feedback",
+    }),
+  );
+  assertContent();
+  await user.click(screen.getByRole("button", { name: "Close help" }));
   expect(
     screen.queryByRole("button", { name: "Sign out" }),
   ).not.toBeInTheDocument();
@@ -174,11 +178,13 @@ it("reuses the signed-in footer and drawer while retaining three primary bottom 
   const nav = within(
     screen.getByRole("navigation", { name: "Mobile navigation" }),
   );
-  expect(nav.getAllByRole("link").map((link) => link.textContent)).toEqual([
-    "Explore",
-    "My setups",
-    "Friends",
-  ]);
+  expect(
+    Array.from(
+      screen
+        .getByRole("navigation", { name: "Mobile navigation" })
+        .querySelectorAll(":scope > a, :scope > button"),
+    ).map((item) => item.textContent),
+  ).toEqual(["Explore", "My setups", "Compare"]);
   expect(
     nav.queryByRole("button", { name: "Help & Feedback" }),
   ).not.toBeInTheDocument();

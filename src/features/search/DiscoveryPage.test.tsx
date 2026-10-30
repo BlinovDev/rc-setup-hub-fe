@@ -67,7 +67,9 @@ it("reconstructs URL filters and renders historical cards without N+1 detail req
   await screen.findByText(item.title);
   await screen.findByRole("option", { name: "RMX" });
   await userEvent.setup().click(screen.getByText(/Filters/));
-  expect(screen.getByRole("textbox", { name: "Title or owner nickname" })).toHaveValue("rd2");
+  expect(
+    screen.getByRole("textbox", { name: "Title or owner nickname" }),
+  ).toHaveValue("rd2");
   expect(screen.getByRole("combobox", { name: "Brand" })).toHaveValue(
     activeBrand,
   );

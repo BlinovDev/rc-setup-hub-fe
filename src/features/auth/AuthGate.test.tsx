@@ -111,7 +111,7 @@ describe("authentication foundation", () => {
     // Public help stays available while session identity is unresolved.
     expect(
       screen.getAllByRole("button", { name: "Help & Feedback" }),
-    ).toHaveLength(2);
+    ).toHaveLength(1);
     expect(
       screen.queryByRole("button", { name: "Sign in with Google" }),
     ).not.toBeInTheDocument();
@@ -355,35 +355,38 @@ it("updates the mobile navigation across guest, refreshed login and logout witho
   const nav = () =>
     within(screen.getByRole("navigation", { name: "Mobile navigation" }));
   expect(
-    nav()
-      .getAllByRole("link")
-      .map((link) => link.textContent),
-  ).toEqual(["Explore", "My setups"]);
+    Array.from(
+      screen
+        .getByRole("navigation", { name: "Mobile navigation" })
+        .querySelectorAll(":scope > a, :scope > button"),
+    ).map((item) => item.textContent),
+  ).toEqual(["Explore", "Sign up", "Compare"]);
   signedIn = true;
   await act(async () => {
     await client.invalidateQueries({ queryKey: currentUserKey, exact: true });
   });
   await screen.findByRole("button", { name: "Open account menu" });
   expect(
-    nav()
-      .getAllByRole("link")
-      .map((link) => link.textContent),
-  ).toEqual(["Explore", "My setups", "Friends"]);
-  expect(
-    nav().queryByRole("button", { name: "Help & Feedback" }),
-  ).not.toBeInTheDocument();
+    Array.from(
+      screen
+        .getByRole("navigation", { name: "Mobile navigation" })
+        .querySelectorAll(":scope > a, :scope > button"),
+    ).map((item) => item.textContent),
+  ).toEqual(["Explore", "My setups", "Compare"]);
   const events = userEvent.setup();
   await events.click(screen.getByRole("button", { name: "Open account menu" }));
   const menu = within(
     screen.getByRole("dialog", { name: "Account and navigation" }),
   );
   expect(menu.getByRole("link", { name: "Account settings" })).toBeVisible();
+  expect(menu.getByRole("link", { name: "Friends" })).toBeVisible();
+  expect(menu.getByRole("button", { name: "Help & Feedback" })).toBeVisible();
   await events.click(menu.getByRole("button", { name: "Sign out" }));
   await expectLogin();
   expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
   expect(
     nav().queryByRole("link", { name: "Friends" }),
   ).not.toBeInTheDocument();
-  expect(nav().getByRole("button", { name: "Help & Feedback" })).toBeVisible();
+  expect(screen.getByRole("button", { name: "Help & Feedback" })).toBeVisible();
   expect(client.getQueryData(currentUserKey)).toBeNull();
 });

@@ -75,6 +75,7 @@ function prepare(matcher: Matcher | ByRoleOptions["name"] | undefined) {
     d.spec &&
     d.id !== "notes" &&
     !d.id?.endsWith("-links") &&
+    !/^Add (top|lower) arm spacing/i.test(String(matcher)) &&
     document.querySelector(".setup-edit-layout") &&
     !document.querySelector(`[data-component="${d.id}"]`)
   ) {
@@ -172,7 +173,13 @@ export function setupButton(options: ByRoleOptions) {
     );
   }
   if (/^Add (top|lower) arm spacing/i.test(text) && d.spec) {
-    return screen.getByRole("button", { name: "Edit " + d.spec.label });
+    const chooser = screen.getByRole("button", { name: "Add component" });
+    if (chooser.getAttribute("aria-expanded") !== "true")
+      fireEvent.click(chooser);
+    return screen.getByRole("button", {
+      name:
+        "Add " + d.spec.label.charAt(0).toLowerCase() + d.spec.label.slice(1),
+    });
   }
   return screen.getByRole("button", options);
 }

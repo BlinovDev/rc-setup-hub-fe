@@ -256,6 +256,11 @@ try {
         .getByRole("button", { name: "Load more", exact: true })
         .click();
       await page.getByText("Second public setup", { exact: true }).waitFor();
+      if (width < 768) {
+        const filters = page.locator(".search-filters");
+        if (!(await filters.getAttribute("open")))
+          await filters.locator("summary").click();
+      }
       await page
         .getByRole("textbox", { name: "Title or owner nickname" })
         .fill("new query");
@@ -272,7 +277,7 @@ try {
       failSearch = false;
       empty = true;
       await page.getByRole("button", { name: "Retry search" }).click();
-      await page.getByText("No public setups match these filters.").waitFor();
+      await page.getByText("No setups match these filters.").waitFor();
       empty = false;
       await page.goto(`${origin}/users/${ownerId}`);
       await page.getByRole("heading", { name: owner.nickname }).waitFor();

@@ -171,7 +171,7 @@ try {
           await page.goto(`${origin}${signedIn ? "/my/setups" : "/"}`);
           await page
             .getByText(
-              signedIn ? privateTitle : "No public setups match these filters.",
+              signedIn ? privateTitle : "No setups match these filters.",
               { exact: true },
             )
             .waitFor();
@@ -252,8 +252,8 @@ try {
             const actions = area.locator(":scope > a, :scope > button");
             assert.deepEqual(await actions.allTextContents(), [
               "Explore",
-              "My setups",
-              signedIn ? "Friends" : "Help & Feedback",
+              signedIn ? "My setups" : "Sign up",
+              "Compare",
             ]);
             const boxes = await actions.evaluateAll((elements) =>
               elements.map((el) => {
@@ -289,17 +289,18 @@ try {
                   box.x + box.width <= width + 1,
               );
             }
-            assert.equal(
-              await area
-                .getByRole("link", { name: "My setups", exact: true })
-                .getAttribute("href"),
-              "/my/setups",
-            );
+            if (signedIn)
+              assert.equal(
+                await area
+                  .getByRole("link", { name: "My setups", exact: true })
+                  .getAttribute("href"),
+                "/my/setups",
+              );
             await area
               .getByRole("link", { name: "Explore", exact: true })
               .click();
             await page
-              .getByText("No public setups match these filters.", {
+              .getByText("No setups match these filters.", {
                 exact: true,
               })
               .waitFor();
@@ -309,22 +310,12 @@ try {
                 .getAttribute("aria-current"),
               "page",
             );
-            await area
-              .getByRole("link", { name: "My setups", exact: true })
-              .click();
-            await page
-              .getByRole(signedIn ? "heading" : "button", {
-                name: signedIn ? "My setups" : "Sign in with Google",
-                exact: true,
-              })
-              .waitFor();
-            assert.equal(
-              await area
-                .getByRole("link", { name: "My setups", exact: true })
-                .getAttribute("aria-current"),
-              "page",
-            );
             if (!signedIn) {
+              assert(
+                await area
+                  .getByRole("button", { name: "Sign up", exact: true })
+                  .isVisible(),
+              );
               assert.equal(
                 await page
                   .getByRole("button", { name: "Create setup", exact: true })
@@ -339,17 +330,32 @@ try {
               );
             } else {
               await area
-                .getByRole("link", { name: "Friends", exact: true })
+                .getByRole("link", { name: "My setups", exact: true })
                 .click();
               await page
-                .getByRole("heading", { name: "Friends", exact: true })
+                .getByRole("heading", { name: "My setups", exact: true })
                 .waitFor();
               assert.equal(
                 await area
-                  .getByRole("link", { name: "Friends", exact: true })
+                  .getByRole("link", { name: "My setups", exact: true })
                   .getAttribute("aria-current"),
                 "page",
               );
+              await page
+                .getByRole("button", { name: "Open account menu" })
+                .click();
+              const accountMenu = page.getByRole("dialog", {
+                name: "Account and navigation",
+              });
+              const friendsLink = accountMenu.getByRole("link", {
+                name: "Friends",
+                exact: true,
+              });
+              assert.equal(await friendsLink.getAttribute("href"), "/friends");
+              await friendsLink.click();
+              await page
+                .getByRole("heading", { name: "Friends", level: 2, exact: true })
+                .waitFor();
               await area
                 .getByRole("link", { name: "My setups", exact: true })
                 .click();
@@ -421,7 +427,7 @@ try {
             await menu.waitFor();
             assert.deepEqual(
               await menu.locator(".account-nav a").allTextContents(),
-              ["Account settings", "Compare"],
+              ["Account settings", "Friends"],
             );
             await menu
               .getByRole("link", { name: "Account settings", exact: true })
@@ -434,6 +440,15 @@ try {
               .getByRole("button", { name: "Open account menu" })
               .click();
             area = menu;
+          }
+          if (mobile && !signedIn) {
+            await page
+              .getByRole("button", { name: "Open navigation menu" })
+              .click();
+            area = page.getByRole("dialog", {
+              name: "Account and navigation",
+            });
+            await area.waitFor();
           }
           const trigger = area.getByRole("button", {
             name: "Help & Feedback",
@@ -519,16 +534,18 @@ try {
           await page.mouse.click(2, 2);
           await panel.waitFor({ state: "hidden" });
           assert(await trigger.evaluate((el) => el === document.activeElement));
-          if (mobile && signedIn) {
+          if (mobile) {
             assert(
               await area.isVisible(),
-              "closing nested help keeps the account drawer open",
+              "closing nested help keeps the navigation drawer open",
             );
             await page.keyboard.press("Escape");
             await area.waitFor({ state: "hidden" });
             assert(
               await page
-                .getByRole("button", { name: "Open account menu" })
+                .getByRole("button", {
+                  name: signedIn ? "Open account menu" : "Open navigation menu",
+                })
                 .evaluate((el) => el === document.activeElement),
             );
           }
@@ -553,7 +570,7 @@ try {
               await mobileNav
                 .locator(":scope > a, :scope > button")
                 .allTextContents(),
-              ["Explore", "My setups", member ? "Friends" : "Help & Feedback"],
+              ["Explore", member ? "My setups" : "Sign up", "Compare"],
             );
           };
           const signOut = async () => {
@@ -591,7 +608,7 @@ try {
             .click();
           await page.waitForURL(origin + "/");
           await page
-            .getByText("No public setups match these filters.", { exact: true })
+            .getByText("No setups match these filters.", { exact: true })
             .waitFor();
           assert.equal(oauth, 1);
           await assertNav(true);
@@ -604,7 +621,7 @@ try {
           await page.getByText(privateTitle, { exact: true }).waitFor();
           await nav.getByRole("link", { name: "Explore", exact: true }).click();
           await page
-            .getByText("No public setups match these filters.", { exact: true })
+            .getByText("No setups match these filters.", { exact: true })
             .waitFor();
           await page.goBack();
           await page.getByText(privateTitle, { exact: true }).waitFor();
@@ -615,7 +632,7 @@ try {
           const readsAfterLogout = protectedReads;
           await page.goForward();
           await page
-            .getByText("No public setups match these filters.", { exact: true })
+            .getByText("No setups match these filters.", { exact: true })
             .waitFor();
           await page.goBack();
           await page

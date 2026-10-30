@@ -125,10 +125,11 @@ export function setupFormDriver(page) {
         !(await page.locator(".setup-edit-layout").count()))
     ) {
       const card = page.locator(`.component-card[aria-label="${component}"]`);
-      const edit = card.getByRole("button", {
-        name: new RegExp("^(Edit|Add component:) " + component + "$"),
-      });
-      if ((await edit.getAttribute("aria-expanded")) !== "true")
+      const edit = card.locator(".component-edit-target");
+      if (
+        (await edit.count()) &&
+        (await edit.getAttribute("aria-expanded")) !== "true"
+      )
         await edit.click();
     }
     const tabName = /camber|caster|toe/.test(String(name).toLowerCase())

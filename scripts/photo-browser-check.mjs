@@ -647,7 +647,7 @@ try {
 
         assert.equal(
           await page.locator("input:visible, textarea:visible").count(),
-          1,
+          2,
         );
         await geometry();
         await page.screenshot({
@@ -702,18 +702,15 @@ try {
           .getByLabel("Front camber (degrees)", { exact: true })
           .fill("-");
         await selectSection("Wheels & tires");
-        await page
-          .getByRole("button", {
-            name: "Add component: Front hex",
-            exact: true,
-          })
-          .click();
+        await page.getByRole("button", { name: "Add component" }).click();
+        await page.getByRole("button", { name: "Add front hex" }).click();
         const draftHex = page.getByLabel("Front hex offset (mm)", {
           exact: true,
         });
+        assert(await draftHex.isVisible(), "Add opens the component fields");
         assert(
-          !(await draftHex.evaluate((el) => el === document.activeElement)),
-          "Add must not automatically open the keyboard",
+          await draftHex.evaluate((el) => el === document.activeElement),
+          "Add focuses the first component field",
         );
         await draftHex.fill("1,");
         await selectSection("Rear");
@@ -794,12 +791,8 @@ try {
             exact: true,
           })
           .click();
-        await page
-          .getByRole("button", {
-            name: "Add component: Front hex",
-            exact: true,
-          })
-          .click();
+        await page.getByRole("button", { name: "Add component" }).click();
+        await page.getByRole("button", { name: "Add front hex" }).click();
         assert.equal(await draftHex.inputValue(), "");
         await page
           .getByRole("link", { name: "Back to my setups", exact: true })
@@ -2452,7 +2445,7 @@ try {
           0,
         );
         assert.deepEqual(await choices.getByRole("button").allTextContents(), [
-          "Front hex",
+          "Add front hex",
           "Add rear hex",
         ]);
         const disclosure = page.getByRole("button", {

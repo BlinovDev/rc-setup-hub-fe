@@ -18,19 +18,23 @@ export async function checkGallery(page, context, { width, height, load }) {
       (el) => el.complete && el.naturalWidth > 0,
       await image.elementHandle(),
     );
-    assert(
-      await image.evaluate((el) => {
+    const dimensions = await image.evaluate((el) => {
         const box = el.getBoundingClientRect();
-        return (
-          box.width > 0 &&
-          box.height > 0 &&
-          Math.abs(
-            box.width / box.height - el.naturalWidth / el.naturalHeight,
-          ) < 0.02 &&
-          getComputedStyle(el).objectFit === "contain"
-        );
-      }),
-      "natural full-photo aspect must be retained",
+        return {
+          box: [box.width, box.height],
+          natural: [el.naturalWidth, el.naturalHeight],
+          objectFit: getComputedStyle(el).objectFit,
+        };
+      });
+    assert(
+      dimensions.box[0] > 0 &&
+        dimensions.box[1] > 0 &&
+        Math.abs(
+          dimensions.box[0] / dimensions.box[1] -
+            dimensions.natural[0] / dimensions.natural[1],
+        ) < 0.02 &&
+        dimensions.objectFit === "contain",
+      `natural full-photo aspect must be retained: ${JSON.stringify(dimensions)}`,
     );
   };
   const noMobileButtons = async (scope) => {
