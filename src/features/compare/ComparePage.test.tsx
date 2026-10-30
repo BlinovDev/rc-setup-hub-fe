@@ -84,6 +84,8 @@ function handlers() {
     http.get(`${apiUrl}/api/v1/setups/visible`, () =>
       HttpResponse.json({ items: [summary(a), summary(b)], next_cursor: null }),
     ),
+    http.get(`${apiUrl}/api/v1/setups/${a.id}`, () => HttpResponse.json(a)),
+    http.get(`${apiUrl}/api/v1/setups/${b.id}`, () => HttpResponse.json(b)),
     http.get(`${apiUrl}/api/v1/setups/compare`, ({ request }) => {
       expect(request.credentials).toBe("include");
       expect(request.cache).toBe("no-store");
@@ -138,12 +140,12 @@ it("supports standalone visible selection, no self comparison, both replacements
   ).not.toBeInTheDocument();
   await user.click(screen.getByRole("checkbox", { name: "Only differences" }));
   expect(screen.getByRole("heading", { name: "Electronics" })).toBeVisible();
-  await user.click(screen.getByRole("button", { name: "First setup: Alpha" }));
+  await user.click(screen.getByRole("button", { name: /First setup/ }));
   expect(
     await screen.findByRole("button", { name: "Select Beta as first setup" }),
   ).toBeDisabled();
   await user.click(screen.getByRole("button", { name: "Cancel selection" }));
-  await user.click(screen.getByRole("button", { name: "Second setup: Beta" }));
+  await user.click(screen.getByRole("button", { name: /Second setup/ }));
   expect(
     await screen.findByRole("button", { name: "Select Alpha as second setup" }),
   ).toBeDisabled();

@@ -8,18 +8,20 @@ owns enduring client behavior; [API](api.md) owns transport/caches, not this rou
 
 | Route | Interaction |
 | --- | --- |
-| / | Public Explore for guests and signed-in users: explicit text search, URL filters, newest-first cursor load-more |
+| / | Explore: public by default; authenticated Mine/Friends presets, search and chassis filters, newest-first cursor load-more |
 | /setups/:setupId | Stable read-only technical detail/gallery/share; owner-only separate Edit link |
 | /my/setups | Own list: sibling title/cover view links, separate Edit/Delete, create CTA and visibility |
-| /my/setups/new | Save setup once, then optional photo uploads |
+| /my/setups/new | Shared six-section editor; save setup once, then upload queued photos |
 | /my/setups/:setupId/edit | Owner editor, generic unavailable for foreign/unsupported setup |
 | /friends | Find people, Incoming Accept/Reject, Outgoing Cancel, accepted Remove with confirmation |
 | /users/:userId | Safe nickname/avatar and paginated public setups; signed-in users can explicitly select Setups visible to you |
 | /settings | Nickname editing, current-user email read-only, optional avatar, shell logout |
-| /compare | Select exactly two visible setups; optional left_id/right_id bookmarkable selection |
+| /compare | Select exactly two visible setups; bookmarkable sides and All available/Mine/Friends/Same model presets |
 
-Discovery clears model when brand changes. All brands/models differ from Custom
-setup selection; no Custom filter. Invalid URL filters offer Reset without requests;
+Discovery clears model when brand changes. Public Explore stays the default; Mine and Friends
+are explicit authenticated presets, server-filtered before pagination. Search/chassis fields
+are collapsed in mobile Filters; active criteria remain removable outside the panel. All
+brands/models differ from Custom setup selection; no Custom filter. Invalid URL filters offer Reset without requests;
 load-more retains cards with independent retry. Detail shows historical chassis and
 present technical values including zero; missing/private/friendship-denied look alike.
 Copy link has success feedback or selectable fallback. Profile/list/friendship load/
@@ -34,6 +36,14 @@ the default. Visible-to-you lists remain an explicit authenticated mode, never
 mixed into public discovery or public profile results.
 
 ## Forms and numeric interaction
+
+Create and Edit use the same section navigator, component chooser, editor summaries,
+validation and Done action. One form-level Save/Create action persists setup details.
+Create photo selections upload after initial setup creation; existing photo changes
+persist immediately and show that status beside the manager. Do not add a second Close
+action for an optional component: Done validates and collapses it while retaining its
+draft; only confirmed Remove discards it. Added/open component membership is one
+presentation state map, separate from form serialization.
 
 Create and Edit open directly in **General** and share the same six-section
 navigator before content. General contains photos, required Title, chassis selection,
@@ -82,7 +92,7 @@ notes. Submission validates all sections, exposes a linked error overview/counts
 reveals hidden fields and focuses real controls after commit, including chassis and
 aggregate link errors. Resizing and section navigation retain drafts/errors.
 
-General is the top-level edit view and the only section with **Delete setup**.
+General is the top-level view and the only section with **Delete setup**.
 There are no section-wide Clear actions, overflow substitutes or bulk-delete
 controls. Users can edit individual fields or explicitly remove an optional component
 with the existing confirmation. These actions retain unrelated sections/errors and
@@ -156,21 +166,21 @@ not only jsdom shims. Owner view navigation performs no setup/photo mutation.
 ## Responsive shell and social links
 
 Below 768px keep a single-row header: branding and Sign in for guests, existing
-avatar/account menu for members. The bottom row order is Explore, Sign up, Compare
+avatar/account menu for members. The drawer spans the full viewport height so the
+fixed bottom navigation is covered while it is open. The bottom row order is Explore, Sign up, Compare
 for guests and Explore, My setups, Compare for members. Sign up starts backend
 Google authentication. Login/logout update navigation with the session boundary.
 
-The full-height drawer has Account settings and Friends for members. Both guests
-and members have centered Help & Feedback above social icons; members also have
-Sign out. Navigation uses neutral text links and separators, with bold current page.
+The full-height drawer has Account settings and Friends for members. Guests also
+have Help & Feedback above centered social icons. Members have centered Help & Feedback,
+then social icons and Sign out at the bottom. Navigation uses neutral text links and separators, with bold current page.
 Selecting a route closes the drawer. Focus Close on open; outside navigation stays inert;
 closing nested Help restores its trigger and leaves the drawer open. Desktop resize
 dismisses the drawer. Reserve safe-area padding below the bar and above fixed Save
 controls; viewport-fit=cover enables iOS insets, with branding below the top inset.
 Desktop navigation, identity, Sign out and social footer remain unchanged.
 
-Help & Feedback is a guest/member drawer action and quiet
-desktop-footer action.
+Help & Feedback is a guest/member drawer action and quiet desktop-footer action.
 Its compact native dialog shows selectable support email, mailto, Close/Escape,
 backdrop dismissal and contained/restored focus. Feature copy is centralized under
 src/features/help for later translation; no response-time or account-creation promise.
