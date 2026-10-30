@@ -16,7 +16,7 @@ function Values({
   );
   if (!present.length) return null;
   return (
-    <section className="rounded border p-4">
+    <section className="technical-panel">
       <h3 className="font-semibold">{title}</h3>
       <dl className="technical-values">
         {present.map(([label, value], index) => (

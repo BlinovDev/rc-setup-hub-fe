@@ -13,7 +13,7 @@ export function SetupSearchCard({
       <PhotoImage photo={item.cover_photo} alt={`Cover of ${item.title}`} />
       <div className="setup-card-content space-y-2">
         <h3 className="text-xl font-semibold">
-          <Link className="underline" to={`/setups/${item.id}`}>
+          <Link className="setup-title-link" to={`/setups/${item.id}`}>
             {item.title}
           </Link>
         </h3>
@@ -21,16 +21,10 @@ export function SetupSearchCard({
           <PublicIdentity user={item.owner} />
         </p>
         <p>{chassisLabel(item)}</p>
-        <p>
-          Created:{" "}
-          <time dateTime={item.created_at}>
-            {new Date(item.created_at).toLocaleString()}
-          </time>
-        </p>
-        <p>
-          Updated:{" "}
+        <p className="setup-card-date">
+          Updated{" "}
           <time dateTime={item.updated_at}>
-            {new Date(item.updated_at).toLocaleString()}
+            {new Date(item.updated_at).toLocaleDateString()}
           </time>
         </p>
       </div>

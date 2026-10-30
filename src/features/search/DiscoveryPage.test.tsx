@@ -66,6 +66,7 @@ it("reconstructs URL filters and renders historical cards without N+1 detail req
   renderSetupRoute(`/?q=rd2&brand_id=${activeBrand}&model_id=${activeModel}`);
   await screen.findByText(item.title);
   await screen.findByRole("option", { name: "RMX" });
+  await userEvent.setup().click(screen.getByText(/Filters/));
   expect(
     screen.getByRole("textbox", { name: "Title or owner nickname" }),
   ).toHaveValue("rd2");
@@ -220,7 +221,7 @@ it.each(["brand_id=bad", "model_id=bad", `q=${"a".repeat(101)}`, "q=%00"])(
     await userEvent
       .setup()
       .click(screen.getByRole("button", { name: "Reset filters" }));
-    await screen.findByText("No public setups match these filters.");
+    await screen.findByText("No setups match these filters.");
   },
 );
 it.each(["a".repeat(101), "invalid\0text"])(
@@ -234,7 +235,8 @@ it.each(["a".repeat(101), "invalid\0text"])(
       }),
     );
     renderSetupRoute("/");
-    await screen.findByText("No public setups match these filters.");
+    await screen.findByText("No setups match these filters.");
+    await userEvent.setup().click(screen.getByText(/Filters/));
     fireEvent.change(screen.getByRole("textbox"), { target: { value: text } });
     await userEvent
       .setup()
@@ -253,8 +255,8 @@ it("shows initial loading and empty results", async () => {
     }),
   );
   renderSetupRoute("/");
-  await screen.findByText("Loading public setups…");
-  await screen.findByText("No public setups match these filters.");
+  await screen.findByText("Loading setups…");
+  await screen.findByText("No setups match these filters.");
 });
 it.each([400, 500, "network"])(
   "first page %s is retryable and never treated as logout",
@@ -275,7 +277,7 @@ it.each([400, 500, "network"])(
     );
     renderSetupRoute("/");
     expect(await screen.findByRole("alert")).toHaveTextContent(
-      failure === 400 ? "Invalid search" : "Unable to load public setups",
+      failure === 400 ? "Invalid search" : "Unable to load setups",
     );
     expect(screen.queryByText("Internal secret")).not.toBeInTheDocument();
     expect(

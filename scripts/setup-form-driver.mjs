@@ -114,7 +114,11 @@ export function setupFormDriver(page) {
         if ((await chooser.getAttribute("aria-expanded")) !== "true")
           await chooser.click();
         await page
-          .getByRole("button", { name: component, exact: true })
+          .getByRole("button", {
+            name:
+              "Add " + component.charAt(0).toLowerCase() + component.slice(1),
+            exact: true,
+          })
           .click();
       }
     }
@@ -125,11 +129,16 @@ export function setupFormDriver(page) {
         !(await page.locator(".setup-edit-layout").count()))
     ) {
       const card = page.locator(`.component-card[aria-label="${component}"]`);
-      const edit = card.getByRole("button", {
-        name: new RegExp("^(Edit|Add component:) " + component + "$"),
-      });
-      if ((await edit.getAttribute("aria-expanded")) !== "true")
+      const edit = card.locator(".component-edit-target");
+      if (
+        (await edit.count()) &&
+        (await edit.getAttribute("aria-expanded")) !== "true"
+      ) {
+        await edit.evaluate((element) =>
+          element.scrollIntoView({ block: "center", inline: "nearest" }),
+        );
         await edit.click();
+      }
     }
     const tabName = /camber|caster|toe/.test(String(name).toLowerCase())
       ? "Angles"

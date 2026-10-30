@@ -206,14 +206,16 @@ try {
         await button("Add front link").click();
         await input("Front link 2 name").fill("Z brace");
         await input("Front link 2 length (mm)").fill("14,25");
-        await button("Add component: Front top arm spacing").click();
+        await button("Add component").click();
+        await button("Add front top arm spacing").click();
         await input("Front top arm — Front spacers (mm)").fill("0");
         await input("Front top arm — Rear spacers (mm)").fill("5,2");
         await button("Done Front top arm spacing").click();
         await page.waitForFunction(
           () =>
-            document.activeElement?.textContent?.trim() ===
-            "Edit Front top arm spacing",
+            document.activeElement?.getAttribute("aria-label") ===
+              "Edit Front top arm spacing" &&
+            document.activeElement.getAttribute("aria-expanded") === "false",
         );
         await tab("Link lengths").focus();
         await page.keyboard.press("Home");

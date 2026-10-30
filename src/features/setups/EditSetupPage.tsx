@@ -51,18 +51,17 @@ function SetupEditor({
     update.error instanceof SetupError && update.error.status === 409;
   if (unavailable)
     return (
-      <section className="setup-editor mt-8">
+      <section className="setup-editor">
         <InlineNotice tone="error">
           Setup not found or unavailable.
         </InlineNotice>
         <Link to="/my/setups">Back to my setups</Link>
       </section>
     );
-  if (detail.isPending)
-    return <LoadingState className="mt-8">Loading setup…</LoadingState>;
+  if (detail.isPending) return <LoadingState>Loading setup…</LoadingState>;
   if (detail.isError)
     return (
-      <div className="mt-8">
+      <div>
         <InlineNotice tone="error">
           {setupErrorMessage(detail.error, "load")}
         </InlineNotice>
@@ -77,19 +76,17 @@ function SetupEditor({
     );
   if (detail.data.owner_id !== user.id)
     return (
-      <InlineNotice tone="error" className="mt-8">
-        Setup not found or unavailable.
-      </InlineNotice>
+      <InlineNotice tone="error">Setup not found or unavailable.</InlineNotice>
     );
   if (detail.data.schema_version !== 1)
     return (
-      <InlineNotice tone="error" className="mt-8">
+      <InlineNotice tone="error">
         This setup version is not supported by this form.
       </InlineNotice>
     );
   return (
-    <section className="setup-editor mt-8">
-      <h2 className="text-2xl font-semibold">Edit setup</h2>
+    <section className="setup-editor">
+      <h2 className="page-title">Edit setup</h2>
       <Link to="/my/setups">Back to my setups</Link>
       <DraftGuard
         dirty={dirty || queue.items.some((item) => item.state !== "uploaded")}
@@ -123,12 +120,18 @@ function SetupEditor({
       <SetupForm
         resetVersion={revision}
         generalPhotos={
-          <PhotoManager
-            key={setupId}
-            setupId={setupId}
-            ownerId={user.id}
-            queue={queue}
-          />
+          <>
+            <PhotoManager
+              key={setupId}
+              setupId={setupId}
+              ownerId={user.id}
+              queue={queue}
+            />
+            <p className="form-save-status">
+              Photo changes save immediately. Save setup to save the details
+              below.
+            </p>
+          </>
         }
         onDirtyChange={setDirty}
         onSectionViewChange={setSectionView}

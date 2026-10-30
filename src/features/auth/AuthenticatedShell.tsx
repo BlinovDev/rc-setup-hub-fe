@@ -105,25 +105,23 @@ export function AuthenticatedShell({
         triggerRef={triggerRef}
         identity={identity}
         footer={
-          user ? (
-            <>
-              <SocialLinks />
-              {signOutControl}
-            </>
-          ) : null
+          <>
+            <HelpFeedback />
+            <SocialLinks />
+            {user && signOutControl}
+          </>
         }
       >
-        <nav className="account-nav" aria-label="Your account">
-          {user && (
+        {user && (
+          <nav className="account-nav" aria-label="Your account">
             <NavLink to="/settings" onClick={closeMenu}>
               Account settings
             </NavLink>
-          )}
-          <NavLink to="/compare" onClick={closeMenu}>
-            Compare
-          </NavLink>
-        </nav>
-        {user && <HelpFeedback />}
+            <NavLink to="/friends" onClick={closeMenu}>
+              Friends
+            </NavLink>
+          </nav>
+        )}
       </NavigationDrawer>
     </>
   );

@@ -27,7 +27,7 @@ export function NewSetupPage() {
   if (savedSetup)
     return (
       <section className="setup-editor space-y-4">
-        <h2>Setup created.</h2>
+        <h2 className="page-title">Setup created.</h2>
         <p>
           Your setup is saved. Completed photos are retained. Retry or remove
           failed selections below.
@@ -47,8 +47,8 @@ export function NewSetupPage() {
       </section>
     );
   return (
-    <section className="setup-editor mt-8">
-      <h2 className="text-2xl font-semibold">New setup</h2>
+    <section className="setup-editor">
+      <h2 className="page-title">New setup</h2>
       <Link to="/my/setups">Back to my setups</Link>
       {create.isError && (
         <InlineNotice tone="error">
@@ -59,8 +59,15 @@ export function NewSetupPage() {
         dirty={dirty || queue.items.some((item) => item.state !== "uploaded")}
         allowExit={allowExit}
       />
-      <PhotoPicker queue={queue} disabled={create.isPending} />
       <SetupForm
+        generalPhotos={
+          <>
+            <PhotoPicker queue={queue} disabled={create.isPending} />
+            <p className="form-save-status">
+              Photos upload after you create the setup.
+            </p>
+          </>
+        }
         onDirtyChange={setDirty}
         pending={create.isPending}
         onSave={async (values) => {

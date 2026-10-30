@@ -123,12 +123,12 @@ export function AuthGate(props: Props) {
         <NavLink to="/" end>
           Explore
         </NavLink>
-        <NavLink to="/my/setups">My setups</NavLink>
         {authenticated ? (
-          <NavLink to="/friends">Friends</NavLink>
+          <NavLink to="/my/setups">My setups</NavLink>
         ) : (
-          <HelpFeedback />
+          <SignInButton>Sign up</SignInButton>
         )}
+        <NavLink to="/compare">Compare</NavLink>
       </nav>
       <footer className="desktop-footer">
         {authenticated && <SocialLinks />}

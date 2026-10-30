@@ -1,4 +1,4 @@
-import { useRef, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { useFormContext, useWatch } from "react-hook-form";
 import { useQuery } from "@tanstack/react-query";
 import { brandsOptions } from "../../chassis/queries";
@@ -48,8 +48,7 @@ export function ComponentCard({
   } = useFormContext<SetupFormValues>();
   useWatch({ control, name: spec.paths });
   const presentation = useEditorPresentation();
-  const [mounted, setMounted] = useState(false),
-    [confirm, setConfirm] = useState(false),
+  const [confirm, setConfirm] = useState(false),
     [generation, setGeneration] = useState(0);
   const opener = useRef<HTMLButtonElement | null>(null);
   const removalTrigger = useRef<HTMLButtonElement | null>(null);
@@ -57,6 +56,18 @@ export function ComponentCard({
   const values = getValues();
   const configured = spec.paths.some((path) => hasValue(valueAt(values, path)));
   const expanded = !!presentation.open[id];
+  const mounted = id in presentation.open;
+  const editor = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (expanded) {
+      const target =
+        editor.current?.querySelector<HTMLElement>('[aria-invalid="true"]') ??
+        editor.current?.querySelector<HTMLElement>(
+          'input:not([type="hidden"]):not(:disabled), textarea:not(:disabled), select:not(:disabled)',
+        );
+      target?.focus();
+    }
+  }, [expanded]);
   const dirty = spec.paths.some(
     (path) => getFieldState(path, formState).isDirty,
   );
@@ -87,9 +98,7 @@ export function ComponentCard({
     const text = String(value).trim();
     return [
       {
-        label:
-          labels[key] ??
-          (setup ? key.charAt(0).toUpperCase() + key.slice(1) : key),
+        label: labels[key] ?? key.charAt(0).toUpperCase() + key.slice(1),
         value:
           key === "manufacturerId"
             ? (displayNames.get(text.toLowerCase()) ??
@@ -104,16 +113,13 @@ export function ComponentCard({
   const open = () => {
     if (id.endsWith("-spacing") && !getValues(spec.paths[0]!))
       setValue(spec.paths[0]!, { front_mm: "", rear_mm: "" } as never);
-    setMounted(true);
     presentation.setOpen(id, true);
   };
   const close = () => {
-    setMounted(true);
     presentation.setOpen(id, false);
     requestAnimationFrame(() => opener.current?.focus());
   };
   const done = () => {
-    setMounted(true);
     if (presentation.validate(spec.paths)) close();
   };
   const requestRemove = () => {
@@ -129,19 +135,15 @@ export function ComponentCard({
       clearErrors(path);
     }
     presentation.validate(spec.paths);
-    presentation.setOpen(id, false);
-    presentation.setAdded(id, false);
+    presentation.remove(id);
     setConfirm(false);
-    setMounted(false);
     setGeneration((n) => n + 1);
     requestAnimationFrame(() => {
-      if (setup)
-        document
-          .querySelector<HTMLButtonElement>(
-            `[data-add-section="${spec.section}"]`,
-          )
-          ?.focus();
-      else opener.current?.focus();
+      document
+        .querySelector<HTMLButtonElement>(
+          `[data-add-section="${spec.section}"]`,
+        )
+        ?.focus();
     });
   };
   const confirmation = confirm && (
@@ -163,171 +165,88 @@ export function ComponentCard({
       </Button>
       <Button
         type="button"
-        variant={setup ? "secondary" : "danger"}
-        className={setup ? "subdued-destructive" : undefined}
+        variant="secondary"
+        className="subdued-destructive"
         onClick={clear}
       >
         Confirm remove {spec.label}
       </Button>
     </div>
   );
-  if (setup) {
-    if (
-      !configured &&
-      !expanded &&
-      !mounted &&
-      !presentation.added[id] &&
-      !errors.length
-    )
-      return null;
-    return (
-      <section
-        className="component-card compact-component"
-        aria-label={spec.label}
-        data-component={id}
-      >
-        <div className="component-preview">
-          <div className="component-heading">
-            <h3>{spec.label}</h3>
-            <span className="component-edit-hint" aria-hidden="true">
-              Edit ↗
-            </span>
-          </div>
-          {dirty && <span className="component-status">Unsaved changes</span>}
-          {errors.length > 0 && (
-            <span role="status" className="component-status">
-              {errors.length} errors
-            </span>
-          )}
-          {!expanded && (
-            <div className="component-summary">
-              {configured ? (
-                <dl className="component-summary-rows">
-                  {summary.map((row, index) => (
-                    <div key={index}>
-                      <dt>{row.label}: </dt>
-                      <dd title={row.value}>{row.value}</dd>
-                    </div>
-                  ))}
-                </dl>
-              ) : (
-                "Not added"
-              )}
-            </div>
-          )}
-          <button
-            ref={opener}
-            type="button"
-            className="component-edit-target"
-            autoFocus={!!presentation.added[id] && !mounted}
-            aria-label={`Edit ${spec.label}`}
-            aria-expanded={expanded}
-            onClick={open}
-          />
-        </div>
-        <Button
-          type="button"
-          className="component-remove-icon"
-          ref={removalTrigger}
-          aria-label={`Remove ${spec.label}`}
-          title={`Remove ${spec.label}`}
-          onClick={requestRemove}
-        >
-          <svg
-            aria-hidden="true"
-            width="18"
-            height="18"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="1.7"
-          >
-            <path d="M4 6h16M9 6V3h6v3M6 6l1 15h10l1-15M10 10v7M14 10v7" />
-          </svg>
-        </Button>
-        {confirmation}
-        <div hidden={!expanded} className="component-editor">
-          {(expanded || mounted || presentation.added[id]) && (
-            <div key={generation}>{children}</div>
-          )}
-          <p className="component-help">
-            Close retains your draft. Done checks this component. Save setup
-            saves all sections.
-          </p>
-          <div className="component-editor-actions">
-            <Button type="button" onClick={close}>
-              Close {spec.label} editor
-            </Button>
-            <Button type="button" onClick={done}>
-              Done {spec.label}
-            </Button>
-          </div>
-        </div>
-      </section>
-    );
-  }
-  if (!configured && !expanded && !mounted && !dirty && !errors.length)
-    return (
-      <section
-        className="component-card component-add"
-        aria-label={spec.label}
-        data-component={id}
-      >
-        <Button ref={opener} type="button" aria-expanded={false} onClick={open}>
-          Add component: {spec.label}
-        </Button>
-      </section>
-    );
+  if (!configured && !expanded && !mounted && !errors.length) return null;
   return (
     <section
-      className="component-card"
+      className="component-card compact-component"
       aria-label={spec.label}
       data-component={id}
     >
-      <div className="component-heading">
-        <h3>{spec.label}</h3>
-        {dirty && <span>Unsaved changes</span>}
-        {errors.length > 0 && <span role="status">{errors.length} errors</span>}
-      </div>
-      {!expanded && (
-        <div className="component-summary">
-          {configured
-            ? summary
-                .map(
-                  (row) =>
-                    `${row.label}: ${row.value.length > 120 ? row.value.slice(0, 120) + "…" : row.value}`,
-                )
-                .join(" · ")
-            : "Not added"}
+      <div className="component-preview" hidden={expanded}>
+        <div className="component-heading">
+          <h3>{spec.label}</h3>
+          <span className="component-edit-hint" aria-hidden="true">
+            Edit ↗
+          </span>
         </div>
-      )}
-      <div className="component-actions">
-        <Button
+        {dirty && <span className="component-status">Unsaved changes</span>}
+        {errors.length > 0 && (
+          <span role="status" className="component-status">
+            {errors.length} errors
+          </span>
+        )}
+        {!expanded && (
+          <div className="component-summary">
+            {configured ? (
+              <dl className="component-summary-rows">
+                {summary.map((row, index) => (
+                  <div key={index}>
+                    <dt>{row.label}: </dt>
+                    <dd title={row.value}>{row.value}</dd>
+                  </div>
+                ))}
+              </dl>
+            ) : (
+              "Not added"
+            )}
+          </div>
+        )}
+        <button
           ref={opener}
           type="button"
+          className="component-edit-target"
+          aria-label={`Edit ${spec.label}`}
           aria-expanded={expanded}
           onClick={open}
-        >
-          {configured || mounted ? "Edit" : "Add component:"} {spec.label}
-        </Button>
-        {(configured || expanded || mounted) && (
-          <Button
-            type="button"
-            variant="danger"
-            ref={removalTrigger}
-            onClick={requestRemove}
-          >
-            Remove {spec.label}
-          </Button>
-        )}
+        />
       </div>
+      <Button
+        type="button"
+        className="component-remove-icon"
+        ref={removalTrigger}
+        aria-label={`Remove ${spec.label}`}
+        title={`Remove ${spec.label}`}
+        onClick={requestRemove}
+      >
+        <svg
+          aria-hidden="true"
+          width="18"
+          height="18"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.7"
+        >
+          <path d="M6 6l12 12M18 6 6 18" />
+        </svg>
+      </Button>
       {confirmation}
-      <div hidden={!expanded} className="component-editor">
+      <div ref={editor} hidden={!expanded} className="component-editor">
         {(expanded || mounted) && <div key={generation}>{children}</div>}
-        <p>Done closes this editor. Save setup saves your changes.</p>
-        <Button type="button" onClick={done}>
-          Done {spec.label}
-        </Button>
+        <p className="component-help">Changes are saved with the setup.</p>
+        <div className="component-editor-actions">
+          <Button type="button" onClick={done}>
+            Done {spec.label}
+          </Button>
+        </div>
       </div>
     </section>
   );

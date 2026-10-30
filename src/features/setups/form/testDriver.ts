@@ -75,6 +75,7 @@ function prepare(matcher: Matcher | ByRoleOptions["name"] | undefined) {
     d.spec &&
     d.id !== "notes" &&
     !d.id?.endsWith("-links") &&
+    !/^Add (top|lower) arm spacing/i.test(String(matcher)) &&
     document.querySelector(".setup-edit-layout") &&
     !document.querySelector(`[data-component="${d.id}"]`)
   ) {
@@ -86,7 +87,8 @@ function prepare(matcher: Matcher | ByRoleOptions["name"] | undefined) {
       fireEvent.click(trigger);
     fireEvent.click(
       within(pane as HTMLElement).getByRole("button", {
-        name: d.spec.label,
+        name:
+          "Add " + d.spec.label.charAt(0).toLowerCase() + d.spec.label.slice(1),
       }),
     );
   }
@@ -161,12 +163,23 @@ export function setupButton(options: ByRoleOptions) {
           });
         const chooser = screen.getByRole("button", { name: "Add component" });
         fireEvent.click(chooser);
-        return screen.getByRole("button", { name: d.spec!.label });
+        return screen.getByRole("button", {
+          name:
+            "Add " +
+            d.spec!.label.charAt(0).toLowerCase() +
+            d.spec!.label.slice(1),
+        });
       })()
     );
   }
   if (/^Add (top|lower) arm spacing/i.test(text) && d.spec) {
-    return screen.getByRole("button", { name: "Edit " + d.spec.label });
+    const chooser = screen.getByRole("button", { name: "Add component" });
+    if (chooser.getAttribute("aria-expanded") !== "true")
+      fireEvent.click(chooser);
+    return screen.getByRole("button", {
+      name:
+        "Add " + d.spec.label.charAt(0).toLowerCase() + d.spec.label.slice(1),
+    });
   }
   return screen.getByRole("button", options);
 }

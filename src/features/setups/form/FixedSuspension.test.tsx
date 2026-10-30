@@ -310,7 +310,7 @@ it("preserves the original spacing add/edit/done/cancel/remove/re-add UX beside 
   );
   await user.click(screen.getByRole("button", { name: "Add component" }));
   await user.click(
-    screen.getByRole("button", { name: "Front top arm spacing" }),
+    screen.getByRole("button", { name: "Add front top arm spacing" }),
   );
   expect(ahead()).toHaveValue("");
   await user.type(ahead(), "0");

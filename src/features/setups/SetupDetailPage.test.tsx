@@ -126,7 +126,8 @@ it.each([400, 404, 500, "network"])(
       ),
     );
     renderSetupRoute(path);
-    await screen.findByText("Owner: Owner unavailable");
+    const ownerStatus = await screen.findByText("Owner unavailable");
+    expect(ownerStatus).toHaveTextContent("Owner: Owner unavailable");
     expect(screen.getByText(testSetup.title)).toBeInTheDocument();
     expect(screen.queryByText("Private internals")).not.toBeInTheDocument();
   },

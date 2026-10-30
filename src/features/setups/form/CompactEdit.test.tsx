@@ -76,7 +76,7 @@ it("opens General with photos/title/chassis/notes/visibility in order; hides the
   select("Front");
   expect(screen.getByLabelText("Front camber (degrees)")).toHaveValue("-");
 });
-it("makes the summary a keyboard edit target and trash a separate named control", async () => {
+it("makes the summary a keyboard edit target and removal a separate named control", async () => {
   show();
   select("Wheels & tires");
   const user = userEvent.setup();
@@ -87,11 +87,12 @@ it("makes the summary a keyboard edit target and trash a separate named control"
   const offset = screen.getByLabelText("Front hex offset (mm)");
   expect(offset).toHaveValue("0");
   fireEvent.change(offset, { target: { value: "-" } });
-  await user.click(
-    screen.getByRole("button", { name: "Close Front hex editor" }),
-  );
-  expect(offset).not.toBeVisible();
+  await user.click(screen.getByRole("button", { name: "Done Front hex" }));
+  expect(offset).toBeVisible();
   expect(offset).toHaveValue("-");
+  fireEvent.change(offset, { target: { value: "0" } });
+  await user.click(screen.getByRole("button", { name: "Done Front hex" }));
+  expect(offset).not.toBeVisible();
   const remove = within(card).getByRole("button", { name: "Remove Front hex" });
   expect(remove.querySelector("svg")).toHaveAttribute("aria-hidden", "true");
   await user.click(remove);
@@ -99,7 +100,8 @@ it("makes the summary a keyboard edit target and trash a separate named control"
   await user.click(screen.getByRole("button", { name: "Cancel" }));
   expect(remove).toHaveFocus();
   await user.click(edit);
-  expect(offset).toHaveValue("-");
+  expect(offset).toHaveValue("0");
+  fireEvent.change(offset, { target: { value: "-" } });
   await user.click(screen.getByRole("button", { name: "Done Front hex" }));
   await waitFor(() => expect(offset).toHaveFocus());
   expect(offset).toHaveAttribute("aria-invalid", "true");
@@ -107,7 +109,7 @@ it("makes the summary a keyboard edit target and trash a separate named control"
   await user.click(screen.getByRole("button", { name: "Done Front hex" }));
   expect(offset).not.toBeVisible();
 });
-it("offers one chooser for only absent components with axle context; close retains an empty editor", async () => {
+it("offers one chooser for only absent components with axle context; Done retains an empty editor", async () => {
   show();
   select("Wheels & tires");
   const user = userEvent.setup();
@@ -118,21 +120,21 @@ it("offers one chooser for only absent components with axle context; close retai
   await user.click(screen.getByRole("button", { name: "Add component" }));
   const choices = screen.getByRole("group", { name: "Available components" });
   expect(
-    within(choices).queryByRole("button", { name: "Front hex" }),
+    within(choices).queryByRole("button", { name: "Add front hex" }),
   ).not.toBeInTheDocument();
   expect(
-    within(choices).queryByRole("button", { name: "Rear differential" }),
+    within(choices).queryByRole("button", { name: "Add rear differential" }),
   ).not.toBeInTheDocument();
-  await user.click(within(choices).getByRole("button", { name: "Front tire" }));
+  await user.click(
+    within(choices).getByRole("button", { name: "Add front tire" }),
+  );
   const model = screen.getByLabelText("Front tire model");
   expect(model).toHaveValue("");
-  expect(model).not.toHaveFocus();
-  await user.click(
-    screen.getByRole("button", { name: "Close Front tire editor" }),
-  );
+  expect(model).toHaveFocus();
+  await user.click(screen.getByRole("button", { name: "Done Front tire" }));
   await user.click(screen.getByRole("button", { name: "Add component" }));
   expect(
-    screen.queryByRole("button", { name: "Front tire" }),
+    screen.queryByRole("button", { name: "Add front tire" }),
   ).not.toBeInTheDocument();
   await user.keyboard("{Escape}");
   expect(screen.getByRole("button", { name: "Add component" })).toHaveFocus();

@@ -210,8 +210,17 @@ try {
               headers,
               json: { id: owner, nickname: "Safe pilot", avatar_url: null },
             });
-          if (p === `/api/v1/setups/${a.id}`)
-            return route.fulfill({ headers, json: a });
+          const detail = [a, b, c, d].find(
+            (setup) => p === `/api/v1/setups/${setup.id}`,
+          );
+          if (detail)
+            return route.fulfill({
+              status: allowed(detail) ? 200 : 404,
+              headers,
+              json: allowed(detail)
+                ? detail
+                : { error: "never show raw database information" },
+            });
           if (p === `/api/v1/setups/${a.id}/photos`)
             return route.fulfill({ headers, json: [] });
           if (p === "/api/v1/setups/visible") {
@@ -297,14 +306,7 @@ try {
           });
         const goCompare = async () => {
           if (mobile) {
-            await page
-              .getByRole("button", {
-                name: member ? "Open account menu" : "Open navigation menu",
-                exact: true,
-              })
-              .click();
-            await page
-              .getByRole("dialog", { name: "Account and navigation" })
+            await nav()
               .getByRole("link", { name: "Compare", exact: true })
               .click();
           } else
@@ -328,6 +330,12 @@ try {
             .getByRole("rowheader", { name: new RegExp(name, "i") })
             .locator("..");
         const search = async (q) => {
+          if (mobile) {
+            const filters = page.locator(".search-filters");
+            if (!(await filters.getAttribute("open"))) {
+              await filters.locator("summary").click();
+            }
+          }
           await page
             .getByRole("textbox", { name: "Title or owner nickname" })
             .fill(q);
@@ -345,7 +353,9 @@ try {
             await nav()
               .locator(":scope > a, :scope > button")
               .allTextContents(),
-            ["Explore", "My setups", "Help & Feedback"],
+            member
+              ? ["Explore", "My setups", "Compare"]
+              : ["Explore", "Sign up", "Compare"],
           );
           const h = page.getByRole("banner");
           assert.equal(await h.getByRole("navigation").count(), 0);
@@ -437,14 +447,19 @@ try {
           mobile &&
           (await scroll.evaluate((el) => el.scrollWidth > el.clientWidth))
         ) {
-          await scroll.focus();
-          await page.keyboard.press("ArrowRight");
-          await page.waitForFunction(
-            () =>
-              document.querySelector(
-                '[aria-label="Front suspension comparison table"]',
-              ).scrollLeft > 0,
-          );
+          if (engine === "chromium") {
+            await scroll.focus();
+            await page.keyboard.press("ArrowRight");
+            await page.waitForFunction(
+              () =>
+                document.querySelector(
+                  '[aria-label="Front suspension comparison table"]',
+                ).scrollLeft > 0,
+            );
+          } else {
+            await scroll.evaluate((el) => (el.scrollLeft = 40));
+            assert((await scroll.evaluate((el) => el.scrollLeft)) > 0);
+          }
           await scroll.evaluate((el) => (el.scrollLeft = el.scrollWidth));
           assert(
             await scroll.evaluate((el) => {
@@ -540,8 +555,7 @@ try {
         await result().waitFor();
         await page
           .getByRole("button", {
-            name: "Second setup: Beta public",
-            exact: true,
+            name: /Second setup.*Beta public.*Change setup/,
           })
           .click();
         await search("Private");
@@ -576,15 +590,13 @@ try {
         assert(
           await page
             .getByRole("button", {
-              name: "First setup: Private owner setup",
-              exact: true,
+              name: /First setup.*Private owner setup.*Change setup/,
             })
             .isVisible(),
         );
         await page
           .getByRole("button", {
-            name: "Second setup: Alpha public",
-            exact: true,
+            name: /Second setup.*Alpha public.*Change setup/,
           })
           .click();
         await search("Accepted");

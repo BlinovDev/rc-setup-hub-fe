@@ -54,7 +54,7 @@ export function UserProfilePage() {
               alt=""
             />
           )}
-          <h2 className="min-w-0 text-2xl font-semibold">{user.nickname}</h2>
+          <h2 className="page-title min-w-0">{user.nickname}</h2>
         </div>
         <ProfileFriendshipControl key={user.id} userId={user.id} />
       </div>

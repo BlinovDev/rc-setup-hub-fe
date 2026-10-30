@@ -14,10 +14,17 @@ export async function searchSetups(
   if (filters.brandId) query.brand_id = filters.brandId;
   if (filters.modelId) query.model_id = filters.modelId;
   if (cursor) query.cursor = cursor;
-  const { data, response } = await apiClient.GET("/api/v1/setups/search", {
-    params: { query },
-    signal,
-  });
+  const personal = filters.scope && filters.scope !== "all";
+  const { data, response } = await apiClient.GET(
+    personal ? "/api/v1/setups/visible" : "/api/v1/setups/search",
+    {
+      params: {
+        query: { ...query, ...(personal ? { scope: filters.scope } : {}) },
+      },
+      cache: "no-store",
+      signal,
+    },
+  );
   if (response.status !== 200 || !data) throw new SetupError(response.status);
   return data;
 }

@@ -48,8 +48,8 @@ export function SettingsPage({
   const nickname = useWatch({ control, name: "nickname" });
   const changed = nickname.trim() !== user.nickname;
   return (
-    <section className="mt-8" aria-labelledby="settings-title">
-      <h2 id="settings-title" className="text-2xl font-semibold">
+    <section aria-labelledby="settings-title">
+      <h2 id="settings-title" className="page-title">
         Settings
       </h2>
       <div className="rounded border bg-white p-4">

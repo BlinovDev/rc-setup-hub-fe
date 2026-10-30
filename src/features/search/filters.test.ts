@@ -13,6 +13,7 @@ it("normalizes text and round trips filters without exposing a cursor", () => {
     brandId: activeBrand,
     modelId: activeModel,
     limit: 20,
+    scope: "all",
   });
   expect(filterParams(result.filters).toString()).toBe(
     `q=rd2&brand_id=${activeBrand}&model_id=${activeModel}`,

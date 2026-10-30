@@ -19,7 +19,11 @@ const privateId = "c61393b6-daa0-4eb8-923c-57aedbb46a48";
 const ownerId = "c61393b6-daa0-4eb8-923c-57aedbb46a46";
 const photoId = "11111111-1111-4111-8111-111111111111";
 const otherId = "22222222-2222-4222-8222-222222222222";
-const owner = { id: ownerId, nickname: "Public pilot", avatar_url: null };
+const owner = {
+  id: ownerId,
+  nickname: "Public pilot",
+  avatar_url: `${api}/api/v1/setups/${id}/image`,
+};
 const user = {
   ...owner,
   email: "private-account@example.test",
@@ -252,6 +256,11 @@ try {
         .getByRole("button", { name: "Load more", exact: true })
         .click();
       await page.getByText("Second public setup", { exact: true }).waitFor();
+      if (width < 768) {
+        const filters = page.locator(".search-filters");
+        if (!(await filters.getAttribute("open")))
+          await filters.locator("summary").click();
+      }
       await page
         .getByRole("textbox", { name: "Title or owner nickname" })
         .fill("new query");
@@ -268,7 +277,7 @@ try {
       failSearch = false;
       empty = true;
       await page.getByRole("button", { name: "Retry search" }).click();
-      await page.getByText("No public setups match these filters.").waitFor();
+      await page.getByText("No setups match these filters.").waitFor();
       empty = false;
       await page.goto(`${origin}/users/${ownerId}`);
       await page.getByRole("heading", { name: owner.nickname }).waitFor();
@@ -288,6 +297,22 @@ try {
         () =>
           document.querySelector('meta[name="robots"]')?.content ===
           "index, follow",
+      );
+      const ownerLink = page.locator(`article a[href="/users/${ownerId}"]`);
+      await ownerLink.waitFor();
+      const ownerAlignment = await ownerLink.evaluate((link) => {
+        const row = link.parentElement;
+        const label = document.createRange();
+        label.selectNodeContents(row.firstChild);
+        const labelRect = label.getBoundingClientRect();
+        const nameRect = link.querySelector("span").getBoundingClientRect();
+        return Math.abs(
+          labelRect.y + labelRect.height / 2 - nameRect.y - nameRect.height / 2,
+        );
+      });
+      assert(
+        ownerAlignment <= 2,
+        `Owner label/name misaligned by ${ownerAlignment}px`,
       );
       assert.equal(await page.title(), `${publicSetup.title} | RC Setup Hub`);
       assert.equal(

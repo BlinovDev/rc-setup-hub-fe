@@ -1,3 +1,4 @@
+import type { SetupScope } from "../search/SetupPresets";
 import { apiClient } from "../../api/client";
 import { SetupError } from "../setups/api";
 import type { paths } from "../../api/generated/schema";
@@ -5,11 +6,15 @@ export async function visibleSetups(
   q: string,
   cursor: string | null,
   signal: AbortSignal,
+  modelId?: string | null,
+  scope: SetupScope = "all",
 ) {
   const query: NonNullable<
     paths["/api/v1/setups/visible"]["get"]["parameters"]["query"]
   > = { limit: 20 };
+  if (scope !== "all") query.scope = scope;
   if (q) query.q = q;
+  if (modelId) query.model_id = modelId;
   if (cursor) query.cursor = cursor;
   const { data, response } = await apiClient.GET("/api/v1/setups/visible", {
     params: { query },

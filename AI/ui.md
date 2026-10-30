@@ -8,18 +8,20 @@ owns enduring client behavior; [API](api.md) owns transport/caches, not this rou
 
 | Route | Interaction |
 | --- | --- |
-| / | Public Explore for guests and signed-in users: explicit text search, URL filters, newest-first cursor load-more |
+| / | Explore: public by default; authenticated Mine/Friends presets, search and chassis filters, newest-first cursor load-more |
 | /setups/:setupId | Stable read-only technical detail/gallery/share; owner-only separate Edit link |
 | /my/setups | Own list: sibling title/cover view links, separate Edit/Delete, create CTA and visibility |
-| /my/setups/new | Save setup once, then optional photo uploads |
+| /my/setups/new | Shared six-section editor; save setup once, then upload queued photos |
 | /my/setups/:setupId/edit | Owner editor, generic unavailable for foreign/unsupported setup |
 | /friends | Find people, Incoming Accept/Reject, Outgoing Cancel, accepted Remove with confirmation |
 | /users/:userId | Safe nickname/avatar and paginated public setups; signed-in users can explicitly select Setups visible to you |
 | /settings | Nickname editing, current-user email read-only, optional avatar, shell logout |
-| /compare | Select exactly two visible setups; optional left_id/right_id bookmarkable selection |
+| /compare | Select exactly two visible setups; bookmarkable sides and All available/Mine/Friends/Same model presets |
 
-Discovery clears model when brand changes. All brands/models differ from Custom
-setup selection; no Custom filter. Invalid URL filters offer Reset without requests;
+Discovery clears model when brand changes. Public Explore stays the default; Mine and Friends
+are explicit authenticated presets, server-filtered before pagination. Search/chassis fields
+are collapsed in mobile Filters; active criteria remain removable outside the panel. All
+brands/models differ from Custom setup selection; no Custom filter. Invalid URL filters offer Reset without requests;
 load-more retains cards with independent retry. Detail shows historical chassis and
 present technical values including zero; missing/private/friendship-denied look alike.
 Copy link has success feedback or selectable fallback. Profile/list/friendship load/
@@ -35,16 +37,24 @@ mixed into public discovery or public profile results.
 
 ## Forms and numeric interaction
 
-Create retains its existing photo-first flow, essentials, optional Add rows and
-six sections. Edit opens directly in **General**. Its six-section navigator precedes
-content; General contains photos, required Title, chassis selection, notes and
-visibility, in that order, without duplicate essentials above navigation. Other
+Create and Edit use the same section navigator, component chooser, editor summaries,
+validation and Done action. One form-level Save/Create action persists setup details.
+Create photo selections upload after initial setup creation; existing photo changes
+persist immediately and show that status beside the manager. Do not add a second Close
+action for an optional component: Done validates and collapses it while retaining its
+draft; only confirmed Remove discards it. Added/open component membership is one
+presentation state map, separate from form serialization.
+
+Create and Edit open directly in **General** and share the same six-section
+navigator before content. General contains photos, required Title, chassis selection,
+notes and visibility, in that order, without duplicate essentials above navigation.
+Create saves the setup before uploading photos. Other
 sections hide General without unmounting fields or the photo manager. Keep photo
 writes/queues independent of technical Save and outside its disabled fieldset.
 Automatic photo crop dialogs render outside hidden General and retain their state
 owner; dismissal restores a visible opener or the current section heading.
 
-Desktop keeps a sidebar from 768px. Mobile Edit uses one distinct sticky
+Desktop keeps a sidebar from 768px. Mobile Create and Edit use one distinct sticky
 current-section button above all content,
 with a small Section caption, blue-tinted surface/border, side spacing and a 12px
 gap below the safe top edge. Its geometric chevron stays vertically centered;
@@ -53,23 +63,24 @@ sheet with current location/error counts. Selection focuses the section heading;
 Escape/dismissal restores the trigger. Keep focused controls below the picker and
 above fixed Save/site navigation; compact Save padding must retain 44px controls.
 
-Existing configured Edit components are compact, vertical label–value summaries,
+Configured Create and Edit components are compact, vertical label–value summaries,
 including zero, partial/historical/manufacturer-only values and wrapped long text.
 The whole preview is a native keyboard-accessible edit target with visible focus
-and an edit hint. A separate 44px corner trash control has a specific accessible
+and an edit hint. A separate 44px corner remove control has a specific accessible
 Remove name; it never opens the editor. Populated removal confirms with Cancel
-focused, clears only that component and re-add starts blank. Close editor retains
-all drafts without validation/deletion; Done validates that component and retains/
-focuses invalid fields, otherwise closes. Save persists the full document.
+focused, clears only that component and re-add starts blank. A single Done action
+validates that component and focuses invalid fields, otherwise collapses it while
+retaining its draft. Save persists the full document. Create and Edit share one
+component renderer and one map of added/open/collapsed components.
 
-Each technical Edit section has one low-emphasis **+ Add component** chooser listing
+Each technical Create/Edit section has one low-emphasis **+ Add component** chooser listing
 only absent parts with axle context. The same native button toggles its associated
 panel (aria-expanded/aria-controls); the panel contains only named component choices,
 never a dismiss row. Escape closes it and restores trigger focus. Keep 44px choice
 targets with subtle hover/focus treatment. Section headings and existing inputs/cards
 precede this secondary disclosure, with no bulk-delete control or reserved gap.
 Adding an empty component keeps its editor
-available through Close/section switches; only explicit removal returns it to the
+available through Done/section switches; only explicit removal returns it to the
 chooser. Optional editors stay hidden until added/edited/revealed by validation.
 No nested accordions or per-part oversized Add/Edit/Remove buttons. Presentation
 state never determines serialization. Mounted hidden editors preserve registrations,
@@ -81,7 +92,7 @@ notes. Submission validates all sections, exposes a linked error overview/counts
 reveals hidden fields and focuses real controls after commit, including chassis and
 aggregate link errors. Resizing and section navigation retain drafts/errors.
 
-General is the top-level edit view and the only section with **Delete setup**.
+General is the top-level view and the only section with **Delete setup**.
 There are no section-wide Clear actions, overflow substitutes or bulk-delete
 controls. Users can edit individual fields or explicitly remove an optional component
 with the existing confirmation. These actions retain unrelated sections/errors and
@@ -155,24 +166,21 @@ not only jsdom shims. Owner view navigation performs no setup/photo mutation.
 ## Responsive shell and social links
 
 Below 768px keep a single-row header: branding and Sign in for guests, existing
-avatar/account menu for members. The fixed bottom row has exactly three actions:
-guests see Explore, My setups, Help & Feedback; members see Explore, My setups,
-Friends. My setups always links to /my/setups; guests see the existing explicit
-Google sign-in UI there, with no private list request, empty-list substitute or
-automatic OAuth redirect. Login/logout update navigation with the session boundary.
+avatar/account menu for members. The drawer spans the full viewport height so the
+fixed bottom navigation is covered while it is open. The bottom row order is Explore, Sign up, Compare
+for guests and Explore, My setups, Compare for members. Sign up starts backend
+Google authentication. Login/logout update navigation with the session boundary.
 
-Both guest and member hamburger drawers include Compare; it is also in desktop
-navigation. Guest branding/Sign in remain on one row beside the menu control.
-The member drawer contains Account settings (the unchanged /settings route) and
-Help & Feedback, followed by canonical social icons and Sign out. Selecting Account
-settings closes the drawer. Focus Close on open; outside navigation stays inert;
+The full-height drawer has Account settings and Friends for members. Guests also
+have Help & Feedback above centered social icons. Members have centered Help & Feedback,
+then social icons and Sign out at the bottom. Navigation uses neutral text links and separators, with bold current page.
+Selecting a route closes the drawer. Focus Close on open; outside navigation stays inert;
 closing nested Help restores its trigger and leaves the drawer open. Desktop resize
 dismisses the drawer. Reserve safe-area padding below the bar and above fixed Save
 controls; viewport-fit=cover enables iOS insets, with branding below the top inset.
 Desktop navigation, identity, Sign out and social footer remain unchanged.
 
-Help & Feedback is the guest bottom-bar action, member drawer action and quiet
-desktop-footer action.
+Help & Feedback is a guest/member drawer action and quiet desktop-footer action.
 Its compact native dialog shows selectable support email, mailto, Close/Escape,
 backdrop dismissal and contained/restored focus. Feature copy is centralized under
 src/features/help for later translation; no response-time or account-creation promise.
@@ -258,7 +266,9 @@ differences found.** Disabling the toggle restores sections and missing placehol
 Flag different/custom chassis prominently. Tables keep both setup columns, scoped
 headers and textual difference markers; focusable horizontal scrolling and sticky
 parameter labels keep values readable on narrow screens. Selection focuses its
-search input; a completed result focuses its heading. No comparison photos or writes.
+search input on desktop; mobile search is inside Filters to avoid opening the keyboard
+automatically. Selected/candidate summaries include joined cover photos through the
+existing private media client. A completed result focuses its heading. No comparison writes.
 
 Recheck both permissions atomically on result loads/refresh/focus. Hide cached values
 while checking and after errors; unavailable never displays a partial side. Existing
@@ -282,3 +292,25 @@ Existing spacing/shim cards and their independent add/edit/remove UX are unchang
 Legacy mapping/conversion follows [API](api.md#forms-and-reads); it must not migrate
 an array during a title-only edit. Fixed detail/Compare rows show Not specified for
 missing values; custom rows stay separate even when their display names coincide.
+
+## Browse and comparison presentation
+
+Setup detail groups title, chassis, safe owner and visibility in its header, with
+Edit/Compare/Copy link actions together, a prominent gallery and subdued dates.
+Technical values preserve explicit zero and missing distinctions. Friends uses
+single list surfaces with row separators instead of nested bordered cards.
+
+Explore defaults to All public through public search. Explicit authenticated Mine
+and Friends presets use the server-filtered visible endpoint; they never merge into
+the default public collection. Presets combine with text/chassis filters before
+pagination. Personal results use session-scoped cache keys and clear/recheck on
+friendship changes, errors and focus. Guests opening a personal preset see Sign in.
+Comparison uses the same preset controls, labelled All available/Mine/Friends.
+Same model filters by the other selected setup's actual model ID and is offered
+only when that ID is known; custom chassis is not a synthetic model.
+
+Search by title/owner and chassis controls live in a shared Filters disclosure,
+collapsed initially on mobile and expanded on desktop. Quick collection/model
+presets and removable active-filter chips remain outside it. Changing filters
+starts a fresh cursor sequence. Selection cards stay side by side on mobile, with
+wrapped titles and cover thumbnails; detailed tables retain horizontal scrolling.

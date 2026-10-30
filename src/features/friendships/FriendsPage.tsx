@@ -23,7 +23,7 @@ export function FriendsPage() {
   const [feedback, setFeedback] = useState("");
   return (
     <section className="space-y-6">
-      <h2 className="text-2xl font-semibold">Friendships</h2>
+      <h2 className="page-title">Friends</h2>
       {feedback && <InlineNotice tone="error">{feedback}</InlineNotice>}
       {friendships.isPending ? (
         <LoadingState>Loading friendships…</LoadingState>
@@ -44,7 +44,7 @@ export function FriendsPage() {
             <section
               key={bucket}
               aria-labelledby={`friends-${bucket}`}
-              className="space-y-3 rounded border p-4"
+              className="people-section"
             >
               <h3 id={`friends-${bucket}`} className="text-xl font-semibold">
                 {title}
@@ -52,9 +52,9 @@ export function FriendsPage() {
               {friendships.data[bucket].length === 0 ? (
                 <p>{empty}</p>
               ) : (
-                <ul className="space-y-3 rounded border p-4">
+                <ul className="people-section">
                   {friendships.data[bucket].map((item) => (
-                    <li key={item.id} className="rounded border p-4 space-y-2">
+                    <li key={item.id} className="people-row">
                       <PublicIdentity user={item.user} />
                       <FriendshipActions
                         item={item}

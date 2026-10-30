@@ -148,7 +148,12 @@ code and [API guidance](https://github.com/BlinovDev/rc-setup-hub/blob/main/AI/a
 ## Comparison reads
 
 GET /setups/visible is the bounded server-authorized candidate search for guests and
-members, distinct from public Explore. GET /setups/compare takes exactly left_id and
+members, distinct from public Explore. Optional `scope=all|mine|friends` narrows before
+pagination: all is the default visible set; mine selects the viewer's setups at any
+visibility; friends selects accepted friends' readable setups, excluding own and
+private friend setups. Mine/friends require an authenticated session (401 for guests).
+Repeat scope alongside q, brand_id, model_id, limit and cursor on each page request.
+Public GET /setups/search remains public-only and does not accept personal scopes. GET /setups/compare takes exactly left_id and
 right_id and returns an atomic SetupComparison or no sides. Use the committed types;
 never combine independent detail reads into a permission-checked pair. Both requests
 use credentials, no-store, abort signals and withSession; comparison/selection keys
