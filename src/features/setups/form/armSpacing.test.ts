@@ -18,8 +18,7 @@ describe("optional arm spacer totals", () => {
       it(`${axle} ${arm} supports empty, partial and all-zero totals independently`, () => {
         const values = setupToForm();
         values.title = "Setup";
-        expect(values[axle][arm]).toBeUndefined();
-        values[axle][arm] = { front_mm: "", rear_mm: "" };
+        expect(values[axle][arm]).toEqual({ front_mm: "", rear_mm: "" });
         expect(setupFormSchema.safeParse(values).success).toBe(true);
         expect(serializeData(values)).toEqual({});
         values[axle][arm] = { front_mm: "0", rear_mm: "5,2" };
@@ -61,7 +60,7 @@ describe("optional arm spacer totals", () => {
   }
   it("hydrates null/empty blocks as absent, and preserves legacy technical values", () => {
     const legacy = setupToForm(testSetup);
-    expect(legacy.front.top_arm_spacing).toBeUndefined();
+    expect(legacy.front.top_arm_spacing).toEqual({ front_mm: "", rear_mm: "" });
     expect(serializeData(legacy)).toEqual(testSetup.data);
     const values = setupToForm({
       ...testSetup,
@@ -74,8 +73,11 @@ describe("optional arm spacer totals", () => {
         },
       },
     });
-    expect(values.front.top_arm_spacing).toBeUndefined();
-    expect(values.front.lower_arm_spacing).toBeUndefined();
+    expect(values.front.top_arm_spacing).toEqual({ front_mm: "", rear_mm: "" });
+    expect(values.front.lower_arm_spacing).toEqual({
+      front_mm: "",
+      rear_mm: "",
+    });
     expect(serializeData(values)).toEqual({});
   });
   it("unrelated edits and removal/clearing retain sibling blocks and measurements", () => {

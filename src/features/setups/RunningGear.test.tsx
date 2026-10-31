@@ -310,6 +310,7 @@ it("legacy editor keeps new fields blank and unavailable joined names have a saf
   await screen.findByLabelText("Title");
   setupControl("Front wheel model");
   expect(setupControl("Rear hex offset (mm)")).toHaveValue("");
+  setupControl("Front wheel model");
   expect(
     screen.getByText(
       "Front wheel manufacturer: Saved manufacturer (name unavailable)",

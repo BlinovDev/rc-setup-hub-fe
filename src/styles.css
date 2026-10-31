@@ -83,6 +83,10 @@
 }
 @layer components {
   .app-shell {
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+    min-height: 100dvh;
     max-width: 72rem;
     margin-inline: auto;
   }
@@ -121,6 +125,7 @@
     padding: 1.5rem 1rem
       calc(var(--mobile-nav-height) + env(safe-area-inset-bottom) + 2rem);
     min-width: 0;
+    flex: 1;
   }
   .page-content > section,
   .page-content > article {
@@ -139,6 +144,14 @@
     border-top: 1px solid #cbd5e1;
     background: white;
   }
+  .primary-nav a.active {
+    color: var(--accent);
+    font-weight: 700;
+    text-decoration-color: var(--accent);
+    text-decoration-line: underline;
+    text-decoration-thickness: 2px;
+    text-underline-offset: 0.35em;
+  }
   .primary-nav a {
     display: flex;
     align-items: center;
@@ -150,8 +163,8 @@
   }
   .primary-nav a[aria-current="page"] {
     font-weight: 750;
-    border-bottom-color: #17212b;
-    background: #f1f5f9;
+    border-bottom-color: transparent;
+    background: transparent;
   }
   .skip-link {
     position: fixed;
@@ -453,9 +466,13 @@
   }
   .desktop-footer {
     display: block;
+    margin-top: auto;
     padding: 1rem 1.5rem;
     border-top: 1px solid #cbd5e1;
     background: white;
+  }
+  .desktop-footer a {
+    color: var(--accent);
   }
 }
 
@@ -729,9 +746,10 @@
     margin-top: 1rem;
   }
   [aria-current="location"] {
-    background: #e0f2fe;
+    background: #fff4ec;
     font-weight: 700;
-    border-inline-start: 4px solid #0369a1;
+    border-inline-start: 4px solid var(--accent);
+    color: var(--accent);
   }
   .error-overview {
     border: 2px solid #b91c1c;
@@ -1567,15 +1585,158 @@
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 0.5rem;
+  margin-bottom: 1.25rem;
 }
 .suspension-tabs [aria-selected="true"] {
-  border-bottom: 3px solid #17212b;
-  background: #f1f5f9;
+  border-color: var(--accent);
+  background: #fff7ed;
+  color: var(--accent);
   font-weight: 750;
 }
 
 .component-card:not(.compact-component) > .component-heading {
   padding-right: 2rem;
+}
+
+/* Create/Edit: use one surface per functional group, with light dividers for
+   related optional blocks instead of stacking a border around every wrapper. */
+.setup-edit-layout .setup-section-pane section > fieldset,
+.setup-edit-layout .setup-section-pane [role="tabpanel"] > fieldset {
+  border: 1px solid #d8e0e8;
+  border-radius: 0.75rem;
+  background: white;
+  padding: 1rem;
+  margin-block: 0;
+}
+.setup-edit-layout .component-card {
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  padding: 0;
+  margin-block: 1rem;
+}
+.setup-edit-layout .component-card + .component-card {
+  border-top: 1px solid #e8edf2;
+  padding-top: 1rem;
+}
+.setup-edit-layout .component-card fieldset {
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  padding: 0;
+}
+.setup-edit-layout .component-card fieldset > legend {
+  display: block;
+  padding: 0;
+  margin-bottom: 0.5rem;
+}
+.setup-edit-layout [role="tabpanel"][id$="-shocks"] {
+  border: 1px solid #d8e0e8;
+  border-radius: 0.75rem;
+  background: white;
+  padding: 1rem;
+  margin-top: 0;
+}
+
+.setup-edit-layout .setup-field {
+  position: relative;
+  min-width: 0;
+  padding-top: 0.4rem;
+}
+.setup-edit-layout .setup-field-control {
+  display: block;
+  width: 100%;
+  min-height: 3.25rem;
+  border: 1px solid #aebbc8;
+  border-radius: 0.65rem;
+  background: white;
+  color: #17212b;
+  padding: 1.2rem 0.8rem 0.35rem;
+  transition:
+    border-color 140ms ease,
+    box-shadow 140ms ease;
+}
+.setup-edit-layout .setup-field-control::placeholder {
+  color: transparent;
+}
+.setup-edit-layout .setup-field-label {
+  position: absolute;
+  top: 1.95rem;
+  left: 0.85rem;
+  max-width: calc(100% - 1.7rem);
+  overflow: hidden;
+  color: #5b6875;
+  font-size: 1rem;
+  line-height: 1;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  pointer-events: none;
+  transform: translateY(-50%);
+  transform-origin: left center;
+  transition:
+    top 140ms ease,
+    color 140ms ease,
+    font-size 140ms ease;
+}
+.setup-edit-layout
+  .setup-field:has(.setup-field-control:placeholder-shown:not(:focus))
+  .setup-field-label {
+  top: 2.05rem;
+  font-size: 1rem;
+}
+.setup-edit-layout
+  .setup-field:has(textarea.setup-field-control:placeholder-shown:not(:focus))
+  .setup-field-label {
+  top: 1.55rem;
+}
+.setup-edit-layout
+  .setup-field:has(.setup-field-control:focus)
+  .setup-field-label,
+.setup-edit-layout
+  .setup-field:not(:has(.setup-field-control:placeholder-shown))
+  .setup-field-label {
+  top: 0.4rem;
+  padding-inline: 0.25rem;
+  background: white;
+  color: #627181;
+  font-size: 0.8rem;
+}
+.setup-edit-layout .setup-field-control:focus {
+  border: 2px solid var(--accent);
+  outline: none;
+  box-shadow: none;
+}
+.setup-edit-layout .edit-setup-form :is(input, textarea, select):focus {
+  border: 2px solid var(--accent);
+  outline: none;
+  box-shadow: none;
+}
+.setup-edit-layout .setup-field-unit {
+  position: absolute;
+  top: 2.05rem;
+  right: 0.75rem;
+  padding: 0.15rem 0.4rem;
+  border-radius: 999px;
+  background: rgb(181 71 28 / 8%);
+  color: var(--accent);
+  font-size: 0.75rem;
+  line-height: 1.2;
+  opacity: 0.78;
+  pointer-events: none;
+  transform: translateY(-50%);
+}
+.setup-edit-layout .setup-field-has-unit .setup-field-control {
+  padding-right: 3.5rem;
+}
+.setup-edit-layout .setup-field-has-unit .setup-field-label {
+  max-width: calc(100% - 5rem);
+}
+.setup-edit-layout .setup-field-required {
+  position: absolute;
+  top: 0;
+  right: 0.15rem;
+  color: #697786;
+  font-size: 0.7rem;
 }
 .compact-component > .component-preview[hidden] ~ .component-editor {
   padding-top: 3rem;

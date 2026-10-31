@@ -3,8 +3,6 @@ import {
   type SuspensionView,
 } from "../suspensionLinks";
 import { EditorPresentation, type FormIssue } from "./editorPresentation";
-import { AddComponent } from "./AddComponent";
-import { ComponentCard } from "./ComponentCard";
 import {
   useEffect,
   useLayoutEffect,
@@ -16,7 +14,6 @@ import {
   sections,
   sectionForPath,
   focusPath,
-  componentForPath,
   matchesPath,
   legacySection,
   type SectionId,
@@ -41,6 +38,8 @@ import { ShockHardwareFields } from "./ShockHardwareFields";
 import { FrontSteeringKnuckleSection } from "./FrontSteeringKnuckleSection";
 import { RunningGearSection } from "./RunningGearSection";
 import { RearDifferentialSection } from "./RearDifferentialSection";
+import { AxleTabs, type Axle } from "./AxleTabs";
+import { ComponentCard } from "./ComponentCard";
 
 export function SetupForm({
   setup,
@@ -74,6 +73,8 @@ export function SetupForm({
   const root = useRef<HTMLFormElement>(null);
   const saving = useRef(false);
   const [savedVersion, setSavedVersion] = useState(0);
+  const [shockAxle, setShockAxle] = useState<Axle>("front");
+  const [wheelAxle, setWheelAxle] = useState<Axle>("front");
   const [active, setActive] = useState<SectionId>("general");
   const [focusRequest, setFocusRequest] = useState<{
     section?: SectionId;
@@ -84,7 +85,6 @@ export function SetupForm({
     else if (focusRequest?.section)
       document.getElementById("section-" + focusRequest.section)?.focus();
   }, [focusRequest]);
-  const [opened, setOpened] = useState<Record<string, boolean>>({});
   const [issues, setIssues] = useState<{ path: string; message: string }[]>([]);
   useEffect(() => {
     onDirtyChange?.(form.formState.isDirty);
@@ -113,11 +113,12 @@ export function SetupForm({
             ? "links"
             : "angles",
       }));
+    if (path.startsWith("frontShock.")) setShockAxle("front");
+    if (path.startsWith("rearShock.")) setShockAxle("rear");
+    if (path.startsWith("runningGear.front.")) setWheelAxle("front");
+    if (path.startsWith("runningGear.rear.")) setWheelAxle("rear");
     if (setup) onSectionViewChange?.(sectionForPath(path) !== "general");
     setActive(sectionForPath(path));
-    const component = componentForPath(path);
-    if (component)
-      setOpened((current) => ({ ...current, [component.id]: true }));
     setFocusRequest({ path });
   }
   function validationIssues(
@@ -139,21 +140,6 @@ export function SetupForm({
     );
     if (next[0]) reveal(next[0].path);
   }
-  function validateComponent(paths: string[]) {
-    const inComponent = (issue: FormIssue) =>
-      paths.some((root) => matchesPath(issue.path, root));
-    const next = validationIssues(
-      setupFormSchema.safeParse(form.getValues()),
-    ).filter(inComponent);
-    for (const path of paths)
-      form.clearErrors(path as FieldPath<SetupFormValues>);
-    setIssues((old) => [
-      ...old.filter((issue) => !inComponent(issue)),
-      ...next,
-    ]);
-    showIssues(next);
-    return !next.length;
-  }
   const counts: Partial<Record<SectionId, number>> = {};
   for (const issue of issues) {
     const section = sectionForPath(issue.path);
@@ -163,15 +149,11 @@ export function SetupForm({
     const followAnchor = () => {
       const section = legacySection(window.location.hash);
       if (!section) return;
+      if (window.location.hash === "#setup-rear-shocks") setShockAxle("rear");
+      if (window.location.hash === "#setup-rear-running-gear")
+        setWheelAxle("rear");
       if (isEdit) onSectionViewChange?.(section !== "general");
       setActive(section);
-      const id =
-        window.location.hash === "#setup-front-knuckle"
-          ? "knuckle"
-          : window.location.hash === "#setup-rear-differential"
-            ? "differential"
-            : undefined;
-      if (id) setOpened((current) => ({ ...current, [id]: true }));
       setFocusRequest({ section });
     };
     followAnchor();
@@ -191,8 +173,9 @@ export function SetupForm({
       front: preferredSuspensionView(form.getValues().front),
       rear: preferredSuspensionView(form.getValues().rear),
     });
+    setShockAxle("front");
+    setWheelAxle("front");
     setActive("general");
-    setOpened({});
     setIssues([]);
     setFocusRequest(null);
     setSavedVersion((value) => value + 1);
@@ -202,19 +185,13 @@ export function SetupForm({
     <FormProvider {...form}>
       <EditorPresentation.Provider
         value={{
-          open: opened,
-          remove: (id) =>
-            setOpened((current) => {
-              const next = { ...current };
-              delete next[id];
-              return next;
-            }),
-          setOpen: (id, open) =>
-            setOpened((current) => ({ ...current, [id]: open })),
-          issues,
-          validate: validateComponent,
-          setup,
           savedVersion,
+          removeIssues: (paths) =>
+            setIssues((current) =>
+              current.filter(
+                (issue) => !paths.some((path) => matchesPath(issue.path, path)),
+              ),
+            ),
         }}
       >
         <div className="setup-edit-layout">
@@ -281,6 +258,19 @@ export function SetupForm({
                       <Button
                         type="button"
                         onClick={() => {
+                          if (changeChassis) {
+                            const values = form.getValues();
+                            form.reset(
+                              {
+                                ...values,
+                                changeChassis: false,
+                                selection: { brandId: null, modelId: null },
+                              },
+                              { keepDefaultValues: true },
+                            );
+                            form.clearErrors("selection");
+                            return;
+                          }
                           form.setValue("changeChassis", !changeChassis, {
                             shouldDirty: true,
                           });
@@ -374,7 +364,6 @@ export function SetupForm({
                       <ComponentCard id="knuckle">
                         <FrontSteeringKnuckleSection setup={setup} />
                       </ComponentCard>
-                      <AddComponent section="front" />
                     </section>
                     <section
                       hidden={active !== "rear"}
@@ -394,7 +383,6 @@ export function SetupForm({
                       <ComponentCard id="differential">
                         <RearDifferentialSection setup={setup} />
                       </ComponentCard>
-                      <AddComponent section="rear" />
                     </section>
                     <section
                       hidden={active !== "shocks"}
@@ -403,47 +391,62 @@ export function SetupForm({
                       <h2 id="section-shocks" tabIndex={-1}>
                         Shocks
                       </h2>
-                      {(["frontShock", "rearShock"] as const).map(
-                        (side, index) => (
-                          <fieldset
-                            id={`setup-${index === 0 ? "front" : "rear"}-shocks`}
+                      <AxleTabs
+                        label="Shock"
+                        idPrefix="shock-axle"
+                        panelIds={{
+                          front: "setup-front-shocks",
+                          rear: "setup-rear-shocks",
+                        }}
+                        value={shockAxle}
+                        onChange={setShockAxle}
+                      />
+                      {(["frontShock", "rearShock"] as const).map((side) => {
+                        const axle = side === "frontShock" ? "front" : "rear";
+                        const label = axle === "front" ? "Front" : "Rear";
+                        return (
+                          <div
+                            id={`setup-${axle}-shocks`}
                             key={side}
                             className="space-y-3 rounded border p-4"
+                            role="tabpanel"
+                            aria-labelledby={`shock-axle-${axle}-tab`}
+                            hidden={shockAxle !== axle}
                           >
-                            <legend className="font-semibold">
-                              {index === 0 ? "Front" : "Rear"} shocks
-                            </legend>
-
-                            <ComponentCard
-                              id={index === 0 ? "front-shock" : "rear-shock"}
-                            >
-                              <SetupField
-                                name={`${side}.manufacturer`}
-                                label={`${index === 0 ? "Front" : "Rear"} shock manufacturer`}
-                              />
-                              <SetupField
-                                name={`${side}.model`}
-                                label={`${index === 0 ? "Front" : "Rear"} shock model`}
-                              />
-                              <SetupField
-                                name={`${side}.springManufacturer`}
-                                label={`${index === 0 ? "Front" : "Rear"} spring manufacturer`}
-                              />
-                              <SetupField
-                                name={`${side}.springColor`}
-                                label={`${index === 0 ? "Front" : "Rear"} spring color`}
-                              />
-                              <SetupField
-                                name={`${side}.oil_cst`}
-                                label={`${index === 0 ? "Front" : "Rear"} shock oil (cSt)`}
-                                numeric
-                              />
+                            <ComponentCard id={`${axle}-shock`}>
+                              <fieldset className="space-y-3 rounded border p-4">
+                                <legend className="font-semibold">
+                                  {label} shock setup
+                                </legend>
+                                <div className="related-fields">
+                                  <SetupField
+                                    name={`${side}.manufacturer`}
+                                    label={`${label} shock manufacturer`}
+                                  />
+                                  <SetupField
+                                    name={`${side}.model`}
+                                    label={`${label} shock model`}
+                                  />
+                                  <SetupField
+                                    name={`${side}.springManufacturer`}
+                                    label={`${label} spring manufacturer`}
+                                  />
+                                  <SetupField
+                                    name={`${side}.springColor`}
+                                    label={`${label} spring color`}
+                                  />
+                                  <SetupField
+                                    name={`${side}.oil_cst`}
+                                    label={`${label} shock oil (cSt)`}
+                                    numeric
+                                  />
+                                  <ShockHardwareFields side={side} />
+                                </div>
+                              </fieldset>
                             </ComponentCard>
-                            <ShockHardwareFields side={side} />
-                          </fieldset>
-                        ),
-                      )}
-                      <AddComponent section="shocks" />
+                          </div>
+                        );
+                      })}
                     </section>
                     <section
                       hidden={active !== "wheels"}
@@ -452,9 +455,27 @@ export function SetupForm({
                       <h2 id="section-wheels" tabIndex={-1}>
                         Wheels &amp; tires
                       </h2>
-                      <RunningGearSection side="front" setup={setup} />
-                      <RunningGearSection side="rear" setup={setup} />
-                      <AddComponent section="wheels" />
+                      <AxleTabs
+                        label="Wheels and tires"
+                        idPrefix="wheel-axle"
+                        panelIds={{
+                          front: "setup-front-running-gear",
+                          rear: "setup-rear-running-gear",
+                        }}
+                        value={wheelAxle}
+                        onChange={setWheelAxle}
+                      />
+                      {(["front", "rear"] as const).map((side) => (
+                        <div
+                          key={side}
+                          id={`setup-${side}-running-gear`}
+                          role="tabpanel"
+                          aria-labelledby={`wheel-axle-${side}-tab`}
+                          hidden={wheelAxle !== side}
+                        >
+                          <RunningGearSection side={side} setup={setup} />
+                        </div>
+                      ))}
                     </section>
                     <section
                       hidden={active !== "electronics"}
@@ -484,7 +505,6 @@ export function SetupForm({
                           ))}
                         </fieldset>
                       </ComponentCard>
-                      <AddComponent section="electronics" />
                     </section>
                   </div>
                 </div>

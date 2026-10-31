@@ -13,11 +13,9 @@ import { mockActiveCatalog, renderSetupRoute } from "./testUtils";
 type Schemas = components["schemas"];
 const field = (side: string, arm: string, position: string) =>
   `${side} ${arm} arm — ${position} spacers (mm)`;
-const add = (side: string, arm: string) =>
-  `Add ${arm} arm spacing — ${side.toLowerCase()} suspension`;
 
 it.each([".", ","])(
-  "creates %s totals, shows units/zero, reopens and preserves unrelated edits then removes/clears",
+  "creates %s totals, shows optional fields directly and preserves unrelated edits when cleared",
   async (separator) => {
     mockActiveCatalog();
     let saved: Schemas["Setup"] = structuredClone(testSetup);
@@ -57,14 +55,8 @@ it.each([".", ","])(
     await user.type(setupControl("Title"), "Arm spacing");
     for (const side of ["Front", "Rear"]) {
       for (const arm of ["top", "lower"]) {
-        expect(
-          screen.queryByLabelText(field(side, arm, "Front")),
-        ).not.toBeInTheDocument();
-        await user.click(setupButton({ name: add(side, arm) }));
-        expect(
-          screen.queryByRole("button", { name: add(side, arm) }),
-        ).not.toBeInTheDocument();
         const front = setupControl(field(side, arm, "Front"));
+        expect(front).toBeVisible();
         expect(front).toHaveValue("");
         expect(front).toHaveAttribute("inputmode", "decimal");
         if (side === "Front") await user.type(front, "0");
@@ -120,10 +112,9 @@ it.each([".", ","])(
     await screen.findByRole("link", { name: "Edit setup" });
     await user.click(screen.getByRole("link", { name: "Edit setup" }));
     await screen.findByLabelText("Title");
-    await user.click(setupButton({ name: "Remove front top arm spacing" }));
-    expect(
-      screen.queryByLabelText(field("Front", "top", "Front")),
-    ).not.toBeInTheDocument();
+    await user.click(setupButton({ name: "Clear front top arm spacing" }));
+    expect(setupControl(field("Front", "top", "Front"))).toBeVisible();
+    expect(setupControl(field("Front", "top", "Front"))).toHaveValue("");
     await user.clear(setupControl(field("Front", "lower", "Front")));
     await user.clear(setupControl(field("Rear", "top", "Rear")));
     const updatedTotal = setupControl(field("Rear", "lower", "Rear"));
@@ -142,15 +133,15 @@ it.each([".", ","])(
     await screen.findByRole("link", { name: "Edit setup" });
     await user.click(screen.getByRole("link", { name: "Edit setup" }));
     await screen.findByLabelText("Title");
-    expect(setupButton({ name: add("Front", "top") })).toBeInTheDocument();
-    expect(setupButton({ name: add("Rear", "top") })).toBeInTheDocument();
+    expect(setupControl(field("Front", "top", "Front"))).toBeVisible();
+    expect(setupControl(field("Rear", "top", "Front"))).toBeVisible();
     expect(setupControl(field("Front", "lower", "Rear"))).toHaveValue("0");
   },
   // Full create/detail/edit/clear journey on both axles, including real section actions.
   10000,
 );
 
-it("allows empty added blocks, removes them without stale values, and saves no empty parents", async () => {
+it("shows empty optional spacing fields and removes a filled block without stale values", async () => {
   mockActiveCatalog();
   let created: Schemas["CreateSetup"] | undefined;
   server.use(
@@ -164,12 +155,10 @@ it("allows empty added blocks, removes them without stale values, and saves no e
   const user = userEvent.setup();
   await screen.findByLabelText("Title");
   await user.type(setupControl("Title"), "Empty blocks");
-  for (const side of ["Front", "Rear"])
-    for (const arm of ["top", "lower"])
-      await user.click(setupButton({ name: add(side, arm) }));
+  expect(setupControl(field("Front", "top", "Front"))).toBeVisible();
+  expect(setupControl(field("Rear", "lower", "Front"))).toBeVisible();
   await user.type(setupControl(field("Front", "top", "Front")), "5.2");
-  await user.click(setupButton({ name: "Remove front top arm spacing" }));
-  await user.click(setupButton({ name: add("Front", "top") }));
+  await user.click(setupButton({ name: "Clear front top arm spacing" }));
   expect(setupControl(field("Front", "top", "Front"))).toHaveValue("");
   await user.click(setupButton({ name: "Create setup" }));
   await screen.findByText("Setup created.");
@@ -200,7 +189,6 @@ it.each(["create", "edit"])(
     const user = userEvent.setup();
     await screen.findByLabelText("Title");
     if (mode === "create") await user.type(setupControl("Title"), "Invalid");
-    await user.click(setupButton({ name: add("Rear", "lower") }));
     const input = setupControl(field("Rear", "lower", "Front"));
     for (const value of ["-0,1", "NaN", "Infinity", "1e999", "1,2.3", "1,,2"]) {
       await user.clear(input);

@@ -38,9 +38,7 @@ it("validates unseen optional values, reveals the editor, and focuses after regi
       running_gear: { rear: { wheel: { offset_mm: 1.5 } } },
     },
   });
-  expect(
-    screen.queryByLabelText("Rear wheel offset (mm)"),
-  ).not.toBeInTheDocument();
+  expect(screen.getByLabelText("Rear wheel offset (mm)")).not.toBeVisible();
   await userEvent
     .setup()
     .click(screen.getByRole("button", { name: "Save setup" }));
@@ -80,7 +78,7 @@ it("aggregate link errors reveal the stable field array and focus an actionable 
   ).toHaveAccessibleDescription("Use at most 100 links.");
   expect(screen.getByLabelText("Front link 101 name")).toHaveValue("Link 100");
 });
-it("collapse and section switches preserve manufacturer choosing/cancel snapshots without eager catalogue loads", async () => {
+it("directly exposes optional fields and preserves manufacturer change drafts across sections", async () => {
   const old = testSetup.chassis.brand_id,
     active = "11111111-1111-4111-8111-111111111111";
   let calls = 0;
@@ -100,9 +98,9 @@ it("collapse and section switches preserve manufacturer choosing/cancel snapshot
   const user = userEvent.setup();
   select("Front");
   expect(calls).toBe(0);
-  await user.click(
-    screen.getByRole("button", { name: "Edit Front steering knuckle" }),
-  );
+  expect(
+    screen.getByLabelText("Front knuckle part number / description"),
+  ).toHaveValue("Old part");
   await user.click(
     screen.getByRole("button", { name: "Change knuckle manufacturer" }),
   );
@@ -115,14 +113,8 @@ it("collapse and section switches preserve manufacturer choosing/cancel snapshot
     screen.getByLabelText("Front knuckle part number / description"),
     { target: { value: "Draft part" } },
   );
-  await user.click(
-    screen.getByRole("button", { name: "Done Front steering knuckle" }),
-  );
   select("Rear");
   select("Front");
-  await user.click(
-    screen.getByRole("button", { name: "Edit Front steering knuckle" }),
-  );
   expect(screen.getByLabelText("Front knuckle manufacturer")).toHaveValue(
     active,
   );

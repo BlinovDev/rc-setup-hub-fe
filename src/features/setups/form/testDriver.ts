@@ -8,8 +8,8 @@ import {
 } from "@testing-library/react";
 import { componentSpecs } from "./presentation";
 
-// Existing transport/field regressions use the real section/card actions before
-// addressing a field. Disclosure/focus/modal tests use raw screen queries instead.
+// Existing transport/field regressions select the relevant section and axle view
+// before addressing a field. Focus/modal tests use raw screen queries instead.
 function destination(matcher: Matcher | ByRoleOptions["name"] | undefined) {
   const text =
     typeof matcher === "string"
@@ -25,9 +25,7 @@ function destination(matcher: Matcher | ByRoleOptions["name"] | undefined) {
   else if (/top arm|top.*spacing/.test(text)) id = side + "-top-spacing";
   else if (/lower arm|lower.*spacing/.test(text)) id = side + "-lower-spacing";
   else if (/link/.test(text)) id = side + "-links";
-  else if (/piston/.test(text)) id = side + "-piston";
-  else if (/seal/.test(text)) id = side + "-seal";
-  else if (/shock|spring/.test(text)) id = side + "-shock";
+  else if (/piston|seal|shock|spring/.test(text)) id = side + "-shock";
   else if (/wheel/.test(text)) id = side + "-wheel";
   else if (/tire/.test(text)) id = side + "-tire";
   else if (/hex/.test(text)) id = side + "-hex";
@@ -71,27 +69,6 @@ function prepare(matcher: Matcher | ByRoleOptions["name"] | undefined) {
     )
       fireEvent.click(target);
   }
-  if (
-    d.spec &&
-    d.id !== "notes" &&
-    !d.id?.endsWith("-links") &&
-    !/^Add (top|lower) arm spacing/i.test(String(matcher)) &&
-    document.querySelector(".setup-edit-layout") &&
-    !document.querySelector(`[data-component="${d.id}"]`)
-  ) {
-    const pane = document.querySelector(".setup-section-pane")!;
-    const trigger = within(pane as HTMLElement).getByRole("button", {
-      name: "Add component",
-    });
-    if (trigger.getAttribute("aria-expanded") !== "true")
-      fireEvent.click(trigger);
-    fireEvent.click(
-      within(pane as HTMLElement).getByRole("button", {
-        name:
-          "Add " + d.spec.label.charAt(0).toLowerCase() + d.spec.label.slice(1),
-      }),
-    );
-  }
   const tabName = /camber|caster|toe/.test(String(matcher).toLowerCase())
     ? "Angles"
     : d.id?.endsWith("-links")
@@ -102,21 +79,12 @@ function prepare(matcher: Matcher | ByRoleOptions["name"] | undefined) {
     if (tab?.getAttribute("aria-selected") !== "true" && tab)
       fireEvent.click(tab);
   }
-  if (
-    d.spec &&
-    (d.id !== "notes" || !document.querySelector(".setup-edit-layout"))
-  ) {
-    const region = document.querySelector<HTMLElement>(
-      `[data-component="${d.id}"]`,
-    );
-    const edit =
-      region &&
-      within(region).queryByRole("button", {
-        name: new RegExp("^(?:Edit|Add component:) " + d.spec.label + "$"),
-      });
-    if (edit && edit.getAttribute("aria-expanded") !== "true")
-      fireEvent.click(edit);
-  }
+  const axleTab =
+    d.label === "Shocks" || d.label === "Wheels & tires"
+      ? screen.queryByRole("tab", { name: d.capital })
+      : null;
+  if (axleTab?.getAttribute("aria-selected") !== "true" && axleTab)
+    fireEvent.click(axleTab);
   return d;
 }
 export function setupControl(
@@ -139,46 +107,15 @@ export function setupControl(
   return screen.getByLabelText(matcher, options);
 }
 export function setupButton(options: ByRoleOptions) {
-  const name = options.name;
-  const d = prepare(name);
-  const text = typeof name === "string" ? name : "";
-  if (
-    /^(Clear |Remove (front|rear) (top|lower) arm spacing)/i.test(text) &&
-    d.spec
-  ) {
-    const region = document.querySelector<HTMLElement>(
-      `[data-component="${d.id}"]`,
-    )!;
+  const d = prepare(options.name);
+  if (typeof options.name === "string" && /^Clear /i.test(options.name)) {
+    if (!d.spec) throw new Error(`No component matches ${options.name}`);
+    const region = screen.getByRole("region", { name: d.spec.label });
     fireEvent.click(
-      within(region).getByRole("button", { name: "Remove " + d.spec.label }),
+      within(region).getByRole("button", { name: `Remove ${d.spec.label}` }),
     );
-    return (
-      within(region).queryByRole("button", {
-        name: "Confirm remove " + d.spec.label,
-      }) ??
-      (() => {
-        if (!document.querySelector(".setup-edit-layout"))
-          return within(region).getByRole("button", {
-            name: "Add component: " + d.spec!.label,
-          });
-        const chooser = screen.getByRole("button", { name: "Add component" });
-        fireEvent.click(chooser);
-        return screen.getByRole("button", {
-          name:
-            "Add " +
-            d.spec!.label.charAt(0).toLowerCase() +
-            d.spec!.label.slice(1),
-        });
-      })()
-    );
-  }
-  if (/^Add (top|lower) arm spacing/i.test(text) && d.spec) {
-    const chooser = screen.getByRole("button", { name: "Add component" });
-    if (chooser.getAttribute("aria-expanded") !== "true")
-      fireEvent.click(chooser);
-    return screen.getByRole("button", {
-      name:
-        "Add " + d.spec.label.charAt(0).toLowerCase() + d.spec.label.slice(1),
+    return within(region).getByRole("button", {
+      name: `Confirm remove ${d.spec.label}`,
     });
   }
   return screen.getByRole("button", options);

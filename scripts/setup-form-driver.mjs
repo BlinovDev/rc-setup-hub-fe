@@ -15,8 +15,7 @@ export function setupFormDriver(page) {
         `${label} ${text.includes("top") ? "top" : "lower"} arm spacing`,
       ];
     if (/link/.test(text)) return [label, `${label} link lengths`];
-    if (/piston/.test(text)) return ["Shocks", `${label} shock piston`];
-    if (/seal/.test(text)) return ["Shocks", `${label} shock seal`];
+    if (/piston|seal/.test(text)) return ["Shocks", `${label} shock setup`];
     if (/shock|spring/.test(text)) return ["Shocks", `${label} shock setup`];
     if (/wheel|tire|hex/.test(text))
       return [
@@ -97,48 +96,17 @@ export function setupFormDriver(page) {
           .getAttribute("aria-current")))
     )
       await select(section);
-    if (
-      component &&
-      (await page.locator(".setup-edit-layout").count()) &&
-      component !== "Setup notes" &&
-      !component.endsWith("link lengths")
-    ) {
-      const existing = page.locator(
-        `.component-card[aria-label="${component}"]`,
-      );
-      if (!(await existing.count())) {
-        const chooser = page.getByRole("button", {
-          name: "Add component",
-          exact: true,
-        });
-        if ((await chooser.getAttribute("aria-expanded")) !== "true")
-          await chooser.click();
-        await page
-          .getByRole("button", {
-            name:
-              "Add " + component.charAt(0).toLowerCase() + component.slice(1),
-            exact: true,
-          })
-          .click();
-      }
-    }
-    if (
-      component &&
-      !component.endsWith("link lengths") &&
-      (component !== "Setup notes" ||
-        !(await page.locator(".setup-edit-layout").count()))
-    ) {
-      const card = page.locator(`.component-card[aria-label="${component}"]`);
-      const edit = card.locator(".component-edit-target");
+    if (component && /^(Shocks|Wheels & tires)$/.test(section ?? "")) {
+      const axle = /\brear\b/i.test(String(name)) ? "Rear" : "Front";
+      const axleTabs = page.getByRole("tablist", {
+        name: section === "Shocks" ? "Shock axle" : "Wheels and tires axle",
+      });
+      const tab = axleTabs.getByRole("tab", { name: axle, exact: true });
       if (
-        (await edit.count()) &&
-        (await edit.getAttribute("aria-expanded")) !== "true"
-      ) {
-        await edit.evaluate((element) =>
-          element.scrollIntoView({ block: "center", inline: "nearest" }),
-        );
-        await edit.click();
-      }
+        (await tab.count()) &&
+        (await tab.getAttribute("aria-selected")) !== "true"
+      )
+        await tab.click();
     }
     const tabName = /camber|caster|toe/.test(String(name).toLowerCase())
       ? "Angles"
@@ -182,41 +150,15 @@ export function setupFormDriver(page) {
     button: async (options) => {
       const name = String(options.name);
       const component = await prepare(name);
-      if (
-        /^Clear |^Remove (front|rear) (top|lower) arm spacing/i.test(name) &&
-        component
-      ) {
+      if (/^Clear /i.test(name) && component) {
         await page
           .getByRole("button", { name: "Remove " + component, exact: true })
           .click();
-        const confirm = page.getByRole("button", {
+        return page.getByRole("button", {
           name: "Confirm remove " + component,
           exact: true,
         });
-        if (await confirm.count()) return confirm;
-        // Empty editors clear immediately; return the now-visible Add action.
-        if (await page.locator(".setup-edit-layout").count()) {
-          const chooser = page.getByRole("button", {
-            name: "Add component",
-            exact: true,
-          });
-          if ((await chooser.getAttribute("aria-expanded")) !== "true")
-            await chooser.click();
-          return page.getByRole("button", {
-            name: component,
-            exact: true,
-          });
-        }
-        return page.getByRole("button", {
-          name: "Add component: " + component,
-          exact: true,
-        });
       }
-      if (/^Add (top|lower) arm spacing/i.test(name) && component)
-        return page.getByRole("button", {
-          name: "Edit " + component,
-          exact: true,
-        });
       return page.getByRole("button", options);
     },
   };

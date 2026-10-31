@@ -1,7 +1,7 @@
-import { ComponentCard } from "./ComponentCard";
 import type { components } from "../../../api/generated/schema";
 import { ManufacturerField } from "./ManufacturerField";
 import { SetupField } from "./SetupField";
+import { ComponentCard } from "./ComponentCard";
 
 export function RunningGearSection({
   side,
@@ -13,24 +13,18 @@ export function RunningGearSection({
   const label = side === "front" ? "Front" : "Rear";
   const name = `runningGear.${side}` as const;
   return (
-    <fieldset
-      id={`setup-${side}-running-gear`}
-      className="space-y-4 rounded border p-4"
-    >
+    <fieldset className="space-y-4 rounded border p-4">
       <legend className="font-semibold">{label} hex, wheel and tire</legend>
       <p>
         All fields are optional. Hex and wheel offsets are separate
         measurements.
       </p>
       <ComponentCard id={`${side}-hex`}>
-        <fieldset className="space-y-3 rounded border p-3">
-          <legend className="font-semibold">{label} hex</legend>
-          <SetupField
-            name={`${name}.hexOffset`}
-            label={`${label} hex offset (mm)`}
-            numeric
-          />
-        </fieldset>
+        <SetupField
+          name={`${name}.hexOffset`}
+          label={`${label} hex offset (mm)`}
+          numeric
+        />
       </ComponentCard>
       {(["wheel", "tire"] as const).map((part) => (
         <ComponentCard key={part} id={`${side}-${part}`}>

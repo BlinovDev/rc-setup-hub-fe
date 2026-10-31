@@ -1,111 +1,66 @@
-import {
-  fireEvent,
-  render,
-  screen,
-  within,
-  waitFor,
-} from "@testing-library/react";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { fireEvent, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { expect, it, vi } from "vitest";
-import { SetupForm } from "./SetupForm";
 import { testSetup } from "../testFixtures";
-const form = (setup = testSetup) => {
-  const save = vi.fn();
-  render(
-    <QueryClientProvider client={new QueryClient()}>
-      <SetupForm setup={setup} onSave={save} pending={false} />
-    </QueryClientProvider>,
+import { SetupForm } from "./SetupForm";
+import type { SetupFormValues } from "./formSchema";
+import { serializePatch } from "./serialization";
+
+it("keeps populated optional fields visible and clears only the chosen block", async () => {
+  const save = vi.fn<(values: SetupFormValues) => Promise<boolean>>(
+    async () => false,
   );
-  return save;
-};
-const section = (name: string) =>
-  fireEvent.click(
-    within(
-      screen.getByRole("navigation", { name: "Setup sections" }),
-    ).getByRole("button", { name }),
-  );
-it("unused controls stay undisclosed; Add keeps an empty editor open and focuses its first input", async () => {
-  form();
-  section("Wheels & tires");
-  const user = userEvent.setup();
-  expect(
-    screen.queryByLabelText("Front hex offset (mm)"),
-  ).not.toBeInTheDocument();
-  await user.click(screen.getByRole("button", { name: "Add component" }));
-  await user.click(screen.getByRole("button", { name: "Add front hex" }));
-  const input = screen.getByLabelText("Front hex offset (mm)");
-  expect(input).toBeVisible();
-  expect(input).toHaveFocus();
-  fireEvent.change(input, { target: { value: "-" } });
-  section("Front");
-  section("Wheels & tires");
-  expect(input).toHaveValue("-");
-  await user.click(screen.getByRole("button", { name: "Done Front hex" }));
-  await waitFor(() => expect(input).toHaveFocus());
-  expect(input).toBeVisible();
-  expect(input).toHaveAttribute("aria-invalid", "true");
-  fireEvent.change(input, { target: { value: "0" } });
-  await user.click(screen.getByRole("button", { name: "Done Front hex" }));
-  expect(input).not.toBeVisible();
-  expect(screen.getByRole("region", { name: "Front hex" })).toHaveTextContent(
-    "Offset (mm): 0",
-  );
-  await user.click(screen.getByRole("button", { name: "Edit Front hex" }));
-  expect(input).toBeVisible();
-  expect(input).toHaveValue("0");
-});
-it("summaries preserve manufacturer/notes/zero-only data and save the whole unseen document", async () => {
   const setup = {
     ...testSetup,
     data: {
       ...testSetup.data,
-      front_steering_knuckle: { manufacturer_id: testSetup.chassis.brand_id },
-      rear_differential: { tuning_notes: "Only notes" } as const,
       running_gear: { front: { hex: { offset_mm: 0 } } },
+      rear_differential: { tuning_notes: "Keep this" },
     },
   };
-  const save = vi.fn();
   render(
     <QueryClientProvider client={new QueryClient()}>
       <SetupForm setup={setup} onSave={save} pending={false} />
     </QueryClientProvider>,
   );
-  section("Front");
-  expect(
-    screen.getByRole("region", { name: "Front steering knuckle" }),
-  ).toHaveTextContent("Saved manufacturer");
-  section("Rear");
-  expect(
-    screen.getByRole("region", { name: "Rear differential" }),
-  ).toHaveTextContent("Only notes");
   const user = userEvent.setup();
-  section("Wheels & tires");
-  expect(screen.getByRole("region", { name: "Front hex" })).toHaveTextContent(
-    "Offset (mm): 0",
+  fireEvent.click(
+    within(
+      screen.getByRole("navigation", { name: "Setup sections" }),
+    ).getByRole("button", { name: "Wheels & tires" }),
   );
-  await user.click(screen.getByRole("button", { name: "Remove Front hex" }));
-  expect(screen.getByRole("button", { name: "Cancel" })).toHaveFocus();
-  await user.click(screen.getByRole("button", { name: "Cancel" }));
-  expect(
-    screen.getByRole("button", { name: "Remove Front hex" }),
-  ).toHaveFocus();
-  expect(screen.getByRole("region", { name: "Front hex" })).toHaveTextContent(
-    "Offset (mm): 0",
-  );
-  await user.click(screen.getByRole("button", { name: "Remove Front hex" }));
+  const offset = screen.getByLabelText("Front hex offset (mm)");
+  expect(offset).toBeVisible();
+  expect(offset).toHaveValue("0");
+  const hex = screen.getByRole("region", { name: "Front hex" });
   await user.click(
-    screen.getByRole("button", { name: "Confirm remove Front hex" }),
+    within(hex).getByRole("button", { name: "Remove Front hex" }),
   );
-  await user.click(screen.getByRole("button", { name: "Add component" }));
-  await user.click(screen.getByRole("button", { name: "Add front hex" }));
-  expect(screen.getByLabelText("Front hex offset (mm)")).toHaveValue("");
+  expect(screen.getByRole("button", { name: "Cancel" })).toHaveFocus();
+  await user.click(
+    within(hex).getByRole("button", { name: "Confirm remove Front hex" }),
+  );
+  expect(offset).toBeVisible();
+  expect(offset).toHaveValue("");
+  expect(
+    within(hex).queryByRole("button", { name: "Remove Front hex" }),
+  ).toBeNull();
+  fireEvent.click(
+    within(
+      screen.getByRole("navigation", { name: "Setup sections" }),
+    ).getByRole("button", { name: "Rear" }),
+  );
+  expect(screen.getByLabelText("Rear differential tuning notes")).toHaveValue(
+    "Keep this",
+  );
   await user.click(screen.getByRole("button", { name: "Save setup" }));
-  expect(save).toHaveBeenCalled();
-  expect(save.mock.calls[0]?.[0].rearDifferential.tuningNotes).toBe(
-    "Only notes",
-  );
-  expect(save.mock.calls[0]?.[0].frontSteeringKnuckle.manufacturerId).toBe(
-    testSetup.chassis.brand_id,
-  );
+  expect(
+    serializePatch(save.mock.calls[0]![0]).data?.running_gear,
+  ).toBeUndefined();
+  expect(
+    serializePatch(save.mock.calls[0]![0]).data?.rear_differential,
+  ).toEqual({
+    tuning_notes: "Keep this",
+  });
 });
