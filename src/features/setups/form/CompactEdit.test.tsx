@@ -76,82 +76,57 @@ it("opens General with photos/title/chassis/notes/visibility in order; hides the
   select("Front");
   expect(screen.getByLabelText("Front camber (degrees)")).toHaveValue("-");
 });
-it("makes the summary a keyboard edit target and removal a separate named control", async () => {
+it("keeps optional inputs visible and clears a populated block with its corner control", async () => {
   show();
   select("Wheels & tires");
   const user = userEvent.setup();
   const card = screen.getByRole("region", { name: "Front hex" });
-  const edit = within(card).getByRole("button", { name: "Edit Front hex" });
-  edit.focus();
-  await user.keyboard("{Enter}");
   const offset = screen.getByLabelText("Front hex offset (mm)");
-  expect(offset).toHaveValue("0");
-  fireEvent.change(offset, { target: { value: "-" } });
-  await user.click(screen.getByRole("button", { name: "Done Front hex" }));
   expect(offset).toBeVisible();
-  expect(offset).toHaveValue("-");
-  fireEvent.change(offset, { target: { value: "0" } });
-  await user.click(screen.getByRole("button", { name: "Done Front hex" }));
-  expect(offset).not.toBeVisible();
-  const remove = within(card).getByRole("button", { name: "Remove Front hex" });
-  expect(remove.querySelector("svg")).toHaveAttribute("aria-hidden", "true");
-  await user.click(remove);
-  expect(edit).toHaveAttribute("aria-expanded", "false");
-  await user.click(screen.getByRole("button", { name: "Cancel" }));
-  expect(remove).toHaveFocus();
-  await user.click(edit);
   expect(offset).toHaveValue("0");
   fireEvent.change(offset, { target: { value: "-" } });
-  await user.click(screen.getByRole("button", { name: "Done Front hex" }));
+  await user.click(screen.getByRole("button", { name: "Save setup" }));
   await waitFor(() => expect(offset).toHaveFocus());
   expect(offset).toHaveAttribute("aria-invalid", "true");
   fireEvent.change(offset, { target: { value: "0" } });
-  await user.click(screen.getByRole("button", { name: "Done Front hex" }));
-  expect(offset).not.toBeVisible();
+  const remove = within(card).getByRole("button", { name: "Remove Front hex" });
+  expect(remove.querySelector("svg")).toHaveAttribute("aria-hidden", "true");
+  await user.click(remove);
+  await user.click(screen.getByRole("button", { name: "Cancel" }));
+  expect(offset).toHaveValue("0");
+  await user.click(
+    within(card).getByRole("button", { name: "Remove Front hex" }),
+  );
+  await user.click(
+    within(card).getByRole("button", { name: "Confirm remove Front hex" }),
+  );
+  expect(offset).toBeVisible();
+  expect(offset).toHaveValue("");
 });
-it("offers one chooser for only absent components with axle context; Done retains an empty editor", async () => {
+it("shows all wheel and tire fields by default and preserves drafts across axle tabs", async () => {
   show();
   select("Wheels & tires");
   const user = userEvent.setup();
-  expect(screen.getAllByRole("button", { name: "Add component" })).toHaveLength(
-    1,
-  );
-  expect(screen.queryByLabelText("Front tire model")).not.toBeInTheDocument();
-  await user.click(screen.getByRole("button", { name: "Add component" }));
-  const choices = screen.getByRole("group", { name: "Available components" });
-  expect(
-    within(choices).queryByRole("button", { name: "Add front hex" }),
-  ).not.toBeInTheDocument();
-  expect(
-    within(choices).queryByRole("button", { name: "Add rear differential" }),
-  ).not.toBeInTheDocument();
-  await user.click(
-    within(choices).getByRole("button", { name: "Add front tire" }),
-  );
   const model = screen.getByLabelText("Front tire model");
-  expect(model).toHaveValue("");
-  expect(model).toHaveFocus();
-  await user.click(screen.getByRole("button", { name: "Done Front tire" }));
-  await user.click(screen.getByRole("button", { name: "Add component" }));
-  expect(
-    screen.queryByRole("button", { name: "Add front tire" }),
-  ).not.toBeInTheDocument();
-  await user.keyboard("{Escape}");
-  expect(screen.getByRole("button", { name: "Add component" })).toHaveFocus();
-  await user.click(screen.getByRole("button", { name: "Edit Front tire" }));
   expect(model).toBeVisible();
+  await user.clear(model);
+  await user.type(model, "Front draft");
+  await user.click(screen.getByRole("tab", { name: "Rear" }));
+  expect(screen.getByLabelText("Rear hex offset (mm)")).toBeVisible();
+  expect(screen.getByLabelText("Rear wheel model")).toBeVisible();
+  expect(screen.getByLabelText("Rear tire model")).toBeVisible();
+  await user.click(screen.getByRole("tab", { name: "Front" }));
+  expect(model).toHaveValue("Front draft");
 });
-it("preserves whole-document serialization, zeros, long and partial hidden summaries after editing General", async () => {
+it("preserves whole-document serialization, zero and long values after editing General", async () => {
   const save = show();
   const user = userEvent.setup();
   fireEvent.change(screen.getByLabelText("Title"), {
     target: { value: "General only" },
   });
   select("Wheels & tires");
-  expect(screen.getByRole("region", { name: "Front hex" })).toHaveTextContent(
-    "Offset (mm): 0",
-  );
-  expect(screen.getByRole("region", { name: "Front wheel" })).toHaveTextContent(
+  expect(screen.getByLabelText("Front hex offset (mm)")).toHaveValue("0");
+  expect(screen.getByLabelText("Front wheel model")).toHaveValue(
     "界".repeat(200),
   );
   select("General");

@@ -21,18 +21,21 @@ export function SetupField({
   const { register, getFieldState, formState } =
     useFormContext<SetupFormValues>();
   const error = getFieldState(name, formState).error;
+  const unitMatch = numeric ? /\s*\(([^()]*)\)$/.exec(label) : null;
+  const visibleLabel = unitMatch ? label.slice(0, unitMatch.index) : label;
+  const unit = unitMatch?.[1] === "degrees" ? "deg" : unitMatch?.[1];
   const props = {
     id,
+    placeholder: " ",
+    "aria-label": label,
     "aria-required": required || undefined,
-    className: "mt-1 min-h-11 w-full rounded border p-2",
+    className: "setup-field-control",
     "aria-invalid": !!error,
     "aria-describedby": error ? `${id}-error` : undefined,
     ...register(name),
   };
   return (
-    <div>
-      <label htmlFor={id}>{label}</label>
-      {required && <span className="ml-2 text-sm">Required</span>}
+    <div className={`setup-field${unit ? " setup-field-has-unit" : ""}`}>
       {multiline ? (
         <textarea rows={4} {...props} />
       ) : (
@@ -43,6 +46,15 @@ export function SetupField({
           {...props}
         />
       )}
+      <label className="setup-field-label" htmlFor={id}>
+        {visibleLabel}
+      </label>
+      {unit && (
+        <span className="setup-field-unit" aria-hidden="true">
+          {unit}
+        </span>
+      )}
+      {required && <span className="setup-field-required">Required</span>}
       {error && (
         <InlineNotice id={`${id}-error`} tone="error">
           {error.message}

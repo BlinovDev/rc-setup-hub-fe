@@ -2,13 +2,13 @@ import { fireEvent, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { expect, it, vi } from "vitest";
-import { SetupForm } from "./SetupForm";
-import { sections } from "./presentation";
-import { serializePatch } from "./serialization";
-import type { SetupFormValues } from "./formSchema";
 import { testSetup } from "../testFixtures";
+import { SetupForm } from "./SetupForm";
+import type { SetupFormValues } from "./formSchema";
+import { serializePatch } from "./serialization";
+
 function show() {
-  const save = vi.fn<(v: SetupFormValues) => Promise<boolean>>(
+  const save = vi.fn<(values: SetupFormValues) => Promise<boolean>>(
     async () => false,
   );
   render(
@@ -18,122 +18,111 @@ function show() {
   );
   return save;
 }
-const select = (name: string) =>
+
+const select = (label: string) =>
   fireEvent.click(
     within(
       screen.getByRole("navigation", { name: "Setup sections" }),
-    ).getByRole("button", { name }),
+    ).getByRole("button", { name: label }),
   );
-it.each(sections.map(([, label]) => label))(
-  "offers no section-wide Clear action in %s and keeps the full document",
-  async (label) => {
-    const save = show();
-    select(label);
-    expect(
-      screen.queryByRole("button", { name: /clear current section/i }),
-    ).not.toBeInTheDocument();
-    expect(document.querySelector(".section-clear")).toBeNull();
-    await userEvent
-      .setup()
-      .click(screen.getByRole("button", { name: "Save setup" }));
-    const body = serializePatch(save.mock.calls[0]![0]);
-    expect(body.data).toEqual(testSetup.data);
-    expect(body.notes).toBe(testSetup.notes);
-  },
-);
-it("uses one associated disclosure trigger, keyboard toggle/Escape and only actual component choices", async () => {
+
+it("shows optional front and rear suspension fields without an add chooser", () => {
   show();
   select("Front");
-  const user = userEvent.setup();
-  const trigger = screen.getByRole("button", { name: "Add component" });
-  expect(trigger).toHaveAttribute("aria-expanded", "false");
-  expect(
-    document.getElementById(trigger.getAttribute("aria-controls")!),
-  ).toHaveAttribute("hidden");
-  trigger.focus();
-  await user.keyboard("{Enter}");
-  expect(trigger).toHaveAttribute("aria-expanded", "true");
-  const panel = screen.getByRole("group", { name: "Available components" });
-  expect(
-    within(panel)
-      .getAllByRole("button")
-      .map((button) => button.textContent),
-  ).toEqual([
-    "Add front steering knuckle",
-    "Add front lower arm mount",
-    "Add front top arm spacing",
-    "Add front lower arm spacing",
-  ]);
-  expect(
-    within(panel).queryByRole("button", { name: /close/i }),
-  ).not.toBeInTheDocument();
-  await user.click(trigger);
-  expect(panel).not.toBeVisible();
-  expect(trigger).toHaveAttribute("aria-expanded", "false");
-  await user.keyboard(" ");
-  expect(panel).toBeVisible();
-  within(panel)
-    .getByRole("button", { name: "Add front lower arm mount" })
-    .focus();
-  await user.keyboard("{Escape}");
-  expect(panel).not.toBeVisible();
-  expect(trigger).toHaveFocus();
-});
-it("selection closes choices and opens only its editor while retaining other drafts and full data", async () => {
-  const save = show();
-  const user = userEvent.setup();
-  select("Front");
-  fireEvent.change(screen.getByLabelText("Front toe (degrees)"), {
-    target: { value: "0,125" },
-  });
-  const trigger = screen.getByRole("button", { name: "Add component" });
-  await user.click(trigger);
-  await user.click(
-    screen.getByRole("button", { name: "Add front lower arm mount" }),
-  );
-  expect(trigger).toHaveAttribute("aria-expanded", "false");
-  expect(
-    screen.queryByRole("group", { name: "Available components" }),
-  ).not.toBeInTheDocument();
-  const model = screen.getByLabelText(
+  for (const name of [
     "Front lower arm mount model / part number",
-  );
-  expect(model).toBeVisible();
-  expect(model).toHaveFocus();
-  fireEvent.change(model, { target: { value: "Added mount" } });
-  await user.click(
-    screen.getByRole("button", { name: "Done Front lower arm mount" }),
-  );
-  await user.click(trigger);
-  expect(
-    within(
-      screen.getByRole("group", { name: "Available components" }),
-    ).queryByRole("button", { name: "Add front lower arm mount" }),
-  ).not.toBeInTheDocument();
-  await user.click(trigger);
+    "Front top arm — Front spacers (mm)",
+    "Front lower arm — Rear spacers (mm)",
+    "Front knuckle part number / description",
+  ])
+    expect(screen.getByLabelText(name)).toBeVisible();
+  expect(screen.queryByRole("button", { name: "Add component" })).toBeNull();
+
   select("Rear");
-  select("Front");
-  expect(screen.getByLabelText("Front toe (degrees)")).toHaveValue("0,125");
-  await user.click(screen.getByRole("button", { name: "Save setup" }));
-  expect(serializePatch(save.mock.calls[0]![0]).data).toEqual({
-    ...testSetup.data,
-    suspension: {
-      ...testSetup.data.suspension,
-      front: {
-        ...testSetup.data.suspension.front,
-        toe_deg: 0.125,
-        lower_arm_mount: { model: "Added mount" },
-      },
-    },
-  });
+  for (const name of [
+    "Rear lower arm mount model / part number",
+    "Rear top arm — Front spacers (mm)",
+    "Rear lower arm — Rear spacers (mm)",
+    "Rear differential model",
+  ])
+    expect(screen.getByLabelText(name)).toBeVisible();
 });
-it("disables the disclosure when all components in the section are already configured", () => {
+
+it("shows one complete shock form per selected axle and preserves both drafts", async () => {
   show();
-  select("Electronics");
-  const trigger = screen.getByRole("button", { name: "Add component" });
-  expect(trigger).toBeDisabled();
-  expect(trigger).toHaveAttribute("aria-expanded", "false");
+  select("Shocks");
+  const user = userEvent.setup();
+  const front = screen.getByRole("tab", { name: "Front" });
+  const rear = screen.getByRole("tab", { name: "Rear" });
+  expect(front).toHaveAttribute("aria-selected", "true");
+  const frontModel = screen.getByLabelText("Front shock model");
+  for (const name of [
+    "Front shock manufacturer",
+    "Front spring manufacturer",
+    "Front spring color",
+    "Front shock oil (cSt)",
+    "Front piston hole count",
+    "Front piston hole diameter (mm)",
+    "Front piston notes",
+    "Front seal type",
+    "Front seal description",
+  ])
+    expect(screen.getByLabelText(name)).toBeVisible();
+  await user.clear(frontModel);
+  await user.type(frontModel, "Front build");
+  await user.click(rear);
+  expect(screen.getByLabelText("Rear piston hole count")).toBeVisible();
+  expect(screen.getByLabelText("Rear seal type")).toBeVisible();
+  expect(frontModel).not.toBeVisible();
+  const rearModel = screen.getByLabelText("Rear shock model");
+  await user.clear(rearModel);
+  await user.type(rearModel, "Rear build");
+  rear.focus();
+  await user.keyboard("{ArrowLeft}");
+  expect(front).toHaveAttribute("aria-selected", "true");
+  expect(frontModel).toHaveValue("Front build");
+  expect(rearModel).toHaveValue("Rear build");
+});
+
+it("shows hex, wheel and tire fields together on the selected axle", async () => {
+  show();
+  select("Wheels & tires");
+  const user = userEvent.setup();
+  const front = screen.getByRole("tab", { name: "Front" });
+  const rear = screen.getByRole("tab", { name: "Rear" });
+  for (const name of [
+    "Front hex offset (mm)",
+    "Front wheel model",
+    "Front wheel offset (mm)",
+    "Front tire model",
+  ])
+    expect(screen.getByLabelText(name)).toBeVisible();
   expect(
-    screen.queryByRole("group", { name: "Available components" }),
-  ).not.toBeInTheDocument();
+    screen.getByRole("button", { name: "Change front wheel manufacturer" }),
+  ).toBeVisible();
+  expect(
+    screen.getByRole("button", { name: "Change front tire manufacturer" }),
+  ).toBeVisible();
+  await user.type(screen.getByLabelText("Front tire model"), "Front tire");
+  await user.click(rear);
+  expect(screen.getByLabelText("Rear hex offset (mm)")).toBeVisible();
+  expect(screen.getByLabelText("Rear wheel model")).toBeVisible();
+  expect(screen.getByLabelText("Rear tire model")).toBeVisible();
+  expect(screen.getByLabelText("Front tire model")).not.toBeVisible();
+  await user.type(screen.getByLabelText("Rear tire model"), "Rear tire");
+  await user.click(front);
+  expect(screen.getByLabelText("Front tire model")).toHaveValue("Front tire");
+  expect(screen.getByLabelText("Rear tire model")).toHaveValue("Rear tire");
+});
+
+it("keeps electronics inputs directly available and omits all blank optional fields", async () => {
+  const save = show();
+  select("Electronics");
+  for (const name of ["Motor", "ESC", "Servo", "Gyro", "Radio"])
+    expect(screen.getByLabelText(name)).toBeVisible();
+  expect(screen.queryByRole("button", { name: "Add component" })).toBeNull();
+  await userEvent
+    .setup()
+    .click(screen.getByRole("button", { name: "Save setup" }));
+  expect(serializePatch(save.mock.calls[0]![0]).data).toEqual(testSetup.data);
 });

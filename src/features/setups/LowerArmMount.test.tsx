@@ -255,7 +255,7 @@ for (const side of ["front", "rear"] as const) {
     delete expected.suspension?.[side]?.lower_arm_mount;
     expect(received?.data).toEqual(expected);
   });
-  it(`${side} associates validation/focus, clears only that mount, and re-adds notes without a manufacturer`, async () => {
+  it(`${side} associates validation/focus and clears only the selected mount`, async () => {
     serve();
     let received: Schemas["PatchSetup"] | undefined;
     let writes = 0;
@@ -285,7 +285,8 @@ for (const side of ["front", "rear"] as const) {
     expect(model).toHaveAccessibleDescription("Use at most 200 characters.");
     expect(writes).toBe(0);
     await user.click(setupButton({ name: `Clear ${side} lower arm mount` }));
-    expect(model).not.toBeInTheDocument();
+    expect(model).toBeVisible();
+    expect(model).toHaveValue("");
     await user.click(setupButton({ name: "Save setup" }));
     await screen.findByRole("link", { name: "Edit setup" });
     const expected = structuredClone(setup.data);

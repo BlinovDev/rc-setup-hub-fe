@@ -40,8 +40,8 @@ function manufacturerModel(value: {
 
 export function setupToForm(setup?: Schemas["Setup"]): SetupFormValues {
   const spacing = (value?: Schemas["ArmSpacing"] | null) =>
-    value == null || (value.front_mm == null && value.rear_mm == null)
-      ? undefined
+    value == null
+      ? { front_mm: "", rear_mm: "" }
       : {
           front_mm: numberInput(value.front_mm),
           rear_mm: numberInput(value.rear_mm),

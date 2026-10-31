@@ -37,13 +37,14 @@ mixed into public discovery or public profile results.
 
 ## Forms and numeric interaction
 
-Create and Edit use the same section navigator, component chooser, editor summaries,
-validation and Done action. One form-level Save/Create action persists setup details.
+Create and Edit use the same section navigator, directly editable optional fields,
+validation and compact component removal. One form-level Save/Create action persists setup details.
 Create photo selections upload after initial setup creation; existing photo changes
-persist immediately and show that status beside the manager. Do not add a second Close
-action for an optional component: Done validates and collapses it while retaining its
-draft; only confirmed Remove discards it. Added/open component membership is one
-presentation state map, separate from form serialization.
+persist immediately and show that status beside the manager. Optional fields are
+visible whenever their section is selected, even when blank. Empty values remain
+omitted during serialization; explicit numeric zero remains set. A configured
+optional component can be cleared with its confirmed corner Remove control. There
+are no Add/Edit/Done component states or chooser.
 
 Create and Edit open directly in **General** and share the same six-section
 navigator before content. General contains photos, required Title, chassis selection,
@@ -63,34 +64,16 @@ sheet with current location/error counts. Selection focuses the section heading;
 Escape/dismissal restores the trigger. Keep focused controls below the picker and
 above fixed Save/site navigation; compact Save padding must retain 44px controls.
 
-Configured Create and Edit components are compact, vertical label–value summaries,
-including zero, partial/historical/manufacturer-only values and wrapped long text.
-The whole preview is a native keyboard-accessible edit target with visible focus
-and an edit hint. A separate 44px corner remove control has a specific accessible
-Remove name; it never opens the editor. Populated removal confirms with Cancel
-focused, clears only that component and re-add starts blank. A single Done action
-validates that component and focuses invalid fields, otherwise collapses it while
-retaining its draft. Save persists the full document. Create and Edit share one
-component renderer and one map of added/open/collapsed components.
-
-Each technical Create/Edit section has one low-emphasis **+ Add component** chooser listing
-only absent parts with axle context. The same native button toggles its associated
-panel (aria-expanded/aria-controls); the panel contains only named component choices,
-never a dismiss row. Escape closes it and restores trigger focus. Keep 44px choice
-targets with subtle hover/focus treatment. Section headings and existing inputs/cards
-precede this secondary disclosure, with no bulk-delete control or reserved gap.
-Adding an empty component keeps its editor
-available through Done/section switches; only explicit removal returns it to the
-chooser. Optional editors stay hidden until added/edited/revealed by validation.
-No nested accordions or per-part oversized Add/Edit/Remove buttons. Presentation
-state never determines serialization. Mounted hidden editors preserve registrations,
-stable field-array IDs, incomplete numeric text and manufacturer cancel state.
-
-Keep optional axle geometry visible within Front/Rear and shock basics before
-piston/seal controls. Use two columns only for short related fields and full-width
-notes. Submission validates all sections, exposes a linked error overview/counts,
-reveals hidden fields and focuses real controls after commit, including chassis and
-aggregate link errors. Resizing and section navigation retain drafts/errors.
+Front and Rear show their optional suspension details, arm mounts/spacers and
+steering/differential fields directly. Shocks and Wheels & tires use accessible
+Front/Rear tabs so one axle's complete form is visible at a time. Shock base,
+spring, piston and seal values belong to one axle form; hex, wheel and tire values
+belong to one axle form. Electronics fields are directly visible in their section.
+Tab switches preserve both axles' drafts. Use two columns only for short related
+fields and full-width notes. Submission validates all sections, exposes a linked
+error overview/counts, selects the relevant section, axle and suspension view, then
+focuses a real invalid control, including chassis and aggregate link errors.
+Resizing and section navigation retain drafts/errors.
 
 General is the top-level view and the only section with **Delete setup**.
 There are no section-wide Clear actions, overflow substitutes or bulk-delete

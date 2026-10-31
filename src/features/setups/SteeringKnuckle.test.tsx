@@ -181,7 +181,8 @@ it("blocks invalid writes with associated focus and clears/re-adds independent f
   );
   expect(writes).toBe(0);
   await user.click(setupButton({ name: "Clear front knuckle" }));
-  expect(description).not.toBeInTheDocument();
+  expect(description).toBeVisible();
+  expect(description).toHaveValue("");
   // Clear then cancel a new choice must not restore the historical selection.
   await user.click(setupButton({ name: "Change knuckle manufacturer" }));
   const selector = setupControl("Front knuckle manufacturer");

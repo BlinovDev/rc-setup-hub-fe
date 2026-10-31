@@ -258,7 +258,7 @@ it("shows the five fixed missing detail rows, and legacy zero stays specified on
   expect(screen.getAllByText("0 mm")).toHaveLength(2);
   expect(screen.getAllByText("Not specified")).toHaveLength(3);
 });
-it("preserves the original spacing add/edit/done/cancel/remove/re-add UX beside fixed inputs", async () => {
+it("keeps spacing inputs visible beside fixed inputs and confirms component clearing", async () => {
   const user = userEvent.setup(),
     save = vi.fn<(values: SetupFormValues) => Promise<boolean>>(
       async () => true,
@@ -288,10 +288,6 @@ it("preserves the original spacing add/edit/done/cancel/remove/re-add UX beside 
       screen.getByRole("navigation", { name: "Setup sections" }),
     ).getByRole("button", { name: "Front" }),
   );
-  await user.click(screen.getByRole("tab", { name: "Link lengths" }));
-  await user.click(
-    screen.getByRole("button", { name: "Edit Front top arm spacing" }),
-  );
   const ahead = () =>
     screen.getByLabelText("Front top arm — Front spacers (mm)");
   expect(ahead()).toHaveValue("0");
@@ -308,18 +304,11 @@ it("preserves the original spacing add/edit/done/cancel/remove/re-add UX beside 
       name: "Confirm remove Front top arm spacing",
     }),
   );
-  await user.click(screen.getByRole("button", { name: "Add component" }));
-  await user.click(
-    screen.getByRole("button", { name: "Add front top arm spacing" }),
-  );
   expect(ahead()).toHaveValue("");
   await user.type(ahead(), "0");
   await user.type(
     screen.getByLabelText("Front top arm — Rear spacers (mm)"),
     "5,2",
-  );
-  await user.click(
-    screen.getByRole("button", { name: "Done Front top arm spacing" }),
   );
   expect(screen.getByLabelText("Front Upper arm length (mm)")).toHaveValue(
     "42.5",
