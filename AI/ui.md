@@ -4,6 +4,17 @@ Mobile-first for use at a drift track: readable numbers, shallow navigation, cle
 visibility, comfortable touch targets and no hover-only core action. [Product](product.md)
 owns enduring client behavior; [API](api.md) owns transport/caches, not this route map.
 
+## Visual continuity
+
+Before changing UI, inspect current `main` and the nearest analogous page/shared
+components: style tokens, colors, typography, spacing, borders, radii, shadows,
+icons, buttons, dialogs and responsive patterns are the visual authority. Reuse
+those components and conventions; do not introduce a new palette or UI aesthetic.
+Preserve adjacent mobile/desktop hierarchy and alignment. Capture and inspect
+representative browser screenshots of resting and confirmation/action states,
+comparing them to adjacent existing UI; unit tests alone do not prove visual fidelity.
+Keep changes scoped; this rule does not authorize unrelated redesigns.
+
 ## Routes
 
 | Route | Interaction |

@@ -5,13 +5,15 @@ import { InlineNotice, LoadingState } from "../../shared/components/Feedback";
 import { Button } from "../../shared/components/Button";
 import { PublicIdentity } from "../users/PublicIdentity";
 import { useState } from "react";
-import { Link, useParams } from "react-router";
+import { Link, useLocation, useParams } from "react-router";
 import type { components } from "../../api/generated/schema";
 import { isUuid } from "../search/filters";
 import { usePublicUser } from "../users/queries";
 import { SetupError, chassisLabel } from "./api";
 import { useSetup } from "./queries";
 import { shareNavigation, setupShareUrl } from "./share";
+import { CloneSetupAction } from "./CloneSetupAction";
+import { SourceAttribution } from "./SourceAttribution";
 import { TechnicalData } from "./TechnicalData";
 function Owner({ id }: { id: string }) {
   const owner = usePublicUser(id);
@@ -34,6 +36,7 @@ export function SetupDetailPage({
   user: components["schemas"]["User"] | null;
 }) {
   const { setupId = "" } = useParams();
+  const location = useLocation();
   const valid = isUuid(setupId);
   const query = useSetup(setupId, valid);
   const [copyState, setCopyState] = useState<
@@ -61,6 +64,11 @@ export function SetupDetailPage({
   const url = setupShareUrl(setup.id);
   return (
     <article className="setup-detail space-y-4">
+      {location.state?.cloned && (
+        <InlineNotice>
+          Private copy created. Photos were not copied.
+        </InlineNotice>
+      )}
       <header className="setup-detail-header">
         <div className="setup-detail-heading">
           <p className="eyebrow">{chassisLabel(setup)}</p>
@@ -95,7 +103,18 @@ export function SetupDetailPage({
         >
           {copyState === "pending" ? "Copying…" : "Copy link"}
         </Button>
+        <CloneSetupAction
+          key={`${setup.id}:${user?.id ?? "guest"}`}
+          setup={setup}
+          signedIn={user !== null}
+        />
       </div>
+      {setup.source_setup_id && (
+        <SourceAttribution
+          setupId={setup.id}
+          sourceId={setup.source_setup_id}
+        />
+      )}
       {copyState === "success" && <InlineNotice>Link copied.</InlineNotice>}
       {copyState === "error" && (
         <InlineNotice tone="error">

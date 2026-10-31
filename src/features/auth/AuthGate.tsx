@@ -1,3 +1,4 @@
+import { CloneContinuation } from "../setups/CloneContinuation";
 import { HelpFeedback } from "../help/HelpFeedback";
 import { flushSync } from "react-dom";
 import { SocialLinks } from "../../shared/social/SocialLinks";
@@ -106,6 +107,7 @@ export function AuthGate(props: Props) {
         ) : (
           <Fragment key={session.data?.id ?? "guest"}>
             <RouteMetadata />
+            {session.data && <CloneContinuation />}
             {session.data ? (
               props.children?.(session.data)
             ) : props.publicPage ? (
