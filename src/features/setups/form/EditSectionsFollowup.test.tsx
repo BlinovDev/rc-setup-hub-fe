@@ -45,19 +45,18 @@ const select = (name: string) =>
       screen.getByRole("navigation", { name: "Setup sections" }),
     ).getByRole("button", { name: new RegExp("^" + name + "(?:\\s*·|$)") }),
   );
-it("uses distinct vertical label/value rows for long, zero-only and partial edit previews", () => {
+it("shows long, zero and partial optional values directly in the edit fields", () => {
   show();
   select("Wheels & tires");
   const wheel = screen.getByRole("region", { name: "Front wheel" });
-  expect(wheel.querySelectorAll("dl > div")).toHaveLength(2);
-  expect(wheel.querySelector("dd")).toHaveTextContent("界".repeat(200));
-  expect(wheel).toHaveTextContent("Offset (mm): 0");
-  expect(
-    screen.getByRole("region", { name: "Rear tire" }).querySelector("dd"),
-  ).toHaveTextContent("Partial");
-  expect(
-    screen.queryByLabelText("Front wheel offset (mm)"),
-  ).not.toBeInTheDocument();
+  expect(within(wheel).getByLabelText("Front wheel model")).toHaveValue(
+    "界".repeat(200),
+  );
+  expect(within(wheel).getByLabelText("Front wheel offset (mm)")).toHaveValue(
+    "0",
+  );
+  expect(screen.getByLabelText("Rear tire model")).toHaveValue("Partial");
+  expect(screen.getByLabelText("Front wheel offset (mm)")).toBeVisible();
   expect(
     within(wheel).getByRole("button", { name: "Remove Front wheel" }),
   ).toHaveClass("ui-button-secondary", "component-remove-icon");
@@ -103,8 +102,8 @@ it("manual field edits and confirmed component removal retain unrelated values a
   );
   expect(screen.getByLabelText("Front camber (degrees)")).toHaveValue("");
   expect(
-    screen.getByRole("region", { name: "Front steering knuckle" }),
-  ).toHaveTextContent("Knuckle");
+    screen.getByLabelText("Front knuckle part number / description"),
+  ).toHaveValue("Knuckle");
 
   expect(screen.queryByLabelText("Front link 1 name")).not.toBeInTheDocument();
   await user.click(screen.getByRole("button", { name: "Add front link" }));

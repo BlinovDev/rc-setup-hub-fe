@@ -72,12 +72,15 @@ it("preserves decimal text input, negative angles, explicit zero and blank value
   );
   const front = within(screen.getByRole("group", { name: "Front suspension" }));
   const toe = front.getByRole("textbox", { name: "Front toe (degrees)" });
-  const visibleLabel = front.getByText("Front toe (degrees)", {
+  const visibleLabel = front.getByText("Front toe", {
     selector: "label",
   });
   expect(visibleLabel).toHaveAttribute("for", toe.id);
-  expect(toe).toHaveAccessibleName(visibleLabel.textContent!);
-  expect(toe).not.toHaveAttribute("aria-label");
+  expect(toe).toHaveAccessibleName("Front toe (degrees)");
+  expect(toe).toHaveAttribute("aria-label", "Front toe (degrees)");
+  expect(
+    within(visibleLabel.parentElement!).getByText("deg", { exact: true }),
+  ).toBeVisible();
   expect(toe).toHaveValue("0");
   expect(toe).toHaveAttribute("type", "text");
   expect(toe).toHaveAttribute("inputmode", "decimal");

@@ -92,7 +92,7 @@ it("hydrates both axles and preserves complete data on a title-only PATCH", asyn
   expect(body?.data).toEqual(setup.data);
   expect(body).not.toHaveProperty("chassis_model_id");
 });
-it("blocks invalid writes with associated focus, clears hardware, and re-adds partial fields", async () => {
+it("blocks invalid writes, clears an axle shock form, and retains partial piston/seal values", async () => {
   serve();
   let body: Schemas["PatchSetup"] | undefined;
   let writes = 0;
@@ -121,15 +121,16 @@ it("blocks invalid writes with associated focus, clears hardware, and re-adds pa
   );
   expect(writes).toBe(0);
   for (const axle of ["front", "rear"])
-    for (const block of ["piston", "seal"])
-      await user.click(setupButton({ name: `Clear ${axle} ${block}` }));
+    await user.click(setupButton({ name: `Clear ${axle} shock setup` }));
   expect(setupControl("Front piston hole count")).toHaveAttribute(
     "aria-invalid",
     "false",
   );
   await user.click(setupButton({ name: "Save setup" }));
   await screen.findByRole("link", { name: "Edit setup" });
-  expect(body?.data).toEqual(testSetup.data);
+  const { shocks: removedShocks, ...cleared } = structuredClone(testSetup.data);
+  void removedShocks;
+  expect(body?.data).toEqual(cleared);
   await user.click(screen.getByRole("link", { name: "Edit setup" }));
   await screen.findByLabelText("Title");
   fill("Rear seal description", "Description only");

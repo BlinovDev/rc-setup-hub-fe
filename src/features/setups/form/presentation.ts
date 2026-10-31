@@ -60,23 +60,12 @@ export const componentSpecs: ComponentSpec[] = [
           "springManufacturer",
           "springColor",
           "oil_cst",
+          "pistonHoles",
+          "pistonDiameter",
+          "pistonNotes",
+          "sealType",
+          "sealDescription",
         ].map((key) => `${side}Shock.${key}`),
-      },
-      {
-        id: `${side}-piston`,
-        section: "shocks",
-        label: `${label} shock piston`,
-        paths: ["pistonHoles", "pistonDiameter", "pistonNotes"].map(
-          (key) => `${side}Shock.${key}`,
-        ),
-      },
-      {
-        id: `${side}-seal`,
-        section: "shocks",
-        label: `${label} shock seal`,
-        paths: ["sealType", "sealDescription"].map(
-          (key) => `${side}Shock.${key}`,
-        ),
       },
       {
         id: `${side}-hex`,

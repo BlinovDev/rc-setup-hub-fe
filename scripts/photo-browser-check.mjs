@@ -537,9 +537,9 @@ try {
           `${width}px horizontal overflow`,
         );
       const assertFocusAboveActions = async (label) => {
-        const rect = await page
-          .getByLabel(label, { exact: true })
-          .boundingBox();
+        const target = page.getByLabel(label, { exact: true });
+        await target.scrollIntoViewIfNeeded();
+        const rect = await target.boundingBox();
         assert(
           rect &&
             rect.height >= 44 &&
@@ -702,16 +702,10 @@ try {
           .getByLabel("Front camber (degrees)", { exact: true })
           .fill("-");
         await selectSection("Wheels & tires");
-        await page.getByRole("button", { name: "Add component" }).click();
-        await page.getByRole("button", { name: "Add front hex" }).click();
         const draftHex = page.getByLabel("Front hex offset (mm)", {
           exact: true,
         });
-        assert(await draftHex.isVisible(), "Add opens the component fields");
-        assert(
-          await draftHex.evaluate((el) => el === document.activeElement),
-          "Add focuses the first component field",
-        );
+        assert(await draftHex.isVisible(), "optional fields start visible");
         await draftHex.fill("1,");
         await selectSection("Rear");
         await selectSection("Wheels & tires");
@@ -739,32 +733,12 @@ try {
           .fill("");
         await selectSection("Wheels & tires");
         await draftHex.fill("Infinity");
-        await page
-          .getByRole("button", { name: "Done Front hex", exact: true })
-          .click();
-        await page.waitForFunction(
-          () =>
-            document.activeElement?.getAttribute("name") ===
-            "runningGear.front.hexOffset",
-        );
         await assertFocusAboveActions("Front hex offset (mm)");
         await draftHex.fill("0");
-        await page
-          .getByRole("button", { name: "Done Front hex", exact: true })
-          .click();
-        assert.equal(await draftHex.isVisible(), false);
-        await page
-          .locator('[data-component="front-hex"]')
-          .getByText("Offset (mm): 0", { exact: true })
-          .waitFor();
         await page.screenshot({
           path: `artifacts/photo-qa/ux-summary-${width}x${height}.png`,
           fullPage: true,
         });
-        await page
-          .getByRole("button", { name: "Edit Front hex", exact: true })
-          .click();
-        assert.equal(await draftHex.inputValue(), "0");
         // Resizing changes navigation presentation without recreating the form/editor.
         await page.setViewportSize({
           width: width < 768 ? 1280 : 390,
@@ -791,8 +765,6 @@ try {
             exact: true,
           })
           .click();
-        await page.getByRole("button", { name: "Add component" }).click();
-        await page.getByRole("button", { name: "Add front hex" }).click();
         assert.equal(await draftHex.inputValue(), "");
         await page
           .getByRole("link", { name: "Back to my setups", exact: true })
@@ -1933,15 +1905,12 @@ try {
         assert.equal(setupPatches, writesBeforeHardware);
         for (const axle of ["front", "rear"]) {
           await (
-            await formButton({ name: `Clear ${axle} piston`, exact: true })
+            await formButton({
+              name: `Clear ${axle} shock setup`,
+              exact: true,
+            })
           ).click();
-          await (
-            await formButton({ name: `Clear ${axle} seal`, exact: true })
-          ).click();
-          delete beforeHardware.shocks[axle].piston;
-          delete beforeHardware.shocks[axle].seal;
-          if (!Object.keys(beforeHardware.shocks[axle]).length)
-            delete beforeHardware.shocks[axle];
+          delete beforeHardware.shocks[axle];
         }
         if (!Object.keys(beforeHardware.shocks).length)
           delete beforeHardware.shocks;
@@ -2271,42 +2240,63 @@ try {
               path: `artifacts/photo-qa/correction-front-${width}x${height}.png`,
               fullPage: true,
             });
-            const add = page.getByRole("button", {
-              name: "Add component",
-              exact: true,
-            });
-            if (await add.isEnabled()) {
-              await add.click();
-              const panel = page.getByRole("group", {
-                name: "Available components",
-                exact: true,
-              });
-              await panel.waitFor({ state: "visible" });
-              const addBox = await add.boundingBox();
-              const addArrow = await add
-                .locator("svg.disclosure-chevron")
-                .boundingBox();
+            for (const label of [
+              "Front lower arm mount",
+              "Front top arm — Front spacers (mm)",
+              "Front lower arm — Rear spacers (mm)",
+              "Front knuckle part number / description",
+            ])
               assert(
-                addBox &&
-                  addArrow &&
-                  Math.abs(
-                    addArrow.y +
-                      addArrow.height / 2 -
-                      (addBox.y + addBox.height / 2),
-                  ) < 2,
-                "Add component chevron must be vertically centered",
+                await page.getByLabel(label, { exact: true }).isVisible(),
+                `${label} is immediately available`,
               );
-              assert.equal(
-                await panel.getByRole("button", { name: /close/i }).count(),
-                0,
-              );
-              await page.screenshot({
-                path: `artifacts/photo-qa/correction-front-choices-${width}x${height}.png`,
-              });
-              await add.click();
-              await panel.waitFor({ state: "hidden" });
-            }
           }
+        }
+        await selectSection("Shocks");
+        const shockTabs = page.getByRole("tablist", { name: "Shock axle" });
+        assert.equal(await shockTabs.getByRole("tab").count(), 2);
+        for (const axle of ["Front", "Rear"]) {
+          await shockTabs.getByRole("tab", { name: axle, exact: true }).click();
+          assert(await page.getByLabel(`${axle} shock model`).isVisible());
+          assert(
+            await page.getByLabel(`${axle} piston hole count`).isVisible(),
+          );
+          assert(
+            await page
+              .getByLabel(`${axle} piston hole diameter (mm)`)
+              .isVisible(),
+          );
+          assert(await page.getByLabel(`${axle} seal type`).isVisible());
+          assert(await page.getByLabel(`${axle} seal description`).isVisible());
+        }
+        await selectSection("Wheels & tires");
+        const wheelTabs = page.getByRole("tablist", {
+          name: "Wheels and tires axle",
+        });
+        assert.equal(await wheelTabs.getByRole("tab").count(), 2);
+        for (const axle of ["Front", "Rear"]) {
+          await wheelTabs.getByRole("tab", { name: axle, exact: true }).click();
+          for (const part of ["hex offset (mm)", "wheel model", "tire model"])
+            assert(await page.getByLabel(`${axle} ${part}`).isVisible());
+        }
+        await selectSection("Electronics");
+        for (const label of ["Motor", "ESC", "Servo", "Gyro", "Radio"])
+          assert(await page.getByLabel(label, { exact: true }).isVisible());
+        if (width >= 768) {
+          const footer = page.locator(".desktop-footer");
+          const geometry = await footer.evaluate((el) => {
+            const shell = document
+              .querySelector(".app-shell")
+              .getBoundingClientRect();
+            const rect = el.getBoundingClientRect();
+            return {
+              shellBottom: shell.bottom,
+              footerBottom: rect.bottom,
+              viewport: innerHeight,
+            };
+          });
+          assert(geometry.footerBottom >= geometry.viewport - 1);
+          assert(Math.abs(geometry.shellBottom - geometry.footerBottom) <= 1);
         }
         await selectSection("General");
         const visibilityStyle = await page
@@ -2443,174 +2433,77 @@ try {
           0,
         );
         await selectSection("Wheels & tires");
-        assert.equal(
-          await page
-            .getByRole("button", { name: "Add component", exact: true })
-            .count(),
-          1,
-        );
-        await page
-          .getByRole("button", { name: "Add component", exact: true })
+        const runningGearTabs = page.getByRole("tablist", {
+          name: "Wheels and tires axle",
+        });
+        await runningGearTabs
+          .getByRole("tab", { name: "Front", exact: true })
           .click();
-        const choices = page.getByRole("group", {
-          name: "Available components",
+        const frontWheelModel = page.getByLabel("Front wheel model", {
           exact: true,
         });
-        await choices.waitFor({ state: "visible" });
+        assert(await frontWheelModel.isVisible());
+        await frontWheelModel.fill("Uncommitted draft");
+        await page
+          .getByLabel("Front wheel offset (mm)", { exact: true })
+          .fill("0");
         await page.screenshot({
-          path: `artifacts/photo-qa/compact-add-choices-${width}x${height}.png`,
+          path:
+            "artifacts/photo-qa/compact-inline-editor-" +
+            width +
+            "x" +
+            height +
+            ".png",
         });
-        assert.equal(
-          await choices
-            .getByRole("button", { name: "Front wheel", exact: true })
-            .count(),
-          0,
-        );
-        assert.equal(
-          await choices
-            .getByRole("button", { name: "Rear differential", exact: true })
-            .count(),
-          0,
-        );
-        assert.equal(
-          await choices.getByRole("button", { name: /close/i }).count(),
-          0,
-        );
-        assert.deepEqual(await choices.getByRole("button").allTextContents(), [
-          "Add front hex",
-          "Add rear hex",
-        ]);
-        const disclosure = page.getByRole("button", {
-          name: "Add component",
-          exact: true,
-        });
-        assert.equal(await disclosure.getAttribute("aria-expanded"), "true");
-        const panelId = await disclosure.getAttribute("aria-controls");
-        assert.equal(await choices.getAttribute("id"), panelId);
-        await disclosure.click();
-        await choices.waitFor({ state: "hidden" });
-        assert.equal(await disclosure.getAttribute("aria-expanded"), "false");
-        await disclosure.focus();
-        await page.keyboard.press("Enter");
-        await choices.waitFor({ state: "visible" });
-        await page.keyboard.press(" ");
-        await choices.waitFor({ state: "hidden" });
-        await disclosure.click();
-        await choices.waitFor({ state: "visible" });
-        await choices
-          .getByRole("button", { name: "Add front hex", exact: true })
-          .focus();
-        await page.keyboard.press("Escape");
-        await choices.waitFor({ state: "hidden" });
-        assert(
-          await disclosure.evaluate((el) => el === document.activeElement),
-        );
-        // Exercise actual touch events on phone/landscape contexts, plus mouse on desktop.
-        if (mobile) {
-          await disclosure.tap();
-          await choices.waitFor({ state: "visible" });
-          await disclosure.tap();
-          await choices.waitFor({ state: "hidden" });
-        }
-        // Selecting an actual choice opens exactly that editor and closes disclosure.
-        if (mobile) await disclosure.tap();
-        else await disclosure.click();
-        const chosenComponent = choices.getByRole("button", {
-          name: "Add front hex",
-          exact: true,
-        });
-        if (mobile) await chosenComponent.tap();
-        else await chosenComponent.click();
-        await page
-          .getByLabel("Front hex offset (mm)", { exact: true })
-          .waitFor({ state: "visible" });
-        await choices.waitFor({ state: "hidden" });
-        await page
-          .getByRole("button", { name: "Done Front hex", exact: true })
+        await runningGearTabs
+          .getByRole("tab", { name: "Rear", exact: true })
           .click();
-        await page
-          .getByLabel("Front hex offset (mm)", { exact: true })
-          .waitFor({ state: "hidden" });
-        await disclosure.click();
-        await choices.waitFor({ state: "visible" });
-        assert.deepEqual(await choices.getByRole("button").allTextContents(), [
-          "Add rear hex",
-        ]);
-        await disclosure.click();
-        await choices.waitFor({ state: "hidden" });
-
-        const wholeCard = page.getByRole("button", {
-          name: "Edit Front wheel",
-          exact: true,
-        });
-        await wholeCard.focus();
-        await page.keyboard.press("Enter");
-        await page
-          .getByLabel("Front wheel model", { exact: true })
-          .fill("Uncommitted draft");
-        await page.screenshot({
-          path: `artifacts/photo-qa/compact-inline-editor-${width}x${height}.png`,
-        });
+        for (const label of [
+          "Rear hex offset (mm)",
+          "Rear wheel model",
+          "Rear tire model",
+        ])
+          assert(await page.getByLabel(label, { exact: true }).isVisible());
+        assert.equal(await frontWheelModel.isVisible(), false);
+        await runningGearTabs
+          .getByRole("tab", { name: "Front", exact: true })
+          .click();
+        assert.equal(await frontWheelModel.inputValue(), "Uncommitted draft");
+        const frontWheel = page.locator('[data-component="front-wheel"]');
+        await frontWheel
+          .getByRole("button", { name: "Remove Front wheel", exact: true })
+          .click();
+        await page.getByRole("button", { name: "Cancel", exact: true }).click();
+        assert.equal(await frontWheelModel.inputValue(), "Uncommitted draft");
+        await frontWheel
+          .getByRole("button", { name: "Remove Front wheel", exact: true })
+          .click();
         await page
           .getByRole("button", {
-            name: "Done Front wheel",
+            name: "Confirm remove Front wheel",
             exact: true,
           })
           .click();
+        assert.equal(await frontWheelModel.inputValue(), "");
+        await frontWheelModel.fill("界".repeat(200));
         await page
-          .getByLabel("Front wheel model", { exact: true })
-          .waitFor({ state: "hidden" });
-        assert.equal(
-          await page
-            .getByLabel("Front wheel model", { exact: true })
-            .isVisible(),
-          false,
-        );
+          .getByLabel("Front wheel offset (mm)", { exact: true })
+          .fill("0");
+        await frontWheelModel.fill("界".repeat(200));
         await page
-          .getByRole("button", { name: "Remove Front wheel", exact: true })
-          .click();
-        assert.equal(await wholeCard.getAttribute("aria-expanded"), "false");
-        await page.getByRole("button", { name: "Cancel", exact: true }).click();
-        await wholeCard.click();
-        assert.equal(
-          await page
-            .getByLabel("Front wheel model", { exact: true })
-            .inputValue(),
-          "Uncommitted draft",
-        );
-        await (
-          await formField("Front wheel model", { exact: true })
-        ).fill("界".repeat(200));
-        await (
-          await formField("Front wheel offset (mm)", { exact: true })
-        ).fill("0");
-        await page
-          .getByRole("button", { name: "Done Front wheel", exact: true })
-          .click();
-        const preview = page.locator(
-          '[data-component="front-wheel"] .component-summary-rows',
-        );
-        await preview.waitFor({ state: "visible" });
-        assert.equal(await preview.locator("dt").count(), 2);
-        assert.equal(await preview.locator("dd").last().innerText(), "0");
-        assert.equal(
-          await preview.locator("dd").first().textContent(),
-          "界".repeat(200),
-        );
-        const rows = await preview.locator(":scope > div").evaluateAll((els) =>
-          els.map((el) => ({
-            top: el.getBoundingClientRect().top,
-            bottom: el.getBoundingClientRect().bottom,
-          })),
-        );
-        assert(
-          rows[1].top >= rows[0].bottom,
-          "preview fields must occupy separate vertical rows",
-        );
+          .getByLabel("Front wheel offset (mm)", { exact: true })
+          .fill("0");
+        const modelBox = await frontWheelModel.boundingBox();
+        assert(modelBox && modelBox.width > 0);
         await geometry();
         await page.evaluate(() => window.scrollTo(0, 0));
         await page.screenshot({
-          path: `artifacts/photo-qa/compact-summary-rows-${width}x${height}.png`,
+          path:
+            "artifacts/photo-qa/compact-form-fields-" +
+            width +
+            "x" +
+            height +
+            ".png",
           fullPage: true,
         });
         // Expand a long editor, then scroll within the same section. The compact

@@ -178,7 +178,7 @@ it("clears differential fields, then cancels a new manufacturer choice without r
   expect(received?.data).toEqual(testSetup.data);
 });
 
-it("associates errors, focuses invalid model, blocks writes and clears errors on removal", async () => {
+it("associates errors, focuses invalid model, blocks writes and clears errors when removed", async () => {
   detail();
   let writes = 0;
   server.use(
@@ -199,7 +199,8 @@ it("associates errors, focuses invalid model, blocks writes and clears errors on
   expect(model).toHaveAccessibleDescription("Use at most 200 characters.");
   expect(writes).toBe(0);
   await user.click(setupButton({ name: "Clear rear differential" }));
-  expect(model).not.toBeInTheDocument();
+  expect(model).toBeVisible();
+  expect(model).toHaveValue("");
   await user.click(setupButton({ name: "Save setup" }));
   await screen.findByRole("link", { name: "Edit setup" });
   expect(writes).toBe(1);
