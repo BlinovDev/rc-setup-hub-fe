@@ -260,6 +260,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/setups/{id}/clone": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Clone an approved public setup as an independent private copy
+         * @description Authenticated only, including for an owned source. Rechecks public visibility and approved moderation under a source row lock through commit. Copies chassis, schema-v1 technical JSONB and notes, preserving historical references, nulls, precision and zeros. No photos or cover. Title is truncated to 143 Unicode characters before appending " (Copy)". New copy is private/pending. Caller-scoped request_id deduplicates retries; reuse for another source or a deleted clone returns 409. Even retries recheck source eligibility. Missing and ineligible sources return the same 404 with no source metadata.
+         */
+        post: operations["cloneSetup"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/setups/{id}": {
         parameters: {
             query?: never;
@@ -849,6 +869,11 @@ export interface components {
         /** @description Complete setup with application owner UUID and read-only historical chassis display. No owner email or provider identity is exposed. */
         Setup: {
             /**
+             * Format: uuid
+             * @description Optional lineage UUID, exposed only while the source remains approved public. Omitted for no lineage, deleted or non-public/unapproved sources, even to owners/friends. No source title, owner or media is exposed.
+             */
+            readonly source_setup_id?: string;
+            /**
              * @description Public access requires approved. Pending/rejected public setups are readable only by their owner and accepted friends. New setups start pending. Photo changes invalidate approval even while non-public; text and technical edits preserve status. Refresh setup after photo mutations.
              * @enum {string}
              */
@@ -890,6 +915,13 @@ export interface components {
             created_at: string;
             /** Format: date-time */
             updated_at: string;
+        };
+        CloneSetup: {
+            /**
+             * Format: uuid
+             * @description Fresh UUID per deliberate clone; retain for retries of that action.
+             */
+            request_id: string;
         };
         /** @description Owner is the session user; schema_version is set to 1. Client owner_id/schema_version and all other unknown fields are rejected. JSON body limit: 256 KiB. */
         CreateSetup: {
@@ -1487,6 +1519,40 @@ export interface operations {
             400: components["responses"]["BadRequest"];
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
+            500: components["responses"]["InternalError"];
+        };
+    };
+    cloneSetup: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CloneSetup"];
+            };
+        };
+        responses: {
+            /** @description Private clone, including an idempotent replay */
+            201: {
+                headers: {
+                    /** @description Relative URL of the private clone. */
+                    Location?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Setup"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
             500: components["responses"]["InternalError"];
         };
     };

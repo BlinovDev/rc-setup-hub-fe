@@ -100,3 +100,12 @@ export async function getUserSetups(userId: string, signal: AbortSignal) {
   if (response.status !== 200 || !data) throw new SetupError(response.status);
   return data;
 }
+
+export async function cloneSetup(id: string, requestId: string) {
+  const { data, response } = await apiClient.POST("/api/v1/setups/{id}/clone", {
+    params: { path: { id } },
+    body: { request_id: requestId },
+  });
+  if (response.status !== 201 || !data) throw new SetupError(response.status);
+  return data;
+}
