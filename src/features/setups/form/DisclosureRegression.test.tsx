@@ -98,6 +98,9 @@ it("directly exposes optional fields and preserves manufacturer change drafts ac
   const user = userEvent.setup();
   select("Front");
   expect(calls).toBe(0);
+  await user.click(
+    document.querySelector('[data-component-disclosure="knuckle"] summary')!,
+  );
   expect(
     screen.getByLabelText("Front knuckle part number / description"),
   ).toHaveValue("Old part");

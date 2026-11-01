@@ -1417,6 +1417,17 @@ try {
             await formButton({ name: `Adjust thumbnail ${n + 1}`, exact: true })
           ).click();
           await cropDialog.waitFor();
+          const applyAction = cropDialog.getByRole("button", {
+            name: "Apply thumbnail",
+          });
+          const applyBox = await applyAction.boundingBox();
+          assert(
+            applyBox &&
+              applyBox.y >= 0 &&
+              applyBox.y + applyBox.height <= height,
+            `crop apply action must stay reachable in ${width}x${height}`,
+          );
+          await cropDialog.getByText("Fine-tune crop position").click();
           const normalized = cropDialog.getByAltText(
             "Normalized photo crop preview",
           );
@@ -1600,6 +1611,7 @@ try {
             await formButton({ name: `Adjust thumbnail ${n + 1}`, exact: true })
           ).click();
           await cropDialog.waitFor();
+          await cropDialog.getByText("Fine-tune crop position").click();
           assert.equal(
             Number(
               await cropDialog.getByLabel("Horizontal position").inputValue(),

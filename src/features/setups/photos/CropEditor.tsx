@@ -310,60 +310,67 @@ export function CropEditor({
               frame.
             </p>
           )}
-          <div className="crop-controls">
-            <label>
-              Zoom
-              <input
-                type="range"
-                min={1}
-                max={zoomLimit}
-                step={0.05}
-                value={Math.min(zoomLimit, actualZoom)}
-                aria-valuetext={`${actualZoom.toFixed(2)} times`}
-                disabled={!ready || legacyZoom || zoomLimit === 1}
-                onChange={(e) =>
-                  change(
-                    zoomCrop(
-                      crop,
-                      Number(e.target.value),
-                      base.width,
-                      base.height,
-                    ),
-                  )
-                }
-              />
-            </label>
-            <label>
-              Horizontal position
-              <input
-                type="range"
-                min={0}
-                max={base.width - crop.size}
-                step={1}
-                value={crop.x}
-                disabled={!ready}
-                onChange={(e) => change({ ...crop, x: Number(e.target.value) })}
-              />
-            </label>
-            <label>
-              Vertical position
-              <input
-                type="range"
-                min={0}
-                max={base.height - crop.size}
-                step={1}
-                value={crop.y}
-                disabled={!ready}
-                onChange={(e) => change({ ...crop, y: Number(e.target.value) })}
-              />
-            </label>
-          </div>
+          <label className="crop-zoom-control">
+            Zoom
+            <input
+              type="range"
+              min={1}
+              max={zoomLimit}
+              step={0.05}
+              value={Math.min(zoomLimit, actualZoom)}
+              aria-valuetext={`${actualZoom.toFixed(2)} times`}
+              disabled={!ready || legacyZoom || zoomLimit === 1}
+              onChange={(e) =>
+                change(
+                  zoomCrop(
+                    crop,
+                    Number(e.target.value),
+                    base.width,
+                    base.height,
+                  ),
+                )
+              }
+            />
+          </label>
+          <details className="crop-fine-tune">
+            <summary>Fine-tune crop position</summary>
+            <div className="crop-controls">
+              <label>
+                Horizontal position
+                <input
+                  type="range"
+                  min={0}
+                  max={base.width - crop.size}
+                  step={1}
+                  value={crop.x}
+                  disabled={!ready}
+                  onChange={(e) =>
+                    change({ ...crop, x: Number(e.target.value) })
+                  }
+                />
+              </label>
+              <label>
+                Vertical position
+                <input
+                  type="range"
+                  min={0}
+                  max={base.height - crop.size}
+                  step={1}
+                  value={crop.y}
+                  disabled={!ready}
+                  onChange={(e) =>
+                    change({ ...crop, y: Number(e.target.value) })
+                  }
+                />
+              </label>
+            </div>
+          </details>
         </>
       )}
       {mutation.isError && <InlineNotice tone="error">{error}</InlineNotice>}
       {reloadError && <InlineNotice tone="error">{reloadError}</InlineNotice>}
       {pending && <p role="status">Saving thumbnail adjustment…</p>}
-      <div className="flex flex-wrap gap-3">
+      <div className="crop-actions flex flex-wrap gap-3">
         <Button
           disabled={!ready}
           onClick={() => void save(resetDraft.current ? null : crop)}

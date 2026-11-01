@@ -81,9 +81,11 @@ export function SuspensionSection({
       >
         <LinkLengthFields side={side} />
       </div>
-      <ComponentCard id={`${side}-mount`}>
-        <LowerArmMountFields side={side} setup={setup} />
-      </ComponentCard>
+      {side === "rear" && (
+        <ComponentCard id="rear-mount">
+          <LowerArmMountFields side={side} setup={setup} />
+        </ComponentCard>
+      )}
       {(["top", "lower"] as const).map((arm) => (
         <ComponentCard key={arm} id={`${side}-${arm}-spacing`}>
           <fieldset className="space-y-3 rounded border p-3">

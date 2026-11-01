@@ -126,6 +126,7 @@ it("cancels without mutation, restores focus, disposes normalized media and pres
 });
 it("applies integer keyboard/slider coordinates and reopens the persisted frame; reset sends null with current revision", async () => {
   const user = await open();
+  await user.click(screen.getByText("Fine-tune crop position"));
   fireEvent.change(screen.getByLabelText("Zoom"), { target: { value: "2" } });
   fireEvent.change(screen.getByLabelText("Horizontal position"), {
     target: { value: "12" },
@@ -154,6 +155,7 @@ it("applies integer keyboard/slider coordinates and reopens the persisted frame;
     naturalHeight: { configurable: true, value: 400 },
   });
   fireEvent.load(img);
+  await user.click(screen.getByText("Fine-tune crop position"));
   expect(screen.getByLabelText("Horizontal position")).toHaveValue("13");
   await user.click(screen.getByRole("button", { name: "Reset to center" }));
   expect(writes).toHaveLength(1);
@@ -239,16 +241,22 @@ it("uses a moderate zoom range instead of source-pixel magnification", async () 
   const zoom = screen.getByLabelText("Zoom");
   expect(Number(zoom.getAttribute("max"))).toBeLessThanOrEqual(4);
   expect(zoom).toHaveAttribute("step", "0.05");
+  expect(
+    screen.getByText("Fine-tune crop position").parentElement,
+  ).not.toHaveAttribute("open");
 });
 
 it("keeps reset as an unsaved draft until Apply; cancel and reopen retain the old frame", async () => {
   const user = await open();
+  await user.click(screen.getByText("Fine-tune crop position"));
   fireEvent.change(screen.getByLabelText("Zoom"), { target: { value: "2" } });
   await user.click(screen.getByRole("button", { name: "Reset to center" }));
   expect(writes).toEqual([]);
   expect(screen.getByLabelText("Zoom")).toHaveValue("1");
   await user.click(screen.getByRole("button", { name: "Cancel adjustment" }));
   await user.click(screen.getByRole("button", { name: "Adjust thumbnail 1" }));
+  await screen.findByAltText("Normalized photo crop preview");
+  await user.click(screen.getByText("Fine-tune crop position"));
   expect(screen.getByLabelText("Vertical position")).toHaveValue("50");
   expect(writes).toEqual([]);
 });

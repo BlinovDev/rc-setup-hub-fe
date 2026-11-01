@@ -85,6 +85,12 @@ function prepare(matcher: Matcher | ByRoleOptions["name"] | undefined) {
       : null;
   if (axleTab?.getAttribute("aria-selected") !== "true" && axleTab)
     fireEvent.click(axleTab);
+  if (d.id === "knuckle" || d.id === "front-mount") {
+    const disclosure = document.querySelector<HTMLDetailsElement>(
+      `[data-component-disclosure="${d.id}"]`,
+    );
+    if (disclosure) disclosure.open = true;
+  }
   return d;
 }
 export function setupControl(

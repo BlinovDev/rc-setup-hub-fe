@@ -9,10 +9,9 @@ export function FrontSteeringKnuckleSection({
 }) {
   return (
     <fieldset id="setup-front-knuckle" className="space-y-3 rounded border p-4">
-      <legend className="font-semibold">Front steering knuckle</legend>
+      <legend className="sr-only">Front steering knuckle</legend>
       <p>
-        Optional. Record the manufacturer and part number or description
-        independently.
+        Record the manufacturer and part number or description independently.
       </p>
       <ManufacturerField
         name="frontSteeringKnuckle.manufacturerId"
