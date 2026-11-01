@@ -2253,15 +2253,55 @@ try {
               fullPage: true,
             });
             for (const label of [
-              "Front lower arm mount",
               "Front top arm — Front spacers (mm)",
               "Front lower arm — Rear spacers (mm)",
-              "Front knuckle part number / description",
             ])
               assert(
                 await page.getByLabel(label, { exact: true }).isVisible(),
-                `${label} is immediately available`,
+                `${label} remains visible in the main front suspension form`,
               );
+            const frontMount = page.locator(
+              'details[data-component-disclosure="front-mount"]',
+            );
+            const knuckle = page.locator(
+              'details[data-component-disclosure="knuckle"]',
+            );
+            assert.equal(await frontMount.getAttribute("open"), null);
+            assert.equal(await knuckle.getAttribute("open"), null);
+            assert(
+              !(await frontMount
+                .getByLabel("Front lower arm mount model / part number")
+                .isVisible()),
+            );
+            assert(
+              !(await knuckle
+                .getByLabel("Front knuckle part number / description")
+                .isVisible()),
+            );
+            assert.deepEqual(
+              await page
+                .locator(
+                  '[aria-labelledby="section-front"] [data-component-disclosure]',
+                )
+                .evaluateAll((items) =>
+                  items.map((item) =>
+                    item.getAttribute("data-component-disclosure"),
+                  ),
+                ),
+              ["knuckle", "front-mount"],
+            );
+            await knuckle.locator(":scope > summary").click();
+            assert(
+              await knuckle
+                .getByLabel("Front knuckle part number / description")
+                .isVisible(),
+            );
+            await frontMount.locator(":scope > summary").click();
+            assert(
+              await frontMount
+                .getByLabel("Front lower arm mount model / part number")
+                .isVisible(),
+            );
           }
         }
         await selectSection("Shocks");
@@ -2562,7 +2602,7 @@ try {
           );
           assert.equal(
             await strip.evaluate((el) => getComputedStyle(el).backgroundColor),
-            "rgb(224, 242, 254)",
+            "rgb(255, 243, 236)",
           );
           await page.screenshot({
             path: `artifacts/photo-qa/compact-sticky-${width}x${height}.png`,
