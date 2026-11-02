@@ -13,7 +13,7 @@ export function MySetupsPage() {
   const message: unknown = location.state?.message;
   return (
     <section aria-labelledby="my-setups-title">
-      <header className="page-heading-row">
+      <header className="page-heading-row my-setups-heading">
         <h2 id="my-setups-title" className="page-title">
           My setups
         </h2>

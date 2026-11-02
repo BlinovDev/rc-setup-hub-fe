@@ -210,11 +210,6 @@ function PhotoCarousel({ photos }: { photos: Photo[] }) {
         <div
           ref={track}
           className="photo-slides"
-          style={
-            {
-              "--gallery-aspect": `${photos[index]?.width ?? 1} / ${photos[index]?.height ?? 1}`,
-            } as CSSProperties
-          }
           role="group"
           aria-label="Photo slides"
           tabIndex={0}

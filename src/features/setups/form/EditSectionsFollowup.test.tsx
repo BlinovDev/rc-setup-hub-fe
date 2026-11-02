@@ -101,6 +101,9 @@ it("manual field edits and confirmed component removal retain unrelated values a
     screen.getByRole("button", { name: "Confirm remove front link 1" }),
   );
   expect(screen.getByLabelText("Front camber (degrees)")).toHaveValue("");
+  await user.click(
+    document.querySelector('[data-component-disclosure="knuckle"] summary')!,
+  );
   expect(
     screen.getByLabelText("Front knuckle part number / description"),
   ).toHaveValue("Knuckle");

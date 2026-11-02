@@ -1,19 +1,26 @@
-import { fireEvent, render, screen, within } from "@testing-library/react";
+import {
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+  within,
+} from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { expect, it, vi } from "vitest";
+import type { components } from "../../../api/generated/schema";
 import { testSetup } from "../testFixtures";
 import { SetupForm } from "./SetupForm";
 import type { SetupFormValues } from "./formSchema";
 import { serializePatch } from "./serialization";
 
-function show() {
+function show(setup: components["schemas"]["Setup"] = testSetup) {
   const save = vi.fn<(values: SetupFormValues) => Promise<boolean>>(
     async () => false,
   );
   render(
     <QueryClientProvider client={new QueryClient()}>
-      <SetupForm setup={testSetup} onSave={save} pending={false} />
+      <SetupForm setup={setup} onSave={save} pending={false} />
     </QueryClientProvider>,
   );
   return save;
@@ -26,17 +33,53 @@ const select = (label: string) =>
     ).getByRole("button", { name: label }),
   );
 
-it("shows optional front and rear suspension fields without an add chooser", () => {
+it("starts uncommon front parts collapsed while keeping the main suspension fields visible", async () => {
   show();
   select("Front");
   for (const name of [
-    "Front lower arm mount model / part number",
     "Front top arm — Front spacers (mm)",
     "Front lower arm — Rear spacers (mm)",
-    "Front knuckle part number / description",
   ])
     expect(screen.getByLabelText(name)).toBeVisible();
+  expect(
+    screen.getByLabelText("Front lower arm mount model / part number"),
+  ).not.toBeVisible();
+  expect(
+    screen.getByLabelText("Front knuckle part number / description"),
+  ).not.toBeVisible();
+  expect(
+    document.querySelector<HTMLDetailsElement>(
+      '[data-component-disclosure="knuckle"]',
+    ),
+  ).not.toHaveAttribute("open");
+  expect(
+    document.querySelector<HTMLDetailsElement>(
+      '[data-component-disclosure="front-mount"]',
+    ),
+  ).not.toHaveAttribute("open");
+  expect(
+    Array.from(
+      document.querySelectorAll<HTMLDetailsElement>(
+        '[aria-labelledby="section-front"] [data-component-disclosure]',
+      ),
+    ).map((disclosure) => disclosure.dataset.componentDisclosure),
+  ).toEqual(["knuckle", "front-mount"]);
   expect(screen.queryByRole("button", { name: "Add component" })).toBeNull();
+  const user = userEvent.setup();
+  await user.click(
+    document.querySelector('[data-component-disclosure="knuckle"] summary')!,
+  );
+  expect(
+    screen.getByLabelText("Front knuckle part number / description"),
+  ).toBeVisible();
+  await user.click(
+    document.querySelector(
+      '[data-component-disclosure="front-mount"] summary',
+    )!,
+  );
+  expect(
+    screen.getByLabelText("Front lower arm mount model / part number"),
+  ).toBeVisible();
 
   select("Rear");
   for (const name of [
@@ -47,6 +90,38 @@ it("shows optional front and rear suspension fields without an add chooser", () 
   ])
     expect(screen.getByLabelText(name)).toBeVisible();
 });
+
+it.each([
+  ["knuckle", "Front knuckle part number / description"],
+  ["front-mount", "Front lower arm mount model / part number"],
+] as const)(
+  "validation opens the hidden %s fields and focuses the invalid value",
+  async (id, label) => {
+    const setup: components["schemas"]["Setup"] = structuredClone(testSetup);
+    if (id === "knuckle")
+      setup.data.front_steering_knuckle = {
+        description: "x".repeat(201),
+      };
+    else
+      setup.data.suspension = {
+        ...setup.data.suspension,
+        front: {
+          ...setup.data.suspension?.front,
+          lower_arm_mount: { model: "x".repeat(201) },
+        },
+      };
+    show(setup);
+    await userEvent
+      .setup()
+      .click(screen.getByRole("button", { name: "Save setup" }));
+    await waitFor(() => expect(screen.getByLabelText(label)).toHaveFocus());
+    expect(
+      document.querySelector<HTMLDetailsElement>(
+        `[data-component-disclosure="${id}"]`,
+      ),
+    ).toHaveAttribute("open");
+  },
+);
 
 it("shows one complete shock form per selected axle and preserves both drafts", async () => {
   show();

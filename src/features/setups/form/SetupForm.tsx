@@ -40,6 +40,8 @@ import { RunningGearSection } from "./RunningGearSection";
 import { RearDifferentialSection } from "./RearDifferentialSection";
 import { AxleTabs, type Axle } from "./AxleTabs";
 import { ComponentCard } from "./ComponentCard";
+import { OptionalComponentDisclosure } from "./OptionalComponentDisclosure";
+import { LowerArmMountFields } from "./LowerArmMountFields";
 
 export function SetupForm({
   setup,
@@ -76,6 +78,8 @@ export function SetupForm({
   const [shockAxle, setShockAxle] = useState<Axle>("front");
   const [wheelAxle, setWheelAxle] = useState<Axle>("front");
   const [active, setActive] = useState<SectionId>("general");
+  const frontKnuckleDisclosure = useRef<HTMLDetailsElement>(null);
+  const frontMountDisclosure = useRef<HTMLDetailsElement>(null);
   const [focusRequest, setFocusRequest] = useState<{
     section?: SectionId;
     path?: string;
@@ -95,6 +99,10 @@ export function SetupForm({
     setFocusRequest({ section });
   }
   function reveal(path: string) {
+    if (path.startsWith("frontSteeringKnuckle."))
+      frontKnuckleDisclosure.current?.setAttribute("open", "");
+    if (path.startsWith("front.lowerArmMount."))
+      frontMountDisclosure.current?.setAttribute("open", "");
     const side = path.startsWith("front.")
       ? "front"
       : path.startsWith("rear.")
@@ -361,9 +369,22 @@ export function SetupForm({
                           setSuspensionViews((old) => ({ ...old, front: view }))
                         }
                       />
-                      <ComponentCard id="knuckle">
-                        <FrontSteeringKnuckleSection setup={setup} />
-                      </ComponentCard>
+                      <OptionalComponentDisclosure
+                        id="knuckle"
+                        reference={frontKnuckleDisclosure}
+                      >
+                        <ComponentCard id="knuckle">
+                          <FrontSteeringKnuckleSection setup={setup} />
+                        </ComponentCard>
+                      </OptionalComponentDisclosure>
+                      <OptionalComponentDisclosure
+                        id="front-mount"
+                        reference={frontMountDisclosure}
+                      >
+                        <ComponentCard id="front-mount">
+                          <LowerArmMountFields side="front" setup={setup} />
+                        </ComponentCard>
+                      </OptionalComponentDisclosure>
                     </section>
                     <section
                       hidden={active !== "rear"}

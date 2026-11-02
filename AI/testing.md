@@ -90,7 +90,8 @@ reproduce one suite, use `PHOTO_BROWSER_SCENARIO=compact-edit npm run test:photo
 (or `lifecycle`); the required gate remains the unfiltered command. It uses mock
 backend HTTP and checks 320/375/390/768/1280
 plus 640x360. It covers chooser/toolbar, save-once/partial retry, gallery/focus,
-crop mouse/emulated touch/arrows/sliders, integer preview/frame, all six shapes,
+crop mouse/emulated touch/keyboard gestures without page or editor scrolling,
+integer preview/frame, all six shapes,
 revision/blob refresh, bounded square lists/long titles/placeholder/errors and
 owner view/edit navigation without writes. It asserts browser-managed credentials
 and no per-card metadata N+1. Shape provenance is in

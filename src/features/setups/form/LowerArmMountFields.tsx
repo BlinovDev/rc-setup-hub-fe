@@ -13,8 +13,10 @@ export function LowerArmMountFields({
   const name = `${side}.lowerArmMount` as const;
   return (
     <fieldset className="space-y-3 rounded border p-3">
-      <legend className="font-semibold">{label} lower arm mount</legend>
-      <p>Optional. Describe one mount configuration for this axle.</p>
+      <legend className={side === "front" ? "sr-only" : "font-semibold"}>
+        {label} lower arm mount
+      </legend>
+      <p>Describe one mount configuration for this axle.</p>
       <ManufacturerField
         name={`${name}.manufacturerId`}
         label={`${label} lower arm mount manufacturer`}

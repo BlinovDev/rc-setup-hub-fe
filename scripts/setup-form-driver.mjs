@@ -121,6 +121,18 @@ export function setupFormDriver(page) {
       )
         await tab.click();
     }
+    if (
+      component === "Front steering knuckle" ||
+      component === "Front lower arm mount"
+    ) {
+      const id =
+        component === "Front steering knuckle" ? "knuckle" : "front-mount";
+      const disclosure = page.locator(
+        `details[data-component-disclosure="${id}"]`,
+      );
+      if (await disclosure.count())
+        await disclosure.evaluate((el) => (el.open = true));
+    }
     return component;
   };
   return {
