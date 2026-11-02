@@ -4,12 +4,24 @@ import { publicUserKey } from "../users/queries";
 import { searchKey } from "../search/queries";
 import { captureSession } from "../auth/sessionCache";
 import { currentUserKey } from "../auth/queries";
-import { ProfileError, updateNickname } from "./api";
+import { ProfileError, updateProfile, uploadAvatar, removeAvatar } from "./api";
 
-export function useUpdateNickname() {
+export const profileMutationKey = ["users", "profile", "mutation"] as const;
+type User = components["schemas"]["User"];
+export function useUpdateProfile() {
+  return useProfileMutation(updateProfile);
+}
+export function useUploadAvatar() {
+  return useProfileMutation(uploadAvatar);
+}
+export function useRemoveAvatar() {
+  return useProfileMutation(removeAvatar);
+}
+function useProfileMutation<T>(mutationFn: (body: T) => Promise<User>) {
   const client = useQueryClient();
   return useMutation({
-    mutationFn: updateNickname,
+    mutationFn,
+    mutationKey: profileMutationKey,
     retry: false,
     onMutate: () => captureSession(client),
     onSuccess: async (user, _body, isCurrent) => {
@@ -21,14 +33,25 @@ export function useUpdateNickname() {
       // Do not restore a session cleared by logout or a concurrent /me 401.
       if (!isCurrent?.()) return;
       client.setQueryData(currentUserKey, user);
-      client.setQueryData<components["schemas"]["PublicProfile"]>(
+      client.setQueryData<components["schemas"]["DriverProfile"]>(
         publicUserKey(user.id),
         (old) =>
           old
-            ? { ...old, nickname: user.nickname, avatar_url: user.avatar_url }
+            ? {
+                ...old,
+                nickname: user.nickname,
+                avatar_url: user.avatar_url,
+                instagram_url: user.instagram_url,
+                tiktok_url: user.tiktok_url,
+                youtube_url: user.youtube_url,
+              }
             : old,
       );
-      await client.invalidateQueries({ queryKey: searchKey });
+      await Promise.all([
+        client.invalidateQueries({ queryKey: searchKey }),
+        client.invalidateQueries({ queryKey: ["setups", "compare"] }),
+        client.invalidateQueries({ queryKey: ["users", "avatar"] }),
+      ]);
     },
     onError: async (error, _body, isCurrent) => {
       if (

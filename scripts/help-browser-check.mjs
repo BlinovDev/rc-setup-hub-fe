@@ -154,6 +154,31 @@ try {
               authenticated = false;
               logoutCount++;
               await route.fulfill({ status: 204, headers });
+            } else if (
+              request.method() === "GET" &&
+              path === "/api/v1/users/c61393b6-daa0-4eb8-923c-57aedbb46a46"
+            ) {
+              await route.fulfill({
+                headers,
+                json: {
+                  id: "c61393b6-daa0-4eb8-923c-57aedbb46a46",
+                  nickname: "Driver",
+                  avatar_url: null,
+                  instagram_url: null,
+                  tiktok_url: null,
+                  youtube_url: null,
+                  member_since: "2026-10-12T12:00:00Z",
+                  public_setup_count: 0,
+                },
+              });
+            } else if (
+              request.method() === "GET" &&
+              path.endsWith("/public-setups")
+            ) {
+              await route.fulfill({
+                headers,
+                json: { items: [], next_cursor: null },
+              });
             } else if (request.method() === "OPTIONS") {
               await route.fulfill({
                 status: 204,
@@ -417,7 +442,7 @@ try {
             assert.deepEqual(
               await desktopNav.getByRole("link").allTextContents(),
               signedIn
-                ? ["Explore", "My setups", "Friends", "Settings", "Compare"]
+                ? ["Explore", "My setups", "Friends", "Account", "Compare"]
                 : ["Explore", "Create setup", "Compare"],
             );
           }
@@ -431,14 +456,14 @@ try {
             await menu.waitFor();
             assert.deepEqual(
               await menu.locator(".account-nav a").allTextContents(),
-              ["Account settings", "Friends"],
+              ["Account", "Friends"],
             );
             await menu
-              .getByRole("link", { name: "Account settings", exact: true })
+              .getByRole("link", { name: "Account", exact: true })
               .click();
             await menu.waitFor({ state: "hidden" });
             await page
-              .getByRole("heading", { name: "Settings", exact: true })
+              .getByRole("heading", { name: "Driver", exact: true })
               .waitFor();
             await page
               .getByRole("button", { name: "Open account menu" })

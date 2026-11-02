@@ -41,7 +41,8 @@ export function CloneSetupAction({
     retry: false,
     onMutate: () => captureSession(client),
     onSuccess: async (copy, _id, isCurrent) => {
-      if (isCurrent?.()) await refreshSetupLists(client, copy.owner_id);
+      // An independent private clone cannot change the public setup count.
+      if (isCurrent?.()) await refreshSetupLists(client, copy.owner_id, false);
     },
   });
   useEffect(() => {

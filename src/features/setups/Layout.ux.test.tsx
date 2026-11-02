@@ -13,7 +13,7 @@ it("labels navigation and identifies the current route beyond color", async () =
   renderSetupRoute("/my/setups");
   await screen.findByText("No setups yet.");
   const nav = within(screen.getByRole("navigation", { name: "Main" }));
-  for (const name of ["Explore", "My setups", "Friends", "Settings"])
+  for (const name of ["Explore", "My setups", "Friends", "Account"])
     expect(nav.getByRole("link", { name })).toBeInTheDocument();
   expect(nav.getByRole("link", { name: "My setups" })).toHaveAttribute(
     "aria-current",

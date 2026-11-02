@@ -49,6 +49,6 @@ route/interaction details in [UI](ui.md). Use [docs by exception](workflow.md).
 Mobile-first, accessible keyboard/touch controls and clear loading/error/empty states.
 The mobile bottom navigation is Explore, Sign up, Compare for guests and Explore,
 My setups, Compare for signed-in users. The full-height drawer holds Help & Feedback
-and centered social links for guests; signed-in drawers add Account settings, Friends
+and centered social links for guests; signed-in drawers add Account, Friends
 and Sign out. Canonical social URLs have accessible names and opener isolation. See
 [UI](ui.md) for page layout, forms and modal/focus rules.

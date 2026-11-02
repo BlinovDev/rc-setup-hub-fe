@@ -99,8 +99,14 @@ return to the original route after OAuth is not supported by this fixed callback
 Feature key factories own exact keys; no global invalidate-everything shortcut.
 Setup create/patch refresh mine, affected detail, search and the returned owner's
 visible/public lists; delete uses cached detail/current user for owner and removes detail.
-Profile nickname mutation updates current-user data; refresh affected visible public
-identity/search displays when applicable. Preserve unrelated owner/query caches.
+Profile nickname/social PATCH and avatar PUT/DELETE update current-user and affected
+public-driver cache fields, preserving membership/public counts and unrelated drafts.
+Managed avatar URLs identify the current UUID pair; fetch through the typed client with
+credentials/no-store and transient revocable blobs, scoped to viewer identity. Provider
+HTTPS URLs use normal images without application credentials. A retired-avatar 404
+refreshes the corresponding profile (and /me for its owner). Old-session completions
+cannot restore state or start a delayed canvas upload under a new identity. Setup/photo
+writes also invalidate that owner's public profile count. Preserve unrelated caches.
 
 Friendships use backend incoming/outgoing/accepted buckets; item.user is already the
 other participant. Search is explicit trimmed nickname <=64 characters, no null/empty
