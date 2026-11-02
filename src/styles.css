@@ -526,52 +526,59 @@
   .crop-dialog {
     width: min(95vw, 640px);
     box-sizing: border-box;
+    display: grid;
+    grid-template-rows: auto auto minmax(0, 1fr) auto;
+    gap: 0.5rem;
+  }
+  .crop-header,
+  .crop-actions {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+  }
+  .crop-header h3,
+  .crop-help,
+  .crop-zoom-status,
+  .crop-legacy-warning {
+    margin: 0;
+  }
+  .crop-help {
+    color: #475569;
+  }
+  .crop-workspace {
+    min-height: 0;
+    overflow: hidden;
+  }
+  .crop-stage {
+    display: grid;
+    place-items: center;
+    min-height: 0;
+    height: 100%;
   }
   .crop-preview {
     position: relative;
     overflow: hidden;
-    width: min(100%, 320px, 45dvh);
+    width: min(100%, 320px, 100cqh);
+    max-height: 100%;
     aspect-ratio: 1;
-    margin: 1rem auto;
+    margin: 0 auto;
     background: #f1f5f9;
-    touch-action: pan-y;
+    touch-action: none;
     cursor: grab;
+  }
+  .crop-preview:active {
+    cursor: grabbing;
+  }
+  .crop-zoom-status,
+  .crop-legacy-warning {
+    text-align: center;
   }
   .crop-preview img {
     position: absolute;
     max-width: none;
     pointer-events: none;
     user-select: none;
-  }
-  .crop-controls {
-    display: grid;
-    gap: 0.75rem;
-    margin-block: 1rem;
-  }
-  .crop-zoom-control,
-  .crop-fine-tune {
-    display: block;
-    margin-block: 1rem;
-  }
-  .crop-zoom-control input {
-    display: block;
-    width: 100%;
-    min-height: 44px;
-  }
-  .crop-fine-tune summary {
-    min-height: 44px;
-    display: flex;
-    align-items: center;
-    cursor: pointer;
-    font-weight: 600;
-  }
-  .crop-controls label {
-    display: grid;
-    min-width: 0;
-  }
-  .crop-controls input {
-    width: 100%;
-    min-height: 44px;
   }
   .photo-toolbar {
     display: flex;
@@ -1358,22 +1365,13 @@
   padding: max(1rem, env(safe-area-inset-top))
     max(1rem, env(safe-area-inset-right)) max(1rem, env(safe-area-inset-bottom))
     max(1rem, env(safe-area-inset-left));
-  overflow-x: hidden;
-  overflow-y: auto;
-  overscroll-behavior-y: contain;
-  scroll-padding-block: 1rem;
+  overflow: hidden;
+  container-type: size;
 }
 .crop-actions {
-  position: sticky;
-  bottom: calc(-1 * max(1rem, env(safe-area-inset-bottom)));
   z-index: 1;
-  margin-inline: calc(-1 * max(1rem, env(safe-area-inset-left)));
-  margin-right: calc(-1 * max(1rem, env(safe-area-inset-right)));
-  padding: 0.75rem max(1rem, env(safe-area-inset-right))
-    max(0.75rem, env(safe-area-inset-bottom))
-    max(1rem, env(safe-area-inset-left));
-  background: white;
-  border-top: 1px solid #e2e8f0;
+  padding-top: 0.5rem;
+  padding-bottom: max(0.25rem, env(safe-area-inset-bottom));
 }
 .photo-viewer::backdrop {
   background: transparent;
@@ -1459,18 +1457,11 @@
   }
   .photo-viewer.crop-dialog {
     width: min(95vw, 640px);
-    height: auto;
+    height: min(90dvh, 800px);
     max-height: 90dvh;
     margin: auto;
     padding: 1rem;
-    overflow-x: hidden;
-    overflow-y: auto;
-  }
-  .crop-actions {
-    bottom: -1rem;
-    margin-inline: -1rem;
-    margin-right: -1rem;
-    padding: 0.75rem 1rem;
+    overflow: hidden;
   }
   .photo-viewer-image .photo-full {
     width: calc(100% - 4rem);

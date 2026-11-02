@@ -956,7 +956,7 @@ try {
         ).waitFor();
         assert.equal(creates, 1);
         await page.getByRole("dialog", { name: "Adjust thumbnail" }).waitFor();
-        await (await formButton({ name: "Cancel adjustment" })).click();
+        await cropDialog.getByRole("button", { name: "Cancel" }).click();
         fail = false;
         const retryButton = await formButton({
           name: "Retry phone.heic",
@@ -993,15 +993,15 @@ try {
 
         await cropDialog.waitFor();
         await cropDialog
-          .getByRole("button", { name: "Apply thumbnail" })
+          .getByRole("button", { name: "Save thumbnail" })
           .waitFor();
-        await cropDialog.getByLabel("Zoom", { exact: true }).fill("2");
         await cropDialog
           .getByRole("group", { name: "Square thumbnail preview" })
           .focus();
+        await page.keyboard.press("+");
         await page.keyboard.press("ArrowRight");
         await cropDialog
-          .getByRole("button", { name: "Apply thumbnail" })
+          .getByRole("button", { name: "Save thumbnail" })
           .click();
         await cropDialog.waitFor({ state: "hidden" });
         assert.equal(cropWrites, 1);
@@ -1417,44 +1417,36 @@ try {
             await formButton({ name: `Adjust thumbnail ${n + 1}`, exact: true })
           ).click();
           await cropDialog.waitFor();
-          const applyAction = cropDialog.getByRole("button", {
-            name: "Apply thumbnail",
+          const saveAction = cropDialog.getByRole("button", {
+            name: "Save thumbnail",
           });
-          const applyBox = await applyAction.boundingBox();
+          const applyBox = await saveAction.boundingBox();
           assert(
             applyBox &&
               applyBox.y >= 0 &&
               applyBox.y + applyBox.height <= height,
             `crop apply action must stay reachable in ${width}x${height}`,
           );
-          await cropDialog.getByText("Fine-tune crop position").click();
           const normalized = cropDialog.getByAltText(
             "Normalized photo crop preview",
           );
           await normalized.waitFor();
-          const zoomControl = cropDialog.getByLabel("Zoom", { exact: true });
-          assert(
-            Number(await zoomControl.getAttribute("max")) <= 4,
-            "normal zoom cannot scale to source-pixel magnification",
-          );
-          assert.equal(await zoomControl.getAttribute("step"), "0.05");
-          const zoomBox = await zoomControl.boundingBox();
-          await zoomControl.click({
-            position: { x: zoomBox.width / 2, y: zoomBox.height / 2 },
-          });
-          assert(
-            Number(await zoomControl.inputValue()) <= 4,
-            "native slider midpoint must stay moderate",
-          );
-          await zoomControl.fill("2");
-          await geometry();
-          // Mouse/pointer pan and touch pointer pan are both dispatched through the actual handlers.
           const preview = cropDialog.getByRole("group", {
             name: "Square thumbnail preview",
           });
-          await preview.scrollIntoViewIfNeeded();
+          await preview.focus();
+          await page.keyboard.press("+");
+          await page.keyboard.press("+");
+          await page.keyboard.press("+");
+          await page.keyboard.press("+");
+          await geometry();
+          // Mouse/pointer pan and touch pointer pan are both dispatched through the actual handlers.
           const box = await preview.boundingBox();
           if (width < 768) {
+            const scrollBefore = await page.evaluate(() => window.scrollY);
+            const dialogScrollBefore = await cropDialog.evaluate(
+              (el) => el.scrollTop,
+            );
             const touch = await context.newCDPSession(page);
             const y = box.y + box.height / 2;
             const middle = box.x + box.width / 2;
@@ -1468,17 +1460,17 @@ try {
             await touch.send("Input.dispatchTouchEvent", {
               type: "touchMove",
               touchPoints: [
-                { x: middle - 60, y, id: 1 },
-                { x: middle + 60, y, id: 2 },
+                { x: middle - 100, y, id: 1 },
+                { x: middle + 100, y, id: 2 },
               ],
             });
             await touch.send("Input.dispatchTouchEvent", {
               type: "touchEnd",
               touchPoints: [],
             });
-            assert(
-              Number(await zoomControl.inputValue()) > 2 &&
-                Number(await zoomControl.inputValue()) <= 4,
+            assert.match(
+              await cropDialog.locator(".crop-zoom-status").innerText(),
+              /Zoom [3-4]\.\d+×/,
               "pinch must zoom smoothly within bounds",
             );
             // Restart one-finger drag after pinch; pointer-count transitions must not jump.
@@ -1495,6 +1487,16 @@ try {
               touchPoints: [],
             });
             await touch.detach();
+            assert.equal(
+              await page.evaluate(() => window.scrollY),
+              scrollBefore,
+              "dragging the crop must not scroll the page",
+            );
+            assert.equal(
+              await cropDialog.evaluate((el) => el.scrollTop),
+              dialogScrollBefore,
+              "dragging the crop must not scroll the editor",
+            );
           } else {
             await page.mouse.move(box.x + 60, box.y + 60);
             await page.mouse.down();
@@ -1503,19 +1505,16 @@ try {
           }
           await preview.focus();
           await page.keyboard.press("Shift+ArrowRight");
-          const draft = {
-            x: Number(
-              await cropDialog.getByLabel("Horizontal position").inputValue(),
-            ),
-            y: Number(
-              await cropDialog.getByLabel("Vertical position").inputValue(),
-            ),
-            size: await normalized.evaluate(
-              (image, sourceWidth) =>
-                Math.round((sourceWidth * 100) / parseFloat(image.style.width)),
-              shapes[n].width,
-            ),
-          };
+          const draft = await normalized.evaluate((image, sourceWidth) => {
+            const size = Math.round(
+              (sourceWidth * 100) / parseFloat(image.style.width),
+            );
+            return {
+              x: Math.round((-parseFloat(image.style.left) * size) / 100),
+              y: Math.round((-parseFloat(image.style.top) * size) / 100),
+              size,
+            };
+          }, shapes[n].width);
           const expectedColors = await normalized.evaluate((image, crop) => {
             const canvas = document.createElement("canvas");
             canvas.width = canvas.height = 100;
@@ -1545,10 +1544,10 @@ try {
             const previous = JSON.stringify(photos[n]);
             cropFailure = 503;
             await cropDialog
-              .getByRole("button", { name: "Apply thumbnail" })
+              .getByRole("button", { name: "Save thumbnail" })
               .click();
             await cropDialog
-              .getByRole("button", { name: "Retry adjustment" })
+              .getByRole("button", { name: "Retry save" })
               .waitFor();
             assert.equal(
               JSON.stringify(photos[n]),
@@ -1557,11 +1556,11 @@ try {
             );
             cropFailure = 0;
             await cropDialog
-              .getByRole("button", { name: "Retry adjustment" })
+              .getByRole("button", { name: "Retry save" })
               .click();
           } else
             await cropDialog
-              .getByRole("button", { name: "Apply thumbnail" })
+              .getByRole("button", { name: "Save thumbnail" })
               .click();
           await cropDialog.waitFor({ state: "hidden" });
           assert.deepEqual(
@@ -1611,19 +1610,19 @@ try {
             await formButton({ name: `Adjust thumbnail ${n + 1}`, exact: true })
           ).click();
           await cropDialog.waitFor();
-          await cropDialog.getByText("Fine-tune crop position").click();
-          assert.equal(
-            Number(
-              await cropDialog.getByLabel("Horizontal position").inputValue(),
-            ),
-            draft.x,
-          );
-          assert.equal(
-            Number(
-              await cropDialog.getByLabel("Vertical position").inputValue(),
-            ),
-            draft.y,
-          );
+          const persistedFrame = await cropDialog
+            .getByAltText("Normalized photo crop preview")
+            .evaluate((image, sourceWidth) => {
+              const size = Math.round(
+                (sourceWidth * 100) / parseFloat(image.style.width),
+              );
+              return {
+                x: Math.round((-parseFloat(image.style.left) * size) / 100),
+                y: Math.round((-parseFloat(image.style.top) * size) / 100),
+                size,
+              };
+            }, shapes[n].width);
+          assert.deepEqual(persistedFrame, draft);
           if (n === 0) {
             const beforeReset = cropWrites;
             await cropDialog
@@ -1634,9 +1633,7 @@ try {
               beforeReset,
               "reset is a draft, not a hidden save",
             );
-            await cropDialog
-              .getByRole("button", { name: "Cancel adjustment" })
-              .click();
+            await cropDialog.getByRole("button", { name: "Cancel" }).click();
             await cropDialog.waitFor({ state: "hidden" });
             await (
               await formButton({
@@ -2434,7 +2431,7 @@ try {
         }
         await cropDialog.waitFor({ state: "visible" });
         await cropDialog
-          .getByRole("button", { name: "Cancel adjustment", exact: true })
+          .getByRole("button", { name: "Cancel", exact: true })
           .click();
         await cropDialog.waitFor({ state: "hidden" });
         assert(

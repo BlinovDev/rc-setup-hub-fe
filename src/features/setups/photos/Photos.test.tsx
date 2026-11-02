@@ -759,9 +759,7 @@ it("keeps an upload and its crop offer usable after General is hidden, retaining
   });
   expect(dialog.parentElement).toBe(document.body);
   expect(dialog.closest("[hidden]")).toBeNull();
-  await user.click(
-    within(dialog).getByRole("button", { name: "Cancel adjustment" }),
-  );
+  await user.click(within(dialog).getByRole("button", { name: "Cancel" }));
   expect(document.getElementById("section-front")).toHaveFocus();
   expect(setupControl("Front toe (degrees)")).toHaveValue("-");
   setupControl("Title");

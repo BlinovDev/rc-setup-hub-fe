@@ -106,14 +106,15 @@ async function open() {
   fireEvent.load(image);
   await waitFor(() =>
     expect(
-      screen.getByRole("button", { name: "Apply thumbnail" }),
+      screen.getByRole("button", { name: "Save thumbnail" }),
     ).toBeEnabled(),
   );
   return user;
 }
 it("cancels without mutation, restores focus, disposes normalized media and preserves unsaved fields", async () => {
   const user = await open();
-  fireEvent.change(screen.getByLabelText("Zoom"), { target: { value: "2" } });
+  screen.getByRole("group", { name: "Square thumbnail preview" }).focus();
+  await user.keyboard("+");
   await user.keyboard("{Escape}");
   expect(writes).toEqual([]);
   expect(screen.getByLabelText("Title")).toHaveValue("Unsaved crop title");
@@ -124,22 +125,14 @@ it("cancels without mutation, restores focus, disposes normalized media and pres
   );
   expect(URL.revokeObjectURL).toHaveBeenCalled();
 });
-it("applies integer keyboard/slider coordinates and reopens the persisted frame; reset sends null with current revision", async () => {
+it("applies integer gesture-keyboard coordinates and reopens the persisted frame; reset sends null with current revision", async () => {
   const user = await open();
-  await user.click(screen.getByText("Fine-tune crop position"));
-  fireEvent.change(screen.getByLabelText("Zoom"), { target: { value: "2" } });
-  fireEvent.change(screen.getByLabelText("Horizontal position"), {
-    target: { value: "12" },
-  });
-  fireEvent.change(screen.getByLabelText("Vertical position"), {
-    target: { value: "60" },
-  });
   screen.getByRole("group", { name: "Square thumbnail preview" }).focus();
-  await user.keyboard("{ArrowRight}");
-  await user.click(screen.getByRole("button", { name: "Apply thumbnail" }));
+  await user.keyboard("{ArrowDown}");
+  await user.click(screen.getByRole("button", { name: "Save thumbnail" }));
   await waitFor(() =>
     expect(writes).toEqual([
-      { expected_revision: 1, crop: { x: 13, y: 60, size: 150 } },
+      { expected_revision: 1, crop: { x: 0, y: 51, size: 300 } },
     ]),
   );
   await waitFor(() =>
@@ -155,11 +148,10 @@ it("applies integer keyboard/slider coordinates and reopens the persisted frame;
     naturalHeight: { configurable: true, value: 400 },
   });
   fireEvent.load(img);
-  await user.click(screen.getByText("Fine-tune crop position"));
-  expect(screen.getByLabelText("Horizontal position")).toHaveValue("13");
+  expect(screen.getByText(/Zoom 1\.00×/)).toBeVisible();
   await user.click(screen.getByRole("button", { name: "Reset to center" }));
   expect(writes).toHaveLength(1);
-  await user.click(screen.getByRole("button", { name: "Apply thumbnail" }));
+  await user.click(screen.getByRole("button", { name: "Save thumbnail" }));
   await waitFor(() =>
     expect(writes[1]).toEqual({ expected_revision: 2, crop: null }),
   );
@@ -181,24 +173,20 @@ it("retains failed draft, retries exactly once and requires explicit reload for 
     ),
   );
   const user = await open();
-  await user.click(screen.getByRole("button", { name: "Apply thumbnail" }));
+  await user.click(screen.getByRole("button", { name: "Save thumbnail" }));
   await screen.findByRole("button", { name: "Reload crop" });
-  expect(
-    screen.getByRole("button", { name: "Apply thumbnail" }),
-  ).toBeDisabled();
+  expect(screen.getByRole("button", { name: "Save thumbnail" })).toBeDisabled();
   expect(writes).toHaveLength(1);
   photo = { ...photo, thumbnail_revision: 2, crop: { x: 0, y: 20, size: 250 } };
   await user.click(screen.getByRole("button", { name: "Reload crop" }));
   await waitFor(() =>
     expect(
-      screen.getByRole("button", { name: "Apply thumbnail" }),
+      screen.getByRole("button", { name: "Save thumbnail" }),
     ).toBeEnabled(),
   );
   conflict = false;
-  await user.click(screen.getByRole("button", { name: "Apply thumbnail" }));
-  await user.click(
-    await screen.findByRole("button", { name: "Retry adjustment" }),
-  );
+  await user.click(screen.getByRole("button", { name: "Save thumbnail" }));
+  await user.click(await screen.findByRole("button", { name: "Retry save" }));
   await waitFor(() => expect(writes).toHaveLength(3));
   expect(writes[2]).toEqual(writes[1]);
   expect(writes[1]?.expected_revision).toBe(2);
@@ -219,53 +207,48 @@ it("removes the normalized preview and blocks apply when a crop races with delet
     ),
   );
   const user = await open();
-  await user.click(screen.getByRole("button", { name: "Apply thumbnail" }));
+  await user.click(screen.getByRole("button", { name: "Save thumbnail" }));
   await screen.findByText(
     "Photo was deleted or is unavailable. Close the editor and reload photos.",
   );
   expect(
     screen.queryByAltText("Normalized photo crop preview"),
   ).not.toBeInTheDocument();
-  expect(
-    screen.getByRole("button", { name: "Apply thumbnail" }),
-  ).toBeDisabled();
+  expect(screen.getByRole("button", { name: "Save thumbnail" })).toBeDisabled();
   expect(URL.revokeObjectURL).toHaveBeenCalled();
-  await user.click(screen.getByRole("button", { name: "Cancel adjustment" }));
+  await user.click(screen.getByRole("button", { name: "Cancel" }));
   await waitFor(() =>
     expect(screen.getByRole("button", { name: "Choose photos" })).toHaveFocus(),
   );
 });
 
-it("uses a moderate zoom range instead of source-pixel magnification", async () => {
-  await open();
-  const zoom = screen.getByLabelText("Zoom");
-  expect(Number(zoom.getAttribute("max"))).toBeLessThanOrEqual(4);
-  expect(zoom).toHaveAttribute("step", "0.05");
-  expect(
-    screen.getByText("Fine-tune crop position").parentElement,
-  ).not.toHaveAttribute("open");
+it("supports keyboard movement and zoom as an accessible gesture alternative", async () => {
+  const user = await open();
+  const preview = screen.getByRole("group", {
+    name: "Square thumbnail preview",
+  });
+  preview.focus();
+  await user.keyboard("+");
+  expect(screen.getByText(/Zoom 1\.25×/)).toBeVisible();
+  await user.keyboard("{ArrowDown}");
+  expect(preview).toHaveFocus();
 });
 
 it("keeps reset as an unsaved draft until Apply; cancel and reopen retain the old frame", async () => {
   const user = await open();
-  await user.click(screen.getByText("Fine-tune crop position"));
-  fireEvent.change(screen.getByLabelText("Zoom"), { target: { value: "2" } });
   await user.click(screen.getByRole("button", { name: "Reset to center" }));
   expect(writes).toEqual([]);
-  expect(screen.getByLabelText("Zoom")).toHaveValue("1");
-  await user.click(screen.getByRole("button", { name: "Cancel adjustment" }));
+  expect(screen.getByText(/Zoom 1\.00×/)).toBeVisible();
+  await user.click(screen.getByRole("button", { name: "Cancel" }));
   await user.click(screen.getByRole("button", { name: "Adjust thumbnail 1" }));
   await screen.findByAltText("Normalized photo crop preview");
-  await user.click(screen.getByText("Fine-tune crop position"));
-  expect(screen.getByLabelText("Vertical position")).toHaveValue("50");
   expect(writes).toEqual([]);
 });
 it("preserves historical extreme saved crops until explicitly reset", async () => {
   photo.crop = { x: 20, y: 60, size: 1 };
   const user = await open();
-  expect(screen.getByLabelText("Zoom")).toBeDisabled();
   expect(screen.getByText(/saved crop is tighter/)).toBeVisible();
-  await user.click(screen.getByRole("button", { name: "Apply thumbnail" }));
+  await user.click(screen.getByRole("button", { name: "Save thumbnail" }));
   await waitFor(() =>
     expect(writes[0]?.crop).toEqual({ x: 20, y: 60, size: 1 }),
   );
