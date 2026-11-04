@@ -78,10 +78,16 @@ The Help & Feedback check runs Chromium and WebKit with iPhone emulation below
 768px. It covers guest/member single-row header/three-action bottom navigation,
 320/375/390/430px and desktop/short landscape layouts, guest My setups sign-in
 without private requests, auth-dependent action order, login/logout/history cleanup,
-Account settings and nested Help drawer access, native modal keyboard/focus/backdrop
+Account navigation and nested Help drawer access, native modal keyboard/focus/backdrop
 behavior and selectable email/mailto;
 it uses mocked HTTP and writes help/nav-prefixed screenshots under artifacts/photo-qa,
 uploaded in the independent Help & Feedback CI artifact.
+
+The public browser command also runs `scripts/profile-browser-check.mjs`: 320/390px,
+desktop and short-landscape account/header navigation, owner-only editing, safe social
+links/stats, real canvas avatar crop/confirmation/replacement/removal, retained text
+drafts and logout isolation. It captures profile resting/edit/crop/removal/guest states
+under artifacts/public-qa for comparison with current-main visuals.
 
 The photo script starts local Vite and runs independent `lifecycle` and `compact-edit`
 scenarios, each with a fresh browser context and explicit backend fixture. Failures

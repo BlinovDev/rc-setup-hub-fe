@@ -96,10 +96,54 @@ export interface paths {
         options?: never;
         head?: never;
         /**
-         * Change current nickname
-         * @description Trims whitespace; rejects empty/overlong nickname. Case-insensitive duplicate nickname returns 409.
+         * Change current profile details
+         * @description Owner-only partial update. Omitted fields stay unchanged; null or an empty social URL clears that link. Nickname cannot be null/empty. All fields validate before the atomic update. Duplicate nickname returns 409. JSON limit 8192 bytes.
          */
         patch: operations["patchMe"];
+        trace?: never;
+    };
+    "/api/v1/me/avatar": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Upload or replace the current user's custom avatar
+         * @description Owner is exclusively the authenticated session user. Multipart contains exactly one file and no other fields. Nonempty file <=10 MiB, body <=10 MiB+64 KiB, <=50 MP. Actual JPEG/PNG/WebP/HEIC/HEIF content selects the bounded decoder; filename and declared MIME never grant a format. First-frame orientation, metadata stripping, center square crop and JPEG normalization, maximum 640x640 without upscaling. Replaces only the account avatar, not setup photos or the Google fallback. Replacement creates a fresh avatar URL; retired URLs return 404. No automatic retries.
+         */
+        put: operations["putMyAvatar"];
+        post?: never;
+        /**
+         * Remove the current user's custom avatar
+         * @description Owner-only, repeat-safe. Returns the latest Google avatar fallback or null for the client placeholder. Retired URLs return 404; durable file cleanup retries on restart.
+         */
+        delete: operations["deleteMyAvatar"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/users/{user_id}/avatar/{avatar_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Read a user's current custom square avatar
+         * @description Public account media, independent of setup visibility. Both UUIDs must identify the current avatar; replacement/removal/account deletion revokes old URLs with 404. Authorization is rechecked before delivery. No redirects to provider media. Cache-Control no-store, private; nosniff; no ETag, Last-Modified or conditional 304. Previously downloaded/in-flight authorized bytes cannot be revoked retroactively.
+         */
+        get: operations["getUserAvatar"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
         trace?: never;
     };
     "/api/v1/users/{user_id}": {
@@ -111,7 +155,7 @@ export interface paths {
         };
         /**
          * Get an application user's public profile
-         * @description Guest or authenticated lookup for direct frontend profile URLs, including users with no public setups. Returns only id, nickname and nullable avatar_url, without email, provider identity or friendship state.
+         * @description Guest or authenticated lookup for direct frontend profile URLs, including users with no public setups. Returns only safe nickname/avatar, validated social links, member_since and approved public_setup_count, without email, provider identity or friendship state.
          */
         get: operations["getPublicUser"];
         put?: never;
@@ -572,7 +616,7 @@ export interface components {
             /** @enum {string} */
             status: "ok" | "unavailable";
         };
-        /** @description Current authenticated application profile. Email is exposed only to this user. */
+        /** @description Current authenticated application profile. Email is exposed only to this user. avatar_url prefers the current app-managed relative API URL, then the Google URL, then null for the client placeholder. */
         User: {
             /** Format: uuid */
             id: string;
@@ -581,6 +625,11 @@ export interface components {
             /** @description Trimmed, non-empty nickname, case-insensitively unique. No null bytes. */
             nickname: string;
             avatar_url: string | null;
+            instagram_url: components["schemas"]["SocialURL"];
+            tiktok_url: components["schemas"]["SocialURL"];
+            youtube_url: components["schemas"]["SocialURL"];
+            /** @description Whether avatar_url currently selects an app-managed custom avatar. */
+            readonly has_custom_avatar: boolean;
             /** Format: date-time */
             created_at: string;
         };
@@ -592,6 +641,26 @@ export interface components {
             nickname: string;
             avatar_url: string | null;
         };
+        /** @description Safe public driver detail. No email, provider identity, private counts or storage keys. */
+        DriverProfile: {
+            /** Format: uuid */
+            id: string;
+            /** @description Trimmed, non-empty nickname, case-insensitively unique. No null bytes. */
+            nickname: string;
+            avatar_url: string | null;
+            instagram_url: components["schemas"]["SocialURL"];
+            tiktok_url: components["schemas"]["SocialURL"];
+            youtube_url: components["schemas"]["SocialURL"];
+            /**
+             * Format: date-time
+             * @description Existing user creation timestamp in UTC; never a stored duration.
+             */
+            readonly member_since: string;
+            /** @description Current count of visibility=public AND moderation_status=approved only, identical for every viewer. */
+            readonly public_setup_count: number;
+        };
+        /** @description Optional HTTPS platform profile URL. Instagram instagram.com/www.instagram.com /username; TikTok tiktok.com/www.tiktok.com /@username; YouTube youtube.com/www.youtube.com /@handle, /channel/id, /c/name or /user/name. No userinfo, port, escaped path, query, fragment, short link or redirect endpoints. Empty string/null clears on PATCH; reads return canonical validated URLs or null. Never fetched by the backend. */
+        SocialURL: string | null;
         /** @description Active catalog selection value; no synthetic Custom record exists. */
         ChassisBrand: {
             /** Format: uuid */
@@ -953,10 +1022,13 @@ export interface components {
             notes?: string | null;
             data?: components["schemas"]["SetupDataV1"];
         };
-        /** @description Nickname only. Unknown fields are rejected. JSON body limit: 4096 bytes. */
+        /** @description Partial owner update; omitted fields unchanged, null/empty socials cleared. Nickname remains non-null. Unknown fields rejected. JSON limit 8192 bytes. */
         PatchMe: {
             /** @description Trimmed, non-empty nickname, case-insensitively unique. No null bytes. */
-            nickname: string;
+            nickname?: string;
+            instagram_url?: components["schemas"]["SocialURL"];
+            tiktok_url?: components["schemas"]["SocialURL"];
+            youtube_url?: components["schemas"]["SocialURL"];
         };
         /** @description Historical chassis display information, including inactive catalog values. */
         SetupSearchChassis: {
@@ -1280,6 +1352,99 @@ export interface operations {
             500: components["responses"]["InternalError"];
         };
     };
+    putMyAvatar: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": {
+                    /** Format: binary */
+                    file: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Updated owner profile; avatar_url is the current custom media URL. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["User"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            500: components["responses"]["InternalError"];
+            /** @description Avatar upload capacity busy; retry explicitly later. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+        };
+    };
+    deleteMyAvatar: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Updated owner profile with has_custom_avatar=false. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["User"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            500: components["responses"]["InternalError"];
+        };
+    };
+    getUserAvatar: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                user_id: string;
+                avatar_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Normalized square JPEG, at most 640px; no upscaling. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "image/jpeg": string;
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            404: components["responses"]["NotFound"];
+            414: components["responses"]["PublicURITooLong"];
+            429: components["responses"]["PublicReadsBusy"];
+            500: components["responses"]["InternalError"];
+        };
+    };
     getPublicUser: {
         parameters: {
             query?: never;
@@ -1298,7 +1463,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["PublicProfile"];
+                    "application/json": components["schemas"]["DriverProfile"];
                 };
             };
             400: components["responses"]["BadRequest"];

@@ -25,8 +25,8 @@ Keep changes scoped; this rule does not authorize unrelated redesigns.
 | /my/setups/new | Shared six-section editor; save setup once, then upload queued photos |
 | /my/setups/:setupId/edit | Owner editor, generic unavailable for foreign/unsupported setup |
 | /friends | Find people, Incoming Accept/Reject, Outgoing Cancel, accepted Remove with confirmation |
-| /users/:userId | Safe nickname/avatar and paginated public setups; signed-in users can explicitly select Setups visible to you |
-| /settings | Nickname editing, current-user email read-only, optional avatar, shell logout |
+| /users/:userId | Canonical profile view (including own Account): avatar, nickname, social icons, membership/public stats and existing public setup gallery |
+| /settings | Authenticated own-profile editor: nickname/social links, immediate avatar upload/crop/replace/remove and read-only account email |
 | /compare | Select exactly two visible setups; bookmarkable sides and All available/Mine/Friends/Same model presets |
 
 Discovery clears model when brand changes. Public Explore stays the default; Mine and Friends
@@ -165,14 +165,15 @@ fixed bottom navigation is covered while it is open. The bottom row order is Exp
 for guests and Explore, My setups, Compare for members. Sign up starts backend
 Google authentication. Login/logout update navigation with the session boundary.
 
-The full-height drawer has Account settings and Friends for members. Guests also
+The full-height drawer has Account (own /users/:userId view) and Friends for members. Guests also
 have Help & Feedback above centered social icons. Members have centered Help & Feedback,
 then social icons and Sign out at the bottom. Navigation uses neutral text links and separators, with bold current page.
 Selecting a route closes the drawer. Focus Close on open; outside navigation stays inert;
 closing nested Help restores its trigger and leaves the drawer open. Desktop resize
 dismisses the drawer. Reserve safe-area padding below the bar and above fixed Save
 controls; viewport-fit=cover enables iOS insets, with branding below the top inset.
-Desktop navigation, identity, Sign out and social footer remain unchanged.
+Desktop Account and nickname/avatar links open the same own-profile view. Mobile avatar
+also opens that view; the separate menu, Sign out and social footer remain available.
 
 Help & Feedback is a guest/member drawer action and quiet desktop-footer action.
 Its compact native dialog shows selectable support email, mailto, Close/Escape,
@@ -182,6 +183,21 @@ src/features/help for later translation; no response-time or account-creation pr
 Canonical URLs live in src/shared/social/profiles.ts; links have accessible names,
 new-tab opener isolation and no tracking parameters. Active nav has current-page
 semantics plus underline/border. Logout preserves pending/error/retry behavior.
+
+## Driver profile editing
+
+Own profiles alone show **Change profile details**, linking to the existing /settings
+editor; other-driver and guest views never expose editing controls. Social icons sit
+in one compact row immediately below the nickname, only for safe configured platform
+URLs, with accessible external-link names and opener isolation. Display membership
+month/year and the backend's approved-public setup count, never infer stats from a
+visible/private list. Preserve gallery and friendship controls.
+
+Avatar confirmation saves immediately, independently of nickname/social Save. Reuse
+the square crop surface and current native dialog styling; cancel makes no upload,
+restores focus and releases local URLs. Unsupported local previews explicitly offer
+server-centered upload; never invent a preview endpoint. Retain unsaved text on avatar
+changes, prevent duplicate writes, and discard dialogs/blobs on session changes.
 
 ## Photos and crop editor
 

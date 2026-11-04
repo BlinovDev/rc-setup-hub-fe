@@ -16,7 +16,7 @@ import {
   usePatchSetup,
   withSession,
 } from "../setups/queries";
-import { useUpdateNickname } from "../profile/queries";
+import { useUpdateProfile } from "../profile/queries";
 import { SetupError } from "../setups/api";
 import { AuthGate } from "./AuthGate";
 import { currentUserKey } from "./queries";
@@ -210,7 +210,7 @@ it.each([200, 401])(
     );
     let save!: () => Promise<unknown>;
     function Settings() {
-      const update = useUpdateNickname();
+      const update = useUpdateProfile();
       save = () => update.mutateAsync({ nickname: "Old session update" });
       return null;
     }

@@ -1,3 +1,6 @@
+import { Avatar } from "../profile/Avatar";
+import { safeSocialUrl } from "../profile/social";
+import { SocialLinks } from "../../shared/social/SocialLinks";
 import { useQuery } from "@tanstack/react-query";
 import { currentUserOptions } from "../auth/queries";
 import { SetupSearchCard } from "../search/SetupSearchCard";
@@ -43,20 +46,67 @@ export function UserProfilePage() {
       </InlineNotice>
     );
   const user = profile.data;
+  const links = (["instagram", "tiktok", "youtube"] as const).flatMap(
+    (platform) => {
+      const url = safeSocialUrl(platform, user[`${platform}_url`]);
+      return url
+        ? [
+            {
+              name:
+                platform === "instagram"
+                  ? "Instagram"
+                  : platform === "tiktok"
+                    ? "TikTok"
+                    : "YouTube",
+              url,
+              icon: platform,
+            },
+          ]
+        : [];
+    },
+  );
+  const memberSince = new Date(user.member_since);
+
   return (
     <section className="space-y-4">
-      <div className="profile-header identity-action-row">
+      <div className="profile-header identity-action-row driver-profile-header">
         <div className="profile-identity">
-          {user.avatar_url && (
-            <img
-              className="h-16 w-16 shrink-0 rounded-full"
-              src={user.avatar_url}
-              alt=""
-            />
-          )}
-          <h2 className="page-title min-w-0">{user.nickname}</h2>
+          <Avatar url={user.avatar_url} size={64} />
+          <div className="min-w-0">
+            <h2 className="page-title min-w-0">{user.nickname}</h2>
+            {links.length > 0 && (
+              <SocialLinks links={links} label="Driver social profiles" />
+            )}
+          </div>
         </div>
-        <ProfileFriendshipControl key={user.id} userId={user.id} />
+        {session.data?.id === user.id ? (
+          <Link className="action-link" to="/settings">
+            Change profile details
+          </Link>
+        ) : (
+          <ProfileFriendshipControl key={user.id} userId={user.id} />
+        )}
+      </div>
+      <div className="driver-stats">
+        {Number.isFinite(memberSince.getTime()) && (
+          <p>
+            Member since{" "}
+            <time dateTime={user.member_since}>
+              {memberSince.toLocaleDateString(undefined, {
+                month: "long",
+                year: "numeric",
+                timeZone: "UTC",
+              })}
+            </time>
+          </p>
+        )}
+        {Number.isSafeInteger(user.public_setup_count) &&
+          user.public_setup_count >= 0 && (
+            <p>
+              {user.public_setup_count} public{" "}
+              {user.public_setup_count === 1 ? "setup" : "setups"}
+            </p>
+          )}
       </div>
       {session.data && (
         <div className="flex flex-wrap gap-3" aria-label="Profile setup lists">

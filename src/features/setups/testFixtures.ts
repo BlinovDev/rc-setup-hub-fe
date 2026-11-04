@@ -5,6 +5,10 @@ export const testUser = {
   email: "driver@example.test",
   avatar_url: null,
   created_at: "2026-09-30T12:00:00Z",
+  instagram_url: null,
+  tiktok_url: null,
+  youtube_url: null,
+  has_custom_avatar: false,
 } satisfies components["schemas"]["User"];
 export const testSetup = {
   running_gear_manufacturers: null,

@@ -65,7 +65,7 @@ export function AuthGate(props: Props) {
               </NavLink>
               <NavLink to="/my/setups">My setups</NavLink>
               <NavLink to="/friends">Friends</NavLink>
-              <NavLink to="/settings">Settings</NavLink>
+              <NavLink to={`/users/${session.data.id}`}>Account</NavLink>
               <NavLink to="/compare">Compare</NavLink>
             </nav>
             <AuthenticatedShell user={session.data} />

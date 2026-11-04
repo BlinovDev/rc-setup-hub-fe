@@ -16,6 +16,10 @@ const user = {
   email: "driver@example.test",
   avatar_url: "https://example.test/avatar.png",
   created_at: "2026-09-30T12:00:00Z",
+  instagram_url: null,
+  tiktok_url: null,
+  youtube_url: null,
+  has_custom_avatar: false,
 } satisfies components["schemas"]["User"];
 const clients: QueryClient[] = [];
 afterEach(() => {
@@ -59,7 +63,7 @@ it.each([user.avatar_url, null])(
       expect(document.querySelector("img")).toHaveAttribute("src", avatar);
     else expect(document.querySelector("img")).toBeNull();
     expect(
-      screen.getByRole("button", { name: "Save nickname" }),
+      screen.getByRole("button", { name: "Save profile details" }),
     ).toBeDisabled();
   },
 );
@@ -94,18 +98,23 @@ it("normalizes the PATCH body and updates settings, shell and affected public id
   client.setQueryData(discoveryKey, { pages: [], pageParams: [null] });
   await userEvent
     .setup()
-    .click(screen.getByRole("button", { name: "Save nickname" }));
+    .click(screen.getByRole("button", { name: "Save profile details" }));
   expect(screen.getByRole("button", { name: "Saving…" })).toBeDisabled();
   expect(await screen.findByRole("status")).toHaveTextContent(
-    "Nickname saved.",
+    "Profile details saved.",
   );
   expect(screen.getByText("New Driver")).toBeInTheDocument();
-  expect(screen.getByRole("textbox")).toHaveValue("New Driver");
+  expect(screen.getByRole("textbox", { name: "Nickname" })).toHaveValue(
+    "New Driver",
+  );
   expect(client.getQueryData(currentUserKey)).toEqual(saved);
   expect(client.getQueryData(publicKey)).toEqual({
     id: user.id,
     nickname: saved.nickname,
     avatar_url: user.avatar_url,
+    instagram_url: null,
+    tiktok_url: null,
+    youtube_url: null,
   });
   expect(client.getQueryState(discoveryKey)?.isInvalidated).toBe(true);
   expect(client.getQueryData(otherKey)).toEqual({ nickname: "Other driver" });
@@ -135,7 +144,9 @@ it("does not PATCH an unchanged normalized nickname even on form submission", as
   );
   setup();
   const input = await edit("  Track Driver  ");
-  expect(screen.getByRole("button", { name: "Save nickname" })).toBeDisabled();
+  expect(
+    screen.getByRole("button", { name: "Save profile details" }),
+  ).toBeDisabled();
   fireEvent.submit(input.closest("form")!);
   await act(async () => {});
   expect(patches).toBe(0);
@@ -149,14 +160,14 @@ it.each([
   await edit(value!);
   await userEvent
     .setup()
-    .click(screen.getByRole("button", { name: "Save nickname" }));
+    .click(screen.getByRole("button", { name: "Save profile details" }));
   expect(await screen.findByRole("alert")).toHaveTextContent(message!);
 });
 it.each([
-  [400, "That nickname is invalid."],
+  [400, "Those profile details are invalid."],
   [409, "That nickname is already in use."],
   [415, "Unable to send the update."],
-  [500, "Unable to save your nickname."],
+  [500, "Unable to save your profile."],
 ])("handles PATCH %s and supports retry", async (status, message) => {
   let requests = 0;
   server.use(
@@ -174,13 +185,13 @@ it.each([
   await edit("Changed");
   await userEvent
     .setup()
-    .click(screen.getByRole("button", { name: "Save nickname" }));
+    .click(screen.getByRole("button", { name: "Save profile details" }));
   expect(await screen.findByRole("alert")).toHaveTextContent(String(message));
   expect(screen.queryByText("Secret internal details")).not.toBeInTheDocument();
   expect(screen.getByText(user.nickname)).toBeInTheDocument();
   await userEvent
     .setup()
-    .click(screen.getByRole("button", { name: "Save nickname" }));
+    .click(screen.getByRole("button", { name: "Save profile details" }));
   expect(await screen.findByText("Changed")).toBeInTheDocument();
   expect(requests).toBe(2);
 });
@@ -194,7 +205,7 @@ it("removes settings data on PATCH 401", async () => {
   await edit("Changed");
   await userEvent
     .setup()
-    .click(screen.getByRole("button", { name: "Save nickname" }));
+    .click(screen.getByRole("button", { name: "Save profile details" }));
   await screen.findByRole("button", { name: "Sign in with Google" });
   expect(screen.queryByText(user.email)).not.toBeInTheDocument();
   expect(screen.queryByRole("textbox")).not.toBeInTheDocument();

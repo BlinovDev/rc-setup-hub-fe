@@ -17,6 +17,10 @@ const user = {
   nickname: "Track driver",
   avatar_url: "https://example.test/avatar.png",
   created_at: "2026-09-30T12:00:00Z",
+  instagram_url: null,
+  tiktok_url: null,
+  youtube_url: null,
+  has_custom_avatar: false,
 } satisfies components["schemas"]["User"];
 
 const clients: QueryClient[] = [];
@@ -378,7 +382,7 @@ it("updates the mobile navigation across guest, refreshed login and logout witho
   const menu = within(
     screen.getByRole("dialog", { name: "Account and navigation" }),
   );
-  expect(menu.getByRole("link", { name: "Account settings" })).toBeVisible();
+  expect(menu.getByRole("link", { name: "Account" })).toBeVisible();
   expect(menu.getByRole("link", { name: "Friends" })).toBeVisible();
   expect(menu.getByRole("button", { name: "Help & Feedback" })).toBeVisible();
   await events.click(menu.getByRole("button", { name: "Sign out" }));

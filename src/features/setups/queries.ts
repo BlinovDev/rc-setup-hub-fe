@@ -26,13 +26,25 @@ export const publicUserSetupsKey = (userId: string) =>
 export const detailKey = (id: string) => ["setups", "detail", id] as const;
 // All setup writes refresh the same list projections; detail/media lifetimes
 // remain with the mutation that owns them.
-export async function refreshSetupLists(client: QueryClient, ownerId?: string) {
+export async function refreshSetupLists(
+  client: QueryClient,
+  ownerId?: string,
+  publicCountMayChange = true,
+) {
   await Promise.all([
     client.invalidateQueries({ queryKey: mineKey, exact: true }),
     client.invalidateQueries({ queryKey: ["setups", "search"] }),
     client.invalidateQueries({ queryKey: ["setups", "compare"] }),
     ...(ownerId
       ? [
+          ...(publicCountMayChange
+            ? [
+                client.invalidateQueries({
+                  queryKey: ["users", "public", ownerId],
+                  exact: true,
+                }),
+              ]
+            : []),
           client.invalidateQueries({
             queryKey: userSetupsKey(ownerId),
           }),

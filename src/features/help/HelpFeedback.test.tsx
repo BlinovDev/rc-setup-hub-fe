@@ -7,6 +7,7 @@ import { expect, it, vi } from "vitest";
 import { apiUrl } from "../../api/config";
 import { routes } from "../../app/router";
 import { server } from "../../test/server";
+import { testUser } from "../setups/testFixtures";
 import { renderSetupRoute } from "../setups/testUtils";
 import { HelpFeedback } from "./HelpFeedback";
 
@@ -172,9 +173,10 @@ it("reuses the signed-in footer and drawer while retaining three primary bottom 
   const menuTrigger = screen.getByRole("button", { name: "Open account menu" });
   await user.click(menuTrigger);
   const menu = screen.getByRole("dialog", { name: "Account and navigation" });
-  expect(
-    within(menu).getByRole("link", { name: "Account settings" }),
-  ).toHaveAttribute("href", "/settings");
+  expect(within(menu).getByRole("link", { name: "Account" })).toHaveAttribute(
+    "href",
+    `/users/${testUser.id}`,
+  );
   const nav = within(
     screen.getByRole("navigation", { name: "Mobile navigation" }),
   );

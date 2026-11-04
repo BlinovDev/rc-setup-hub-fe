@@ -1,3 +1,4 @@
+import { SquareCropPreview } from "./SquareCropPreview";
 import { useEffect, useRef, useState } from "react";
 import type { components } from "../../../api/generated/schema";
 import { Button } from "../../../shared/components/Button";
@@ -8,13 +9,7 @@ import {
 import { SetupError } from "../api";
 import { useCropPhoto } from "./queries";
 import { usePhotoMedia } from "./usePhotoMedia";
-import {
-  boundCrop,
-  centerCrop,
-  maxCropZoom,
-  panCrop,
-  zoomCropAt,
-} from "./crop";
+import { boundCrop, centerCrop } from "./crop";
 import { trapDialogTab } from "../form/dialogFocus";
 type Photo = components["schemas"]["SetupPhoto"];
 type Crop = components["schemas"]["PhotoCrop"];
@@ -33,26 +28,13 @@ export function CropEditor({
   const dialog = useRef<HTMLDialogElement>(null);
   const image = useRef<HTMLImageElement>(null);
   const [base, setBase] = useState(photo);
+  const [resetKey, setResetKey] = useState(0);
   const [crop, setCrop] = useState(
     photo.crop ?? centerCrop(photo.width, photo.height),
   );
-  const draft = useRef(crop);
   const resetDraft = useRef(false);
-  type Point = { x: number; y: number };
-  const pointers = useRef(new Map<number, Point>());
-  const gesture = useRef<{ crop: Crop; points: Point[] } | null>(null);
-  const zoomLimit = maxCropZoom(base.width, base.height);
-  const actualZoom = Math.min(base.width, base.height) / crop.size;
-  const legacyZoom = actualZoom > zoomLimit + 0.01;
   function replaceCrop(next: Crop) {
-    draft.current = next;
     setCrop(next);
-  }
-  function startGesture() {
-    gesture.current = {
-      crop: draft.current,
-      points: [...pointers.current.values()],
-    };
   }
   const [loaded, setLoaded] = useState(false);
   const [decodeError, setDecodeError] = useState(false);
@@ -146,10 +128,9 @@ export function CropEditor({
           onClick={() => {
             request.current = null;
             mutation.reset();
-            pointers.current.clear();
-            gesture.current = null;
             replaceCrop(centerCrop(base.width, base.height));
             resetDraft.current = true;
+            setResetKey((value) => value + 1);
           }}
         >
           Reset to center
@@ -179,173 +160,30 @@ export function CropEditor({
           </InlineNotice>
         )}
         {media.data && !media.isError && !unavailable && (
-          <div className="crop-stage">
-            <div
-              className="crop-preview"
-              role="group"
-              aria-label="Square thumbnail preview"
-              tabIndex={0}
-              onKeyDown={(event) => {
-                const step = event.shiftKey ? 10 : 1;
-                const move = {
-                  ArrowLeft: [-step, 0],
-                  ArrowRight: [step, 0],
-                  ArrowUp: [0, -step],
-                  ArrowDown: [0, step],
-                }[event.key];
-                if (move) {
-                  event.preventDefault();
-                  change({
-                    ...crop,
-                    x: crop.x + move[0]!,
-                    y: crop.y + move[1]!,
-                  });
-                  return;
-                }
-                if (["+", "=", "Add"].includes(event.key)) {
-                  event.preventDefault();
-                  if (!legacyZoom)
-                    change(
-                      zoomCropAt(
-                        crop,
-                        actualZoom + 0.25,
-                        base.width,
-                        base.height,
-                      ),
-                    );
-                } else if (["-", "_", "Subtract"].includes(event.key)) {
-                  event.preventDefault();
-                  change(
-                    zoomCropAt(
-                      crop,
-                      actualZoom - 0.25,
-                      base.width,
-                      base.height,
-                    ),
-                  );
-                }
-              }}
-              aria-describedby="crop-instructions"
-              onPointerDown={(event) => {
-                if (
-                  !ready ||
-                  pointers.current.size >= 2 ||
-                  (event.pointerType === "mouse" && event.button !== 0)
-                )
-                  return;
-                event.currentTarget.focus();
-                event.currentTarget.setPointerCapture(event.pointerId);
-                pointers.current.set(event.pointerId, {
-                  x: event.clientX,
-                  y: event.clientY,
-                });
-                startGesture();
-              }}
-              onPointerMove={(event) => {
-                const start = gesture.current;
-                if (!start || !pointers.current.has(event.pointerId) || !ready)
-                  return;
-                pointers.current.set(event.pointerId, {
-                  x: event.clientX,
-                  y: event.clientY,
-                });
-                const points = [...pointers.current.values()];
-                const box = event.currentTarget.getBoundingClientRect();
-                if (box.width <= 0) return;
-                if (
-                  start.points.length === 2 &&
-                  points.length === 2 &&
-                  !legacyZoom
-                ) {
-                  const distance = (p: Point[]) =>
-                    Math.hypot(p[1]!.x - p[0]!.x, p[1]!.y - p[0]!.y);
-                  const midpoint = (p: Point[]) => ({
-                    x: ((p[0]!.x + p[1]!.x) / 2 - box.left) / box.width,
-                    y: ((p[0]!.y + p[1]!.y) / 2 - box.top) / box.width,
-                  });
-                  const initial = distance(start.points);
-                  if (initial < 1) return;
-                  const zoom =
-                    ((Math.min(base.width, base.height) / start.crop.size) *
-                      distance(points)) /
-                    initial;
-                  change(
-                    zoomCropAt(
-                      start.crop,
-                      zoom,
-                      base.width,
-                      base.height,
-                      midpoint(start.points),
-                      midpoint(points),
-                    ),
-                  );
-                } else if (points.length === 1 && start.points.length === 1) {
-                  change(
-                    panCrop(
-                      start.crop,
-                      points[0]!.x - start.points[0]!.x,
-                      points[0]!.y - start.points[0]!.y,
-                      box.width,
-                      base.width,
-                      base.height,
-                    ),
-                  );
-                }
-              }}
-              onPointerUp={(event) => {
-                pointers.current.delete(event.pointerId);
-                startGesture();
-              }}
-              onPointerCancel={(event) => {
-                pointers.current.delete(event.pointerId);
-                startGesture();
-              }}
-              onLostPointerCapture={(event) => {
-                pointers.current.delete(event.pointerId);
-                startGesture();
-              }}
-            >
-              <img
-                ref={image}
-                alt="Normalized photo crop preview"
-                draggable={false}
-                style={{
-                  width: `${(base.width / crop.size) * 100}%`,
-                  height: `${(base.height / crop.size) * 100}%`,
-                  left: `${(-crop.x / crop.size) * 100}%`,
-                  top: `${(-crop.y / crop.size) * 100}%`,
-                }}
-                onLoad={(event) => {
-                  const el = event.currentTarget;
-                  setDecodeError(
-                    el.naturalWidth !== base.width ||
-                      el.naturalHeight !== base.height,
-                  );
-                  setLoaded(
-                    el.naturalWidth === base.width &&
-                      el.naturalHeight === base.height,
-                  );
-                }}
-                onError={() => {
-                  setDecodeError(true);
-                  setLoaded(false);
-                }}
-              />
-            </div>
-            <p id="crop-instructions" className="sr-only">
-              Drag to move and pinch to zoom. With a keyboard, use arrow keys to
-              move and plus or minus to zoom. Coordinates use integer pixels.
-            </p>
-            <p role="status" className="crop-zoom-status">
-              Zoom {actualZoom.toFixed(2)}×
-            </p>
-            {legacyZoom && (
-              <p className="crop-legacy-warning">
-                The saved crop is tighter than the 4× editing range. It is
-                preserved. Reset to center to adjust zoom.
-              </p>
-            )}
-          </div>
+          <SquareCropPreview
+            resetKey={resetKey}
+            width={base.width}
+            height={base.height}
+            crop={crop}
+            ready={ready}
+            onChange={change}
+            imageRef={image}
+            onLoad={(event) => {
+              const el = event.currentTarget;
+              setDecodeError(
+                el.naturalWidth !== base.width ||
+                  el.naturalHeight !== base.height,
+              );
+              setLoaded(
+                el.naturalWidth === base.width &&
+                  el.naturalHeight === base.height,
+              );
+            }}
+            onError={() => {
+              setDecodeError(true);
+              setLoaded(false);
+            }}
+          />
         )}
         {mutation.isError && (
           <InlineNotice tone="error">
@@ -365,8 +203,7 @@ export function CropEditor({
                           centerCrop(current.width, current.height),
                       );
                       resetDraft.current = false;
-                      pointers.current.clear();
-                      gesture.current = null;
+                      setResetKey((value) => value + 1);
                       mutation.reset();
                       request.current = null;
                     } else setMissing(true);

@@ -2107,3 +2107,96 @@
     padding: 1rem;
   }
 }
+
+/* Driver profiles reuse the current browse surfaces, social targets and crop dialog. */
+.driver-avatar {
+  display: inline-flex;
+  flex: 0 0 auto;
+  overflow: hidden;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  color: var(--muted);
+  background: #f1f5f9;
+}
+.driver-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.header-avatar-link {
+  display: inline-flex;
+  min-width: 44px;
+  min-height: 44px;
+  align-items: center;
+  justify-content: center;
+}
+.profile-identity .social-links {
+  justify-content: flex-start;
+  margin: 0.25rem 0 0;
+  gap: 0.25rem;
+}
+.driver-stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 1.25rem;
+  color: var(--muted);
+  font-size: 0.875rem;
+}
+.profile-details-panel,
+.profile-avatar-editor {
+  margin-bottom: 1rem;
+  padding: 1rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 0.75rem;
+  background: var(--surface);
+}
+.profile-avatar-editor h3 {
+  margin-bottom: 1rem;
+}
+.profile-details-panel {
+  max-width: 44rem;
+}
+.avatar-crop-dialog .crop-workspace {
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  gap: 0.5rem;
+}
+.avatar-crop-dialog .crop-stage {
+  flex: 1;
+  height: auto;
+}
+.avatar-zoom {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding-inline: 0.25rem;
+}
+.avatar-zoom input {
+  flex: 1;
+  min-width: 0;
+}
+.avatar-preview-unavailable .crop-stage {
+  display: none;
+}
+
+.profile-avatar-editor {
+  max-width: 44rem;
+}
+@media (max-width: 767px) {
+  .driver-profile-header {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .driver-profile-header > .action-link {
+    justify-self: start;
+  }
+}
+.avatar-crop-dialog .crop-stage {
+  container-type: size;
+  grid-template-rows: minmax(0, 1fr) auto;
+}
+.avatar-crop-dialog .crop-preview {
+  width: min(100%, 320px, calc(100cqh - 2rem));
+  max-height: none;
+}

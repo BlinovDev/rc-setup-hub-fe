@@ -1,3 +1,5 @@
+import { Avatar } from "../profile/Avatar";
+import { Link } from "react-router";
 import { HelpFeedback } from "../help/HelpFeedback";
 import { NavLink } from "react-router";
 import { useCallback, useId, useRef, useState } from "react";
@@ -20,17 +22,24 @@ export function AuthenticatedShell({
   const closeMenu = useCallback(() => setMenuOpen(false), []);
   const identity = (
     <div className="flex items-center gap-3">
-      {user?.avatar_url && (
-        <img
-          className="h-8 w-8 shrink-0 rounded-full object-cover"
-          src={user?.avatar_url}
-          alt=""
-          width={32}
-          height={32}
-        />
+      {user && (
+        <Link
+          className="header-avatar-link"
+          to={`/users/${user.id}`}
+          aria-label="Your profile"
+          onClick={closeMenu}
+        >
+          <Avatar url={user.avatar_url} />
+        </Link>
       )}
       <p className="min-w-0 break-words text-sm">
-        {user?.nickname ?? "Navigation"}
+        {user ? (
+          <Link to={`/users/${user.id}`} onClick={closeMenu}>
+            {user.nickname}
+          </Link>
+        ) : (
+          "Navigation"
+        )}
       </p>
     </div>
   );
@@ -68,14 +77,14 @@ export function AuthenticatedShell({
         </section>
       )}
       <div className="mobile-session">
-        {user?.avatar_url && (
-          <img
-            src={user?.avatar_url}
-            alt=""
-            width={32}
-            height={32}
-            className="h-8 w-8 shrink-0 rounded-full object-cover"
-          />
+        {user && (
+          <Link
+            className="header-avatar-link"
+            to={`/users/${user.id}`}
+            aria-label="Your profile"
+          >
+            <Avatar url={user.avatar_url} />
+          </Link>
         )}
         <Button
           ref={triggerRef}
@@ -114,8 +123,8 @@ export function AuthenticatedShell({
       >
         {user && (
           <nav className="account-nav" aria-label="Your account">
-            <NavLink to="/settings" onClick={closeMenu}>
-              Account settings
+            <NavLink to={`/users/${user.id}`} onClick={closeMenu}>
+              Account
             </NavLink>
             <NavLink to="/friends" onClick={closeMenu}>
               Friends

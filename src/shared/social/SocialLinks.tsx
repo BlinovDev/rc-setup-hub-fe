@@ -1,12 +1,19 @@
 import { socialProfiles } from "./profiles";
 
-export function SocialLinks() {
+export function SocialLinks({
+  links = socialProfiles,
+  label = "International Drift Hub social profiles",
+}: {
+  links?: readonly {
+    name: string;
+    url: string;
+    icon: "youtube" | "tiktok" | "instagram";
+  }[];
+  label?: string;
+} = {}) {
   return (
-    <nav
-      aria-label="International Drift Hub social profiles"
-      className="social-links"
-    >
-      {socialProfiles.map(({ name, url, icon }) => (
+    <nav aria-label={label} className="social-links">
+      {links.map(({ name, url, icon }) => (
         <a
           key={name}
           href={url}

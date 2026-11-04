@@ -31,6 +31,16 @@ beforeEach(() => {
   });
   server.use(
     http.get(`${apiUrl}/api/v1/me/setups`, () => HttpResponse.json([])),
+    http.get(`${apiUrl}/api/v1/users/${testUser.id}`, () =>
+      HttpResponse.json({
+        ...testUser,
+        member_since: testUser.created_at,
+        public_setup_count: 0,
+      }),
+    ),
+    http.get(`${apiUrl}/api/v1/users/${testUser.id}/public-setups`, () =>
+      HttpResponse.json({ items: [], next_cursor: null }),
+    ),
   );
 });
 afterEach(() => {
@@ -90,7 +100,7 @@ it("shows identity, canonical safe icon links and sign out without moving bottom
     within(dialog).queryByRole("navigation", { name: "Main" }),
   ).not.toBeInTheDocument();
   const nav = screen.getByRole("navigation", { name: "Main" });
-  for (const name of ["Explore", "My setups", "Friends", "Settings"])
+  for (const name of ["Explore", "My setups", "Friends", "Account"])
     expect(within(nav).getByRole("link", { name })).toBeInTheDocument();
 });
 
@@ -101,9 +111,7 @@ it("focuses Close, supports explicit dismissal and native Escape cancellation, a
   });
   expect(close).toHaveFocus();
   await user.tab();
-  expect(
-    within(dialog).getByRole("link", { name: "Account settings" }),
-  ).toHaveFocus();
+  expect(within(dialog).getByRole("link", { name: "Account" })).toHaveFocus();
   await user.click(close);
   expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
   expect(trigger).toHaveFocus();
@@ -163,12 +171,10 @@ it("closes on switching to desktop and removes its media listener", async () => 
 
 it("closes the account drawer when an account route is selected", async () => {
   const { user, dialog, trigger } = await openMenu();
-  await user.click(
-    within(dialog).getByRole("link", { name: "Account settings" }),
-  );
+  await user.click(within(dialog).getByRole("link", { name: "Account" }));
   expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
   expect(trigger).toHaveAttribute("aria-expanded", "false");
   expect(
-    await screen.findByRole("heading", { name: "Settings" }),
+    await screen.findByRole("heading", { name: testUser.nickname }),
   ).toBeInTheDocument();
 });
