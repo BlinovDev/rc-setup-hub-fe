@@ -87,7 +87,10 @@ The public browser command also runs `scripts/profile-browser-check.mjs`: 320/39
 desktop and short-landscape account/header navigation, owner-only editing, safe social
 links/stats, real canvas avatar crop/confirmation/replacement/removal, retained text
 drafts and logout isolation. It captures profile resting/edit/crop/removal/guest states
-under artifacts/public-qa for comparison with current-main visuals.
+under artifacts/public-qa for comparison with current-main visuals. The same command
+runs `scripts/moderation-browser-check.mjs`: owner-only Pending/Approved/Rejected
+metadata at 320/390/1280px in light/dark color schemes, wrapping and guest/friend
+privacy, with moderation-prefixed screenshots in the same artifact.
 
 The photo script starts local Vite and runs independent `lifecycle` and `compact-edit`
 scenarios, each with a fresh browser context and explicit backend fixture. Failures

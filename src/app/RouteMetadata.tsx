@@ -24,6 +24,7 @@ export function RouteMetadata({
   const setup =
     !unresolved &&
     detail.isSuccess &&
+    !detail.isFetching &&
     detail.data?.visibility === "public" &&
     detail.data.moderation_status === "approved"
       ? detail.data

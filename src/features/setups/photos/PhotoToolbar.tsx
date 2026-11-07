@@ -152,7 +152,7 @@ export function PhotoToolbar({
           </p>
           <p>
             {saved
-              ? "Photo uploads, cover changes and deletions save immediately. Setup fields use Save setup separately. Leaving editing does not undo saved photo changes. Unsaved queued files are lost if you leave."
+              ? "Photo uploads, cover changes and deletions save immediately. Adding, deleting, replacing, changing the cover or cropping photos sends approved public setups back for review. Setup fields use Save setup separately. Leaving editing does not undo saved photo changes. Unsaved queued files are lost if you leave."
               : "Photos are queued locally. Create setup saves your setup once, then uploads the queue. Completed uploads are retained if another file fails. Queued files are lost if you leave."}
           </p>
           <Button

@@ -14,6 +14,7 @@ import { useSetup } from "./queries";
 import { shareNavigation, setupShareUrl } from "./share";
 import { CloneSetupAction } from "./CloneSetupAction";
 import { SourceAttribution } from "./SourceAttribution";
+import { ModerationStatus } from "./ModerationStatus";
 import { TechnicalData } from "./TechnicalData";
 function Owner({ id }: { id: string }) {
   const owner = usePublicUser(id);
@@ -49,10 +50,14 @@ export function SetupDetailPage({
       (query.data.visibility !== "public" ||
         query.data.moderation_status !== "approved")) ||
     (query.error instanceof SetupError &&
-      [400, 404].includes(query.error.status))
+      [400, 403, 404].includes(query.error.status))
   )
     return <p>Setup not found or unavailable.</p>;
-  if (query.isPending) return <LoadingState>Loading setup…</LoadingState>;
+  if (
+    query.isPending ||
+    (query.isFetching && query.data?.owner_id !== user?.id)
+  )
+    return <LoadingState>Loading setup…</LoadingState>;
   if (query.isError)
     return (
       <InlineNotice tone="error">
@@ -73,9 +78,14 @@ export function SetupDetailPage({
         <div className="setup-detail-heading">
           <p className="eyebrow">{chassisLabel(setup)}</p>
           <h2 className="page-title">{setup.title}</h2>
+          {setup.owner_id === user?.id && setup.visibility === "public" && (
+            <ModerationStatus status={setup.moderation_status} />
+          )}
           <Owner id={setup.owner_id} />
         </div>
-        <VisibilityBadge value={setup.visibility} />
+        {!(setup.owner_id === user?.id && setup.visibility === "public") && (
+          <VisibilityBadge value={setup.visibility} />
+        )}
       </header>
       <div className="setup-detail-actions">
         {setup.owner_id === user?.id && (
