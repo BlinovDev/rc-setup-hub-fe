@@ -49,6 +49,9 @@ it.each([
       name: "Moderation status",
     });
     expect(badge).toHaveTextContent(label);
+    expect(
+      screen.getByRole("group", { name: "Setup visibility and moderation" }),
+    ).toContainElement(badge);
     expect(screen.getByText("Public")).toBeInTheDocument();
     expect(badge.querySelector("svg")).toHaveAttribute("aria-hidden", "true");
     const title = screen.getByRole("heading", { name: testSetup.title });

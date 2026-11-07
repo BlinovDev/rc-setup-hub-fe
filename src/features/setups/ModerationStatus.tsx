@@ -36,6 +36,7 @@ export function ModerationStatus({
     <div className="space-y-1">
       <div
         className="flex flex-wrap items-center gap-2 text-sm"
+        role="group"
         aria-label="Setup visibility and moderation"
       >
         <span className="inline-flex items-center gap-1">
