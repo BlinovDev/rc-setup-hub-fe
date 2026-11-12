@@ -70,6 +70,14 @@ const a = make(1, "Alpha public", "public", {
     },
   },
   electronics: { motor: "10.5T" },
+  weight_distribution: {
+    front_left_g: 380,
+    front_right_g: 400,
+    rear_left_g: 320,
+    rear_right_g: 350,
+    body_installed: false,
+    battery_installed: true,
+  },
 });
 const b = {
   ...make(2, "Beta public", "public", {
@@ -86,6 +94,14 @@ const b = {
     },
     shocks: { front: { piston: { holes: 4 }, seal: { type: "x-ring" } } },
     electronics: { motor: "10.5T" },
+    weight_distribution: {
+      front_left_g: 380,
+      front_right_g: 400,
+      rear_left_g: 320,
+      rear_right_g: 360,
+      body_installed: true,
+      battery_installed: true,
+    },
   }),
   chassis: null,
   chassis_model_id: null,
@@ -432,6 +448,78 @@ try {
           ["42.5", "42.5"],
         );
         assert(await page.getByText(/Different or custom chassis/).isVisible());
+        assert(
+          await page
+            .getByRole("heading", { name: "Weight Distribution", exact: true })
+            .isVisible(),
+        );
+        assert(
+          await page
+            .getByText("Measurements were taken under different conditions.", {
+              exact: true,
+            })
+            .isVisible(),
+        );
+        assert.deepEqual(
+          await page
+            .getByRole("region", {
+              name: "Weight Distribution comparison table",
+            })
+            .getByRole("rowheader", { name: /Rear right/ })
+            .locator("..")
+            .getByRole("cell")
+            .allTextContents(),
+          ["350", "360"],
+        );
+        const weightRegion = page.getByRole("region", {
+          name: "Weight Distribution comparison table",
+          exact: true,
+        });
+        const rearRight = weightRegion
+          .getByRole("rowheader", { name: /Rear right/ })
+          .locator("..");
+        assert(
+          (
+            await rearRight
+              .getByRole("cell")
+              .nth(0)
+              .locator(".comparison-value")
+              .getAttribute("class")
+          ).includes("comparison-value-lower"),
+        );
+        assert(
+          (
+            await rearRight
+              .getByRole("cell")
+              .nth(1)
+              .locator(".comparison-value")
+              .getAttribute("class")
+          ).includes("comparison-value-higher"),
+        );
+        const weightMode = page.getByRole("group", {
+          name: "Weight display mode",
+          exact: true,
+        });
+        await weightMode.getByRole("button", { name: "Percentages" }).click();
+        assert.equal(
+          await weightRegion
+            .getByRole("rowheader", { name: /Front \(%\)/ })
+            .count(),
+          1,
+        );
+        assert.equal(
+          await weightRegion
+            .getByRole("rowheader", { name: /Front left \(g\)/ })
+            .count(),
+          0,
+        );
+        assert.equal(
+          await weightRegion
+            .getByRole("rowheader", { name: /Body installed/ })
+            .count(),
+          1,
+        );
+        await weightMode.getByRole("button", { name: "Grams" }).click();
         assert.equal(
           await page.locator('meta[name="robots"]').getAttribute("content"),
           "noindex, nofollow",
@@ -478,6 +566,7 @@ try {
           );
         }
         await page.getByRole("checkbox", { name: "Only differences" }).check();
+        assert.equal(await weightRegion.getByRole("row").count(), 8);
         assert.equal(
           await front()
             .getByRole("rowheader", { name: /Camber|Tie rod|Upper/ })
@@ -499,9 +588,17 @@ try {
           .getByRole("button", { name: "Refresh comparison", exact: true })
           .click();
         await page
-          .getByText("No comparable differences found.", { exact: true })
-          .waitFor();
-        assert.equal(await page.getByRole("table").count(), 0);
+          .getByRole("rowheader", { name: /Toe/ })
+          .waitFor({ state: "detached" });
+        await weightRegion.waitFor();
+        assert.equal(await page.getByRole("table").count(), 1);
+        assert.equal(await weightRegion.getByRole("row").count(), 8);
+        assert.equal(
+          await page
+            .getByText("No comparable differences found.", { exact: true })
+            .count(),
+          0,
+        );
         await page
           .getByRole("checkbox", { name: "Only differences" })
           .uncheck();

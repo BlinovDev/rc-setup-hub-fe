@@ -1664,6 +1664,28 @@
   font-size: 0.75rem;
   font-weight: normal;
 }
+.comparison-value {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  border-radius: 0.25rem;
+  padding: 0.15rem 0.35rem;
+  font-variant-numeric: tabular-nums;
+}
+.comparison-value-higher {
+  background: #fef2f2;
+  color: #991b1b;
+}
+.comparison-value-higher::before {
+  content: "↑";
+}
+.comparison-value-lower {
+  background: #f0fdf4;
+  color: #166534;
+}
+.comparison-value-lower::before {
+  content: "↓";
+}
 @media (max-width: 767px) {
   .guest-header-controls > .ui-button,
   .guest-header-controls .mobile-session > .ui-button {

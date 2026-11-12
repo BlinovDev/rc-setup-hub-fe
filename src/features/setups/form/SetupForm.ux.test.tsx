@@ -23,17 +23,42 @@ function form(pending = false, blocked = false) {
     </QueryClientProvider>
   );
 }
-it("offers six section buttons and one current location", () => {
+it("offers seven section buttons and one current location", () => {
   render(form());
   const buttons = within(
     screen.getByRole("navigation", { name: "Setup sections" }),
   ).getAllByRole("button");
-  expect(buttons).toHaveLength(6);
+  expect(buttons).toHaveLength(7);
   expect(
     buttons.filter(
       (button) => button.getAttribute("aria-current") === "location",
     ),
   ).toHaveLength(1);
+});
+it("shows the four wheel fields in order and defaults weighing conditions to false", async () => {
+  render(form());
+  await userEvent
+    .setup()
+    .click(screen.getByRole("button", { name: "Weight Distribution" }));
+  const fields = [
+    "Front left (g)",
+    "Front right (g)",
+    "Rear left (g)",
+    "Rear right (g)",
+  ];
+  expect(
+    fields.map((name) => screen.getByRole("textbox", { name })),
+  ).toHaveLength(4);
+  expect(screen.getByRole("textbox", { name: fields[0]! })).toHaveAttribute(
+    "inputmode",
+    "decimal",
+  );
+  expect(
+    screen.getByRole("checkbox", { name: "Body installed" }),
+  ).not.toBeChecked();
+  expect(
+    screen.getByRole("checkbox", { name: "Battery installed" }),
+  ).not.toBeChecked();
 });
 it.each([
   [false, false],

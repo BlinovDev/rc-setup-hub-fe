@@ -36,7 +36,17 @@ const publicSetup = {
   visibility: "public",
   chassis_model_id: null,
   chassis: null,
-  data: { suspension: { front: { camber_deg: 0, toe_deg: -1.25 } } },
+  data: {
+    suspension: { front: { camber_deg: 0, toe_deg: -1.25 } },
+    weight_distribution: {
+      front_left_g: 380,
+      front_right_g: 400,
+      rear_left_g: 320,
+      rear_right_g: 350,
+      body_installed: true,
+      battery_installed: false,
+    },
+  },
   notes: "Public track notes",
   schema_version: 1,
   moderation_status: "approved",
@@ -293,6 +303,39 @@ try {
       empty = false;
       await page.goto(`${origin}/setups/${id}?tracking=ignored`);
       await page.getByRole("heading", { name: publicSetup.title }).waitFor();
+      const weightDiagram = page.getByRole("img", {
+        name: /Top-down line drawing of a passenger car/,
+      });
+      await weightDiagram.waitFor();
+      assert.equal(
+        await weightDiagram.evaluate(
+          (image) => image.complete && image.naturalWidth > 0,
+        ),
+        true,
+      );
+      assert.equal(
+        await page.getByRole("group", { name: /balance$/i }).count(),
+        2,
+      );
+      const distributionLayout = page.locator(
+        '[data-layout="weight-distribution"]',
+      );
+      const layoutRects = await distributionLayout
+        .locator(":scope > div")
+        .evaluateAll((elements) =>
+          elements.map((element) => {
+            const { x, y } = element.getBoundingClientRect();
+            return { x, y };
+          }),
+        );
+      assert.equal(layoutRects.length, 2);
+      if (width >= 768) {
+        assert(layoutRects[1].x > layoutRects[0].x);
+      } else {
+        assert(layoutRects[1].y > layoutRects[0].y);
+      }
+      assert.equal(await page.getByText("350 g", { exact: true }).count(), 1);
+      await noOverflow();
       await page.waitForFunction(
         () =>
           document.querySelector('meta[name="robots"]')?.content ===

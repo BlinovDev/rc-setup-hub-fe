@@ -7,6 +7,7 @@ export const sections = [
   ["shocks", "Shocks"],
   ["wheels", "Wheels & tires"],
   ["electronics", "Electronics"],
+  ["weightDistribution", "Weight Distribution"],
 ] as const;
 export type SectionId = (typeof sections)[number][0];
 export type ComponentSpec = {
@@ -87,6 +88,12 @@ export const componentSpecs: ComponentSpec[] = [
     label: "Electronics",
     paths: ["electronics"],
   },
+  {
+    id: "weight-distribution",
+    section: "weightDistribution",
+    label: "Weight Distribution",
+    paths: ["weightDistribution"],
+  },
 ];
 export const matchesPath = (path: string, root: string) =>
   path === root || path.startsWith(root + ".");
@@ -105,6 +112,7 @@ export function sectionForPath(path: string): SectionId {
 export function hasValue(value: unknown): boolean {
   if (value == null) return false;
   if (typeof value === "string") return value.trim() !== "";
+  if (typeof value === "boolean") return value;
   if (typeof value === "object") return Object.values(value).some(hasValue);
   return true; // Explicit numeric zero is configured.
 }

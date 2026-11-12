@@ -722,7 +722,7 @@ export interface components {
             front: components["schemas"]["AxleRunningGearManufacturers"] | null;
             rear: components["schemas"]["AxleRunningGearManufacturers"] | null;
         };
-        /** @description Schema version 1 technical document. All sections are optional; null sections are omitted on output. Unknown fields are rejected on input. Explicit numeric zero is preserved; omitted/null optional numeric values are unknown. PATCH replaces this entire document, without a deep merge. */
+        /** @description Schema version 1 technical document. All sections are optional; null sections are omitted on output. Unknown fields are rejected on input. Explicit numeric zero is preserved; omitted/null optional numeric values are unknown. PATCH replaces this entire document, without a deep merge. Weight distribution is additive schema-v1 JSONB and needs no database migration. */
         SetupDataV1: {
             running_gear?: components["schemas"]["RunningGear"] | null;
             front_steering_knuckle?: components["schemas"]["SteeringKnuckle"] | null;
@@ -730,6 +730,7 @@ export interface components {
             suspension?: components["schemas"]["Suspension"] | null;
             shocks?: components["schemas"]["Shocks"] | null;
             electronics?: components["schemas"]["Electronics"] | null;
+            weight_distribution?: components["schemas"]["WeightDistribution"] | null;
         };
         /** @description Optional front-only steering knuckle. Fields are independent; empty/null blocks are omitted. Additive schema-v1 extension without migration or defaults. No rear knuckle field. Supplied data replaces the entire technical document. */
         SteeringKnuckle: {
@@ -890,6 +891,27 @@ export interface components {
             gyro?: string | null;
             /** @description Trimmed technical text without null bytes. Null, omitted or empty text is omitted in responses. */
             radio?: string | null;
+        };
+        /** @description Optional single four-wheel mass measurement. A partial measurement is invalid. An empty block or conditions without wheel weights is omitted; both conditions default to false. */
+        WeightDistribution: {
+            /** @description Front-left wheel weight in grams. All four wheel weights must be present together and finite; omitted/null values are unknown. */
+            front_left_g?: number | null;
+            /** @description Front-right wheel weight in grams. All four wheel weights must be present together and finite; omitted/null values are unknown. */
+            front_right_g?: number | null;
+            /** @description Rear-left wheel weight in grams. All four wheel weights must be present together and finite; omitted/null values are unknown. */
+            rear_left_g?: number | null;
+            /** @description Rear-right wheel weight in grams. All four wheel weights must be present together and finite; omitted/null values are unknown. */
+            rear_right_g?: number | null;
+            /**
+             * @description Whether the body shell was installed during weighing. A recorded measurement always serializes this condition explicitly.
+             * @default false
+             */
+            body_installed: boolean;
+            /**
+             * @description Whether the battery was installed during weighing. A recorded measurement always serializes this condition explicitly.
+             * @default false
+             */
+            battery_installed: boolean;
         };
         /** @description Integer square in normalized full JPEG pixels, independent of original orientation. */
         PhotoCrop: {

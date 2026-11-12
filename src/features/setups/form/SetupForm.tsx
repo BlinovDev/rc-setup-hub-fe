@@ -527,6 +527,61 @@ export function SetupForm({
                         </fieldset>
                       </ComponentCard>
                     </section>
+                    <section
+                      hidden={active !== "weightDistribution"}
+                      aria-labelledby="section-weightDistribution"
+                    >
+                      <h2 id="section-weightDistribution" tabIndex={-1}>
+                        Weight Distribution
+                      </h2>
+                      <ComponentCard id="weight-distribution">
+                        <div className="space-y-4 rounded border p-4">
+                          <p>
+                            Enter the weight measured at each wheel in grams.
+                          </p>
+                          <div className="grid grid-cols-2 gap-3">
+                            {(
+                              [
+                                ["front_left_g", "Front left (g)"],
+                                ["front_right_g", "Front right (g)"],
+                                ["rear_left_g", "Rear left (g)"],
+                                ["rear_right_g", "Rear right (g)"],
+                              ] as const
+                            ).map(([key, label]) => (
+                              <SetupField
+                                key={key}
+                                name={`weightDistribution.${key}`}
+                                label={label}
+                                numeric
+                              />
+                            ))}
+                          </div>
+                          <fieldset className="space-y-2">
+                            <legend className="font-semibold">
+                              Measurement conditions
+                            </legend>
+                            <label className="flex min-h-11 items-center gap-2">
+                              <input
+                                type="checkbox"
+                                {...form.register(
+                                  "weightDistribution.body_installed",
+                                )}
+                              />
+                              Body installed
+                            </label>
+                            <label className="flex min-h-11 items-center gap-2">
+                              <input
+                                type="checkbox"
+                                {...form.register(
+                                  "weightDistribution.battery_installed",
+                                )}
+                              />
+                              Battery installed
+                            </label>
+                          </fieldset>
+                        </div>
+                      </ComponentCard>
+                    </section>
                   </div>
                 </div>
                 <div className="form-actions">

@@ -43,6 +43,36 @@ describe("setup input semantics", () => {
       shocks: { front: { model: "Big bore" } },
     });
   });
+  it("keeps weight distribution absent until all four positive weights are entered", () => {
+    const values = setupToForm();
+    values.title = "Weight test";
+    values.weightDistribution.body_installed = true;
+    expect(serializeData(values)).not.toHaveProperty("weight_distribution");
+    values.weightDistribution.front_left_g = "380,5";
+    values.weightDistribution.front_right_g = "400.25";
+    values.weightDistribution.rear_left_g = "320";
+    values.weightDistribution.rear_right_g = "350";
+    expect(setupFormSchema.safeParse(values).success).toBe(true);
+    expect(serializeData(values).weight_distribution).toEqual({
+      front_left_g: 380.5,
+      front_right_g: 400.25,
+      rear_left_g: 320,
+      rear_right_g: 350,
+      body_installed: true,
+      battery_installed: false,
+    });
+    values.weightDistribution.rear_right_g = "";
+    expect(setupFormSchema.safeParse(values).success).toBe(false);
+    expect(() => serializeData(values)).toThrow();
+  });
+  it.each(["0", "-1", "NaN", "Infinity", "oops"])(
+    "rejects invalid wheel weight %s",
+    (weight) => {
+      const values = setupToForm();
+      values.weightDistribution.front_left_g = weight;
+      expect(setupFormSchema.safeParse(values).success).toBe(false);
+    },
+  );
   it("maps every schema-v1 field to inputs and serializes the full technical document", () => {
     const values = setupToForm(testSetup);
     expect(values.front.toe_deg).toBe("0");
