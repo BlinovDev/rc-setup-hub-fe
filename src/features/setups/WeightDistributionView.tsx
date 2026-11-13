@@ -47,7 +47,7 @@ export function WeightDistributionView({
             />
           </div>
           <img
-            className="col-start-2 h-72 w-full object-contain dark:invert"
+            className="col-start-2 h-72 w-full object-contain"
             src={carTopView}
             alt="Top-down line drawing of a passenger car, front facing up. Left and right are from the vehicle perspective."
           />

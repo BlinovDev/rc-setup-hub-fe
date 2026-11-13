@@ -1,10 +1,17 @@
-import { chromium } from "playwright";
+import { chromium, webkit } from "playwright";
 import { spawn } from "node:child_process";
 import { mkdir, readFile } from "node:fs/promises";
 import assert from "node:assert/strict";
 
 const origin = "http://127.0.0.1:5175";
 const api = "http://127.0.0.1:8081";
+const visibilityHeaders = {
+  "access-control-allow-origin": origin,
+  "access-control-allow-credentials": "true",
+  "access-control-allow-methods": "GET,POST,OPTIONS",
+  "access-control-allow-headers": "content-type",
+  "cache-control": "no-store, private",
+};
 const vite = spawn(
   process.execPath,
   ["node_modules/vite/bin/vite.js", "--host", "127.0.0.1", "--port", "5175"],
@@ -74,7 +81,7 @@ const photo = (setupId) => ({
   url: "/image",
   thumbnail_url: "/thumbnail",
 });
-let browser;
+let browser, webkitBrowser;
 const failures = [];
 try {
   for (let attempt = 0; attempt < 100; attempt++) {
@@ -88,6 +95,175 @@ try {
   }
   await mkdir("artifacts/public-qa", { recursive: true });
   browser = await chromium.launch({ headless: true });
+  for (const [engine, browserType] of [
+    ["chromium", browser],
+    ["webkit", (webkitBrowser = await webkit.launch({ headless: true }))],
+  ]) {
+    for (const [width, height] of [
+      [393, 852],
+      [412, 915],
+      [1440, 900],
+      [2560, 1440],
+    ]) {
+      for (const colorScheme of ["light", "dark"]) {
+        const context = await browserType.newContext({
+          viewport: { width, height },
+          colorScheme,
+          hasTouch: width < 768,
+        });
+        const page = await context.newPage();
+        try {
+          await page.route(`${api}/**`, async (route) => {
+            const request = route.request();
+            const path = new URL(request.url()).pathname;
+            if (request.method() === "OPTIONS")
+              return route.fulfill({ status: 204, headers: visibilityHeaders });
+            if (path === "/api/v1/me")
+              return route.fulfill({
+                status: 401,
+                headers: {
+                  ...visibilityHeaders,
+                  "content-type": "application/json",
+                },
+                body: JSON.stringify({ error: "No session" }),
+              });
+            const body =
+              path === `/api/v1/setups/${id}`
+                ? publicSetup
+                : path === `/api/v1/setups/${id}/photos`
+                  ? []
+                  : path === `/api/v1/users/${ownerId}`
+                    ? owner
+                    : path === "/api/v1/chassis/brands"
+                      ? []
+                      : undefined;
+            if (body === undefined)
+              return route.fulfill({
+                status: 404,
+                headers: {
+                  ...visibilityHeaders,
+                  "content-type": "application/json",
+                },
+                body: JSON.stringify({ error: "Not found" }),
+              });
+            return route.fulfill({
+              status: 200,
+              headers: {
+                ...visibilityHeaders,
+                "content-type": "application/json",
+              },
+              body: JSON.stringify(body),
+            });
+          });
+          await page.goto(`${origin}/setups/${id}`);
+          await page
+            .getByRole("heading", { name: publicSetup.title })
+            .waitFor();
+          const diagram = page.getByRole("img", {
+            name: /Top-down line drawing of a passenger car/,
+          });
+          await page.waitForFunction(
+            (image) => image.complete,
+            await diagram.elementHandle(),
+          );
+          const visual = await diagram.evaluate((image) => {
+            const panel = image.closest(".technical-panel");
+            const container = image.parentElement;
+            const rect = image.getBoundingClientRect();
+            const bounds = container.getBoundingClientRect();
+            return {
+              complete: image.complete,
+              naturalWidth: image.naturalWidth,
+              width: rect.width,
+              height: rect.height,
+              filter: getComputedStyle(image).filter,
+              cardBackground: getComputedStyle(panel).backgroundColor,
+              fitsContainer:
+                rect.left >= bounds.left - 1 &&
+                rect.top >= bounds.top - 1 &&
+                rect.right <= bounds.right + 1 &&
+                rect.bottom <= bounds.bottom + 1,
+            };
+          });
+          assert(
+            visual.complete,
+            `${engine} ${width}/${colorScheme}: image incomplete`,
+          );
+          assert(
+            visual.naturalWidth > 0,
+            `${engine} ${width}/${colorScheme}: image has no pixels`,
+          );
+          assert(
+            visual.width > 0 && visual.height > 0,
+            `${engine} ${width}/${colorScheme}: image has zero layout size`,
+          );
+          assert(
+            visual.fitsContainer,
+            `${engine} ${width}/${colorScheme}: image clipped by layout`,
+          );
+          assert.equal(
+            await page.evaluate(
+              () => document.documentElement.scrollWidth <= innerWidth + 1,
+            ),
+            true,
+            `${engine} ${width}/${colorScheme}: horizontal page overflow`,
+          );
+          await page
+            .locator('[data-layout="weight-distribution"]')
+            .scrollIntoViewIfNeeded();
+          for (const [corner, grams] of [
+            ["FL", "380 g"],
+            ["FR", "400 g"],
+            ["RL", "320 g"],
+            ["RR", "350 g"],
+          ]) {
+            const label = page.getByText(corner, { exact: true });
+            await label.waitFor();
+            assert(
+              await label.isVisible(),
+              `${engine} ${width}/${colorScheme}: ${corner} hidden`,
+            );
+            const marker = label.locator("..");
+            assert((await marker.innerText()).includes(grams));
+            const inViewport = await marker.evaluate((element) => {
+              const rect = element.getBoundingClientRect();
+              return (
+                rect.width > 0 &&
+                rect.height > 0 &&
+                rect.top >= 0 &&
+                rect.left >= 0 &&
+                rect.bottom <= innerHeight &&
+                rect.right <= innerWidth
+              );
+            });
+            assert(
+              inViewport,
+              `${engine} ${width}/${colorScheme}: ${corner} value is outside viewport`,
+            );
+          }
+          await page.screenshot({
+            path: `artifacts/public-qa/weight-distribution-${engine}-${width}x${height}-${colorScheme}.png`,
+            fullPage: true,
+          });
+          console.log(
+            `Weight visibility ${engine} ${width}x${height} ${colorScheme}: ${JSON.stringify(visual)}`,
+          );
+          assert.equal(
+            visual.cardBackground,
+            "rgb(255, 255, 255)",
+            `${engine} ${width}/${colorScheme}: expected current light card surface`,
+          );
+          assert.equal(
+            visual.filter,
+            "none",
+            `${engine} ${width}/${colorScheme}: image filter conflicts with card background (${JSON.stringify(visual)})`,
+          );
+        } finally {
+          await context.close();
+        }
+      }
+    }
+  }
   for (const [width, height] of [
     [320, 900],
     [375, 900],
@@ -526,6 +702,7 @@ try {
   }
   assert.deepEqual(failures, [], "Public browser regressions");
 } finally {
+  await webkitBrowser?.close();
   await browser?.close();
   vite.kill("SIGTERM");
 }
