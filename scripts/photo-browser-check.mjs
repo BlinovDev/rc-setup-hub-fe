@@ -671,7 +671,7 @@ try {
               .evaluate((el) => el === document.activeElement),
           );
           await sheet
-            .getByRole("button", { name: "Electronics", exact: true })
+            .getByRole("button", { name: "Weight Distribution", exact: true })
             .focus();
           await page.keyboard.press("Tab");
           assert(
@@ -2610,7 +2610,7 @@ try {
             exact: true,
           });
           await sheet
-            .getByRole("button", { name: "Electronics", exact: true })
+            .getByRole("button", { name: "Weight Distribution", exact: true })
             .focus();
           await page.keyboard.press("Tab");
           assert(
