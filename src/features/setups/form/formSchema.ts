@@ -238,6 +238,41 @@ export const setupFormSchema = z
       gyro: text(200),
       radio: text(200),
     }),
+    weightDistribution: z
+      .object({
+        front_left_g: z.string(),
+        front_right_g: z.string(),
+        rear_left_g: z.string(),
+        rear_right_g: z.string(),
+        body_installed: z.boolean(),
+        battery_installed: z.boolean(),
+      })
+      .superRefine((value, context) => {
+        const keys = [
+          "front_left_g",
+          "front_right_g",
+          "rear_left_g",
+          "rear_right_g",
+        ] as const;
+        const filled = keys.filter((key) => value[key].trim() !== "");
+        for (const key of keys) {
+          const input = value[key];
+          if (input.trim() === "") {
+            if (filled.length > 0)
+              context.addIssue({
+                code: "custom",
+                path: [key],
+                message: "Enter all four wheel weights.",
+              });
+          } else if (!validNumber(input, true, true, parseSuspensionNumber)) {
+            context.addIssue({
+              code: "custom",
+              path: [key],
+              message: "Enter a finite weight greater than zero.",
+            });
+          }
+        }
+      }),
   })
   .superRefine((values, context) => {
     for (const side of ["front", "rear"] as const) {

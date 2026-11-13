@@ -10,7 +10,7 @@ const show = () =>
       <SetupForm setup={testSetup} onSave={vi.fn()} pending={false} />
     </QueryClientProvider>,
   );
-it("keeps essentials and one save, switches six sections without rewriting incomplete drafts", async () => {
+it("keeps essentials and one save, switches seven sections without rewriting incomplete drafts", async () => {
   show();
   const user = userEvent.setup();
   expect(screen.getByLabelText("Title")).toHaveAttribute(
@@ -22,7 +22,7 @@ it("keeps essentials and one save, switches six sections without rewriting incom
     name: "Setup sections",
     hidden: true,
   });
-  expect(within(nav).getAllByRole("button", { hidden: true })).toHaveLength(6);
+  expect(within(nav).getAllByRole("button", { hidden: true })).toHaveLength(7);
   fireEvent.click(
     within(nav).getByRole("button", { name: "Front", hidden: true }),
   );

@@ -172,6 +172,165 @@ it("renders one clear empty-differences state and restores all fields", () => {
   expect(screen.getAllByRole("table").length).toBeGreaterThan(15);
   expect(screen.getAllByText("Not specified").length).toBeGreaterThan(10);
 });
+it("switches Weight Distribution between stored grams and derived percentages", async () => {
+  const measuredA = {
+    ...a,
+    data: {
+      ...a.data,
+      weight_distribution: {
+        front_left_g: 380,
+        front_right_g: 400,
+        rear_left_g: 320,
+        rear_right_g: 350,
+        body_installed: true,
+        battery_installed: true,
+      },
+    },
+  };
+  const measuredB = {
+    ...b,
+    data: {
+      ...b.data,
+      weight_distribution: {
+        front_left_g: 400,
+        front_right_g: 390,
+        rear_left_g: 315,
+        rear_right_g: 340,
+        body_installed: false,
+        battery_installed: true,
+      },
+    },
+  };
+  const user = userEvent.setup();
+  render(
+    <MemoryRouter>
+      <ComparisonTables
+        left={measuredA}
+        right={measuredB}
+        onlyDifferences={false}
+      />
+    </MemoryRouter>,
+  );
+  const weight = within(
+    screen.getByRole("region", {
+      name: "Weight Distribution comparison table",
+    }),
+  );
+  expect(screen.getByRole("button", { name: "Grams" })).toHaveAttribute(
+    "aria-pressed",
+    "true",
+  );
+  const frontLeft = within(
+    weight.getByRole("row", { name: /Front left \(g\)/ }),
+  );
+  expect(frontLeft.getAllByRole("cell")[0]!).toHaveTextContent("380");
+  expect(
+    frontLeft.getAllByRole("cell")[0]!.querySelector(".comparison-value"),
+  ).toHaveClass("comparison-value-lower");
+  expect(
+    frontLeft.getAllByRole("cell")[0]!.querySelector(".comparison-value"),
+  ).toHaveAttribute("aria-label", "380; Lower than the other setup");
+  expect(
+    frontLeft.getAllByRole("cell")[1]!.querySelector(".comparison-value"),
+  ).toHaveClass("comparison-value-higher");
+  expect(weight.getByRole("row", { name: /Total mass \(g\)/ })).toBeVisible();
+  expect(weight.getByRole("row", { name: /Body installed/ })).toBeVisible();
+  expect(
+    weight
+      .getAllByRole("row")
+      .findIndex((row) => /Rear right \(g\)/.test(row.textContent ?? "")),
+  ).toBeLessThan(
+    weight
+      .getAllByRole("row")
+      .findIndex((row) => /Total mass \(g\)/.test(row.textContent ?? "")),
+  );
+  expect(
+    weight
+      .getAllByRole("row")
+      .findIndex((row) => /Total mass \(g\)/.test(row.textContent ?? "")),
+  ).toBeLessThan(
+    weight
+      .getAllByRole("row")
+      .findIndex((row) => /Body installed/.test(row.textContent ?? "")),
+  );
+  expect(
+    screen.getByText("Measurements were taken under different conditions."),
+  ).toBeVisible();
+
+  await user.click(screen.getByRole("button", { name: "Percentages" }));
+  expect(screen.getByRole("button", { name: "Percentages" })).toHaveAttribute(
+    "aria-pressed",
+    "true",
+  );
+  expect(weight.getByRole("row", { name: /Front \(%\)/ })).toBeVisible();
+  expect(weight.getByRole("row", { name: /Left \(%\)/ })).toBeVisible();
+  expect(weight.getByRole("row", { name: /Total mass \(g\)/ })).toBeVisible();
+  expect(
+    weight.queryByRole("row", { name: /Front left \(g\)/ }),
+  ).not.toBeInTheDocument();
+  expect(weight.getByRole("row", { name: /Body installed/ })).toBeVisible();
+  expect(
+    weight
+      .getAllByRole("row")
+      .findIndex((row) => /Right \(%\)/.test(row.textContent ?? "")),
+  ).toBeLessThan(
+    weight
+      .getAllByRole("row")
+      .findIndex((row) => /Total mass \(g\)/.test(row.textContent ?? "")),
+  );
+  expect(
+    weight
+      .getAllByRole("row")
+      .findIndex((row) => /Total mass \(g\)/.test(row.textContent ?? "")),
+  ).toBeLessThan(
+    weight
+      .getAllByRole("row")
+      .findIndex((row) => /Body installed/.test(row.textContent ?? "")),
+  );
+  const frontPercentage = within(
+    weight.getByRole("row", { name: /Front \(%\)/ }),
+  );
+  expect(
+    frontPercentage.getAllByRole("cell")[0]!.querySelector(".comparison-value"),
+  ).toHaveClass("comparison-value-lower");
+  expect(
+    frontPercentage.getAllByRole("cell")[1]!.querySelector(".comparison-value"),
+  ).toHaveClass("comparison-value-higher");
+});
+it("hides Weight Distribution unless both setups have a measurement and does not highlight other missing values", () => {
+  const measured = {
+    ...a,
+    data: {
+      ...a.data,
+      weight_distribution: {
+        front_left_g: 380,
+        front_right_g: 400,
+        rear_left_g: 320,
+        rear_right_g: 350,
+        body_installed: false,
+        battery_installed: false,
+      },
+    },
+  };
+  render(
+    <MemoryRouter>
+      <ComparisonTables left={measured} right={b} onlyDifferences={false} />
+    </MemoryRouter>,
+  );
+  expect(
+    screen.queryByRole("region", {
+      name: "Weight Distribution comparison table",
+    }),
+  ).not.toBeInTheDocument();
+  const missingSideRow = within(
+    screen.getByRole("region", {
+      name: "Front suspension comparison table",
+    }),
+  ).getByRole("row", { name: /Camber \(deg\)/ });
+  expect(missingSideRow).toHaveTextContent("Not specified");
+  expect(missingSideRow).not.toHaveClass("comparison-different");
+  expect(missingSideRow).not.toHaveTextContent("Different");
+});
 it.each([
   "?left_id=bad",
   `?left_id=${a.id}&right_id=${a.id.toUpperCase()}`,

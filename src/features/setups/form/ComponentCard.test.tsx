@@ -64,3 +64,54 @@ it("keeps populated optional fields visible and clears only the chosen block", a
     tuning_notes: "Keep this",
   });
 });
+
+it("removes the complete weight measurement through the section clearing interaction", async () => {
+  const save = vi.fn<(values: SetupFormValues) => Promise<boolean>>(
+    async () => true,
+  );
+  const setup = {
+    ...testSetup,
+    data: {
+      ...testSetup.data,
+      weight_distribution: {
+        front_left_g: 380,
+        front_right_g: 400,
+        rear_left_g: 320,
+        rear_right_g: 350,
+        body_installed: true,
+        battery_installed: true,
+      },
+    },
+  };
+  render(
+    <QueryClientProvider client={new QueryClient()}>
+      <SetupForm setup={setup} onSave={save} pending={false} />
+    </QueryClientProvider>,
+  );
+  const user = userEvent.setup();
+  fireEvent.click(
+    within(
+      screen.getByRole("navigation", { name: "Setup sections" }),
+    ).getByRole("button", {
+      name: "Weight Distribution",
+    }),
+  );
+  await user.click(
+    screen.getByRole("button", { name: "Remove Weight Distribution" }),
+  );
+  await user.click(
+    screen.getByRole("button", {
+      name: "Confirm remove Weight Distribution",
+    }),
+  );
+  expect(screen.getByRole("textbox", { name: "Front left (g)" })).toHaveValue(
+    "",
+  );
+  expect(
+    screen.getByRole("checkbox", { name: "Body installed" }),
+  ).not.toBeChecked();
+  await user.click(screen.getByRole("button", { name: "Save setup" }));
+  expect(
+    serializePatch(save.mock.calls[0]![0]).data?.weight_distribution,
+  ).toBeUndefined();
+});

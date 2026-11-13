@@ -27,6 +27,42 @@ it("normalizes only text boundaries, line endings and Unicode, not meaningful ca
   expect(normalize("ABC")).not.toBe(normalize("abc"));
   expect(normalize(1.00000001)).not.toBe(normalize(1.00000002));
 });
+it("compares weight values, derived values, missing measurements and conditions", () => {
+  const measurement = {
+    front_left_g: 380,
+    front_right_g: 400,
+    rear_left_g: 320,
+    rear_right_g: 350,
+    body_installed: true,
+    battery_installed: false,
+  };
+  const a = setup({ weight_distribution: measurement });
+  const b = setup({
+    weight_distribution: {
+      ...measurement,
+      rear_right_g: 360,
+      battery_installed: true,
+    },
+  });
+  const sections = comparisonSections(a, b, true);
+  const weight = sections.find(
+    (section) => section.title === "Weight Distribution",
+  )!;
+  expect(weight.rows).toHaveLength(11);
+  expect(weight.warning).toBe(true);
+  expect(weight.rows.map((row) => row.label)).toContain("Rear right (g)");
+  expect(weight.rows.map((row) => row.label)).toContain("Battery installed");
+  expect(
+    comparisonSections(a, setup(), true).some(
+      (section) => section.title === "Weight Distribution",
+    ),
+  ).toBe(false);
+  expect(
+    comparisonSections(setup(), setup(), true).some(
+      (section) => section.title === "Weight Distribution",
+    ),
+  ).toBe(false);
+});
 it("keeps absent vs explicit zero distinct and excludes either missing side from only-differences", () => {
   const a = setup({ suspension: { front: { camber_deg: 0, toe_deg: 0 } } });
   const b = setup({ suspension: { front: { toe_deg: 1 } } });

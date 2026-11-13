@@ -3,6 +3,8 @@ import {
   type TechnicalValue,
   type TechnicalProps,
 } from "./technicalSections";
+import { WeightDistributionView } from "./WeightDistributionView";
+import { calculateWeightDistribution } from "./weightDistribution";
 function Values({
   title,
   values,
@@ -31,15 +33,21 @@ function Values({
 }
 export function TechnicalData(props: TechnicalProps) {
   const sections = technicalSections(props);
-  const hasData = sections.some((section) =>
-    section.values.some(
-      ([, value, , showMissing, key]) => value != null || (showMissing && !key),
-    ),
-  );
+  const hasData =
+    Boolean(calculateWeightDistribution(props.data.weight_distribution)) ||
+    sections.some((section) =>
+      section.values.some(
+        ([, value, , showMissing, key]) =>
+          value != null || (showMissing && !key),
+      ),
+    );
   return (
     <>
       {!hasData && <p>No technical setup data yet.</p>}
       <div className="grid gap-4 sm:grid-cols-2">
+        <WeightDistributionView
+          value={props.data.weight_distribution ?? null}
+        />
         {sections.map((section) => (
           <Values key={section.title} {...section} />
         ))}

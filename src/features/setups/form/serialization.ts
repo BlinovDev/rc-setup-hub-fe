@@ -143,6 +143,17 @@ export function setupToForm(setup?: Schemas["Setup"]): SetupFormValues {
       gyro: setup?.data.electronics?.gyro ?? "",
       radio: setup?.data.electronics?.radio ?? "",
     },
+    weightDistribution: {
+      front_left_g: numberInput(setup?.data.weight_distribution?.front_left_g),
+      front_right_g: numberInput(
+        setup?.data.weight_distribution?.front_right_g,
+      ),
+      rear_left_g: numberInput(setup?.data.weight_distribution?.rear_left_g),
+      rear_right_g: numberInput(setup?.data.weight_distribution?.rear_right_g),
+      body_installed: setup?.data.weight_distribution?.body_installed ?? false,
+      battery_installed:
+        setup?.data.weight_distribution?.battery_installed ?? false,
+    },
   };
 }
 export function serializeData(values: SetupFormValues): Schemas["SetupDataV1"] {
@@ -314,6 +325,29 @@ export function serializeData(values: SetupFormValues): Schemas["SetupDataV1"] {
   if (Object.keys(suspension).length) data.suspension = suspension;
   if (Object.keys(shocks).length) data.shocks = shocks;
   if (Object.keys(electronics).length) data.electronics = electronics;
+  const weight = values.weightDistribution;
+  const weightKeys = [
+    "front_left_g",
+    "front_right_g",
+    "rear_left_g",
+    "rear_right_g",
+  ] as const;
+  const entered = weightKeys.filter((key) => weight[key].trim() !== "");
+  if (entered.length) {
+    if (entered.length !== weightKeys.length)
+      throw new Error("Enter all four wheel weights.");
+    const measurement: Schemas["WeightDistribution"] = {
+      body_installed: weight.body_installed,
+      battery_installed: weight.battery_installed,
+    };
+    for (const key of weightKeys) {
+      const parsed = parseSuspensionNumber(weight[key]);
+      if (parsed === undefined || parsed <= 0)
+        throw new Error("Enter a finite weight greater than zero.");
+      measurement[key] = parsed;
+    }
+    data.weight_distribution = measurement;
+  }
   return data;
 }
 function common(values: SetupFormValues) {

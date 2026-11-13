@@ -51,6 +51,7 @@ function destination(matcher: Matcher | ByRoleOptions["name"] | undefined) {
           shocks: "Shocks",
           wheels: "Wheels & tires",
           electronics: "Electronics",
+          weightDistribution: "Weight Distribution",
         } as const
       )[section]
     : undefined;

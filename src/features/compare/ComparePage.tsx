@@ -181,8 +181,9 @@ export function ComparePage({ viewer }: { viewer: string }) {
                 </InlineNotice>
               )}
               <p id="comparison-help">
-                Differences are marked in text and color. Only differences shows
-                values specified on both sides. Scroll the table horizontally on
+                Differences are marked in text and color. Only differences hides
+                unchanged rows; Weight Distribution stays visible when both
+                setups have a measurement. Scroll the table horizontally on
                 narrow screens.
               </p>
               <ComparisonTables
@@ -370,7 +371,23 @@ export function ComparisonTables({
   right: Setup;
   onlyDifferences: boolean;
 }) {
-  const sections = comparisonSections(left, right, onlyDifferences);
+  const [weightMode, setWeightMode] = useState<"grams" | "percentages">(
+    "grams",
+  );
+  const sections = comparisonSections(left, right, onlyDifferences)
+    .map((section) => ({
+      ...section,
+      rows:
+        section.title === "Weight Distribution"
+          ? section.rows.filter(
+              (row) =>
+                row.key.startsWith(`weight:${weightMode}:`) ||
+                row.key.startsWith("weight:grams:total:") ||
+                row.key.startsWith("weight:conditions:"),
+            )
+          : section.rows,
+    }))
+    .filter((section) => section.rows.length > 0);
   return (
     <div className="space-y-4">
       {sections.length === 0 && (
@@ -378,7 +395,38 @@ export function ComparisonTables({
       )}
       {sections.map((section) => (
         <section key={section.title} aria-label={section.title}>
-          <h4 className="text-lg font-semibold">{section.title}</h4>
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <h4 className="text-lg font-semibold">{section.title}</h4>
+            {section.title === "Weight Distribution" && (
+              <div
+                className="flex flex-wrap gap-2"
+                role="group"
+                aria-label="Weight display mode"
+              >
+                <Button
+                  variant={weightMode === "grams" ? "primary" : "secondary"}
+                  aria-pressed={weightMode === "grams"}
+                  onClick={() => setWeightMode("grams")}
+                >
+                  Grams
+                </Button>
+                <Button
+                  variant={
+                    weightMode === "percentages" ? "primary" : "secondary"
+                  }
+                  aria-pressed={weightMode === "percentages"}
+                  onClick={() => setWeightMode("percentages")}
+                >
+                  Percentages
+                </Button>
+              </div>
+            )}
+          </div>
+          {section.warning && (
+            <p role="note">
+              Measurements were taken under different conditions.
+            </p>
+          )}
           <div
             className="comparison-scroll"
             tabIndex={0}
@@ -406,19 +454,35 @@ export function ComparisonTables({
                   <tr
                     key={row.key}
                     className={
-                      row.different ? "comparison-different" : undefined
+                      row.different && row.left !== null && row.right !== null
+                        ? "comparison-different"
+                        : undefined
                     }
                   >
                     <th scope="row">
                       {row.label}
-                      {row.different && (
-                        <span className="comparison-difference-label">
-                          Different
-                        </span>
-                      )}
+                      {row.different &&
+                        row.left !== null &&
+                        row.right !== null && (
+                          <span className="comparison-difference-label">
+                            Different
+                          </span>
+                        )}
                     </th>
-                    <td>{row.left ?? notSpecified}</td>
-                    <td>{row.right ?? notSpecified}</td>
+                    <td>
+                      <ComparedValue
+                        value={row.left}
+                        valueNumber={row.leftNumber}
+                        otherNumber={row.rightNumber}
+                      />
+                    </td>
+                    <td>
+                      <ComparedValue
+                        value={row.right}
+                        valueNumber={row.rightNumber}
+                        otherNumber={row.leftNumber}
+                      />
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -427,5 +491,31 @@ export function ComparisonTables({
         </section>
       ))}
     </div>
+  );
+}
+
+function ComparedValue({
+  value,
+  valueNumber,
+  otherNumber,
+}: {
+  value: string | number | null;
+  valueNumber: number | null;
+  otherNumber: number | null;
+}) {
+  const direction =
+    valueNumber === null || otherNumber === null || valueNumber === otherNumber
+      ? null
+      : valueNumber > otherNumber
+        ? "higher"
+        : "lower";
+  if (!direction) return value ?? notSpecified;
+  return (
+    <span
+      className={`comparison-value comparison-value-${direction}`}
+      aria-label={`${value}; ${direction === "higher" ? "Higher" : "Lower"} than the other setup`}
+    >
+      {value ?? notSpecified}
+    </span>
   );
 }
