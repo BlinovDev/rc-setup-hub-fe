@@ -45,7 +45,7 @@ git diff --check
 
 ## Mandatory full GitHub Actions checks
 
-Every PR still runs `docs-and-skills`, `test`, all five browser suite jobs and the
+Every PR still runs `docs-and-skills`, `test`, all six browser suite jobs and the
 `photo-browser` compatibility gate. The full `test` job remains:
 
 ```sh
@@ -63,7 +63,7 @@ With intentional contract changes, commit the exact backend contract/generated t
 then regenerate and require no diff. Do not manually format/edit generated files.
 Existing PR CI still runs regardless of a documentation-only local check selection.
 
-All PRs also require all five unfiltered browser suites in CI:
+All PRs also require all six unfiltered browser suites in CI:
 
 ```sh
 npx playwright install --with-deps chromium webkit
@@ -72,7 +72,17 @@ npm run test:public:browser
 node scripts/help-browser-check.mjs
 npm run test:compare:browser
 npm run test:links:browser
+npm run test:performance:browser
 ```
+
+`test:performance:browser` builds the production bundle and measures cold/reload
+navigation to Explore, My setups, the Compare selector and a selected comparison
+at 390/1280px. It uses a deterministic 120ms mocked API, 20 setups and thumbnail
+responses, with 1500ms data/2000ms first-cover budgets. It rejects duplicate session
+or page-data requests and per-card metadata waterfalls, and writes measurements
+to `artifacts/performance/pages.json`. These are client regression budgets, not
+production latency or real-backend evidence; PostgreSQL endpoint measurements
+live in the backend's `TestReadEndpointLatency`.
 
 The Help & Feedback check runs Chromium and WebKit with iPhone emulation below
 768px. It covers guest/member single-row header/three-action bottom navigation,
