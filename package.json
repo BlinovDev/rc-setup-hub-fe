@@ -20,7 +20,8 @@
     "test:photos:browser": "node scripts/photo-browser-check.mjs",
     "test:public:browser": "node scripts/public-browser-check.mjs && node scripts/clone-browser-check.mjs && node scripts/profile-browser-check.mjs && node scripts/moderation-browser-check.mjs",
     "test:compare:browser": "node scripts/compare-browser-check.mjs",
-    "test:links:browser": "node scripts/suspension-links-browser-check.mjs"
+    "test:links:browser": "node scripts/suspension-links-browser-check.mjs",
+    "test:performance:browser": "node scripts/performance-browser-check.mjs"
   },
   "dependencies": {
     "@tanstack/react-query": "5.104.0",
