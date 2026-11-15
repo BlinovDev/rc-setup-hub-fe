@@ -69,6 +69,10 @@ jobs:
             command: npm run test:compare:browser
             artifact: compare-qa-screenshots
             path: artifacts/compare-qa/
+          - suite: performance
+            command: npm run test:performance:browser
+            artifact: performance-measurements
+            path: artifacts/performance/
           - suite: suspension-links
             command: npm run test:links:browser
             artifact: links-qa-screenshots
