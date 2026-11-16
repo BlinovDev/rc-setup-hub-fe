@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   calculateWeightDistribution,
   formatPercent,
+  formatGrams,
 } from "./weightDistribution";
 
 describe("weight distribution calculations", () => {
@@ -34,4 +35,15 @@ describe("weight distribution calculations", () => {
       }),
     ).toBeNull();
   });
+});
+
+it("rounds grams only for presentation and handles decimal and percentage boundaries", () => {
+  expect(formatGrams(0.1 + 0.2)).toBe("0.3");
+  expect(formatGrams(1332.8000000000002)).toBe("1,332.8");
+  expect(formatGrams(1.235)).toBe("1.24");
+  expect(formatGrams(1e21)).not.toMatch(/e\+/);
+  expect(formatGrams(0.000001)).not.toMatch(/e-/);
+  expect(formatPercent(52.44)).toBe("52.4%");
+  expect(formatPercent(52.46)).toBe("52.5%");
+  expect(formatPercent(50)).toBe("50.0%");
 });
