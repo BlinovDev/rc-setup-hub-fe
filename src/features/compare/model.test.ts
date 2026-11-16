@@ -247,3 +247,32 @@ it("renders an optional missing custom link measurement as missing rather than t
   });
   expect(flat(a, b, true)).toEqual([]);
 });
+
+it("keeps raw weight identities and calculations when formatted values coincide", () => {
+  const measurement = {
+    front_left_g: 234.5,
+    front_right_g: 209.1,
+    rear_left_g: 460.1,
+    rear_right_g: 429.1,
+    body_installed: true,
+    battery_installed: false,
+  };
+  const a = setup({ weight_distribution: measurement });
+  const b = setup({
+    weight_distribution: { ...measurement, rear_right_g: 429.1001 },
+  });
+  const total = row(a, b, "Total mass (g)");
+  expect(total).toMatchObject({
+    left: "1,332.8",
+    right: "1,332.8",
+    different: true,
+    belowDisplayPrecision: true,
+  });
+  expect(total.leftNumber).toBe(1332.8000000000002);
+  expect(total.rightNumber).toBe(1332.8001);
+  expect(row(a, a, "Total mass (g)")).toMatchObject({
+    different: false,
+    belowDisplayPrecision: false,
+  });
+  expect(a.data.weight_distribution).toEqual(measurement);
+});
