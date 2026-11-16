@@ -4,6 +4,7 @@ import { chassisLabel } from "../setups/api";
 import {
   calculateWeightDistribution,
   formatPercent,
+  formatGrams,
 } from "../setups/weightDistribution";
 import {
   technicalSections,
@@ -135,7 +136,11 @@ function entries(section: TechnicalSection) {
     group.push({
       label: link ? `${label.trim()} (mm)` : label,
       value:
-        link && typeof value === "string" ? value.replace(/ mm$/, "") : value,
+        key.startsWith("weight:grams:") && typeof value === "number"
+          ? formatGrams(value)
+          : link && typeof value === "string"
+            ? value.replace(/ mm$/, "")
+            : value,
       identity: canonical ?? value,
     });
     groups.set(key, group);
@@ -187,6 +192,8 @@ export function comparisonSections(
             left,
             right,
             different,
+            belowDisplayPrecision:
+              key.startsWith("weight:") && different && left === right,
             leftNumber: typeof l?.identity === "number" ? l.identity : null,
             rightNumber: typeof r?.identity === "number" ? r.identity : null,
           };

@@ -43,3 +43,23 @@ it("hides absent measurements", () => {
   const { container } = render(<WeightDistributionView />);
   expect(container).toBeEmptyDOMElement();
 });
+
+it("presents decimal totals and balances without binary tails", () => {
+  render(
+    <WeightDistributionView
+      value={{
+        front_left_g: 234.5,
+        front_right_g: 209.1,
+        rear_left_g: 460.1,
+        rear_right_g: 429.1,
+        body_installed: true,
+        battery_installed: false,
+      }}
+    />,
+  );
+  expect(screen.getByText("1,332.8 g")).toBeVisible();
+  expect(screen.getByText("33.3%")).toBeVisible();
+  expect(screen.getByText("66.7%")).toBeVisible();
+  expect(screen.getByText("52.1%")).toBeVisible();
+  expect(screen.getByText("47.9%")).toBeVisible();
+});
