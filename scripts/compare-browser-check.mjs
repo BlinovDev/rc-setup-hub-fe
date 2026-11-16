@@ -775,6 +775,61 @@ try {
         assert(
           visibleCalls.some((call) => call.q === "Private" && call.member),
         );
+        // Screenshot regression: decimal sums must stay compact on narrow screens.
+        await page.route(`${api}/api/v1/setups/compare?**`, (route) => {
+          const weight = {
+            front_left_g: 234.5,
+            front_right_g: 209.1,
+            rear_left_g: 460.1,
+            rear_right_g: 429.1,
+            body_installed: true,
+            battery_installed: false,
+          };
+          return route.fulfill({
+            headers,
+            json: {
+              left: { ...a, data: { weight_distribution: weight } },
+              right: {
+                ...b,
+                data: {
+                  weight_distribution: { ...weight, rear_right_g: 429.1001 },
+                },
+              },
+            },
+          });
+        });
+        await page.goto(`${origin}/compare?left_id=${a.id}&right_id=${b.id}`);
+        await page
+          .getByRole("heading", { name: "Setup comparison", exact: true })
+          .waitFor();
+        const decimalTotal = page.getByRole("row", {
+          name: /Total mass \(g\)/,
+        });
+        assert.deepEqual(
+          await decimalTotal.getByRole("cell").allTextContents(),
+          ["1,332.8", "1,332.8"],
+        );
+        assert(
+          (await decimalTotal.textContent()).includes(
+            "Different below display precision",
+          ),
+        );
+        assert.equal(
+          await decimalTotal.locator(".comparison-value").count(),
+          0,
+        );
+        assert(
+          await page.evaluate(
+            () => document.documentElement.scrollWidth <= window.innerWidth + 1,
+          ),
+          "decimal comparison must not overflow the page",
+        );
+        for (const cell of await decimalTotal.getByRole("cell").all()) {
+          assert(
+            await cell.evaluate((el) => el.scrollWidth <= el.clientWidth + 1),
+            "decimal total must fit its cell",
+          );
+        }
         assert.deepEqual(unexpected, []);
         assert.deepEqual(errors, []);
         console.log(
