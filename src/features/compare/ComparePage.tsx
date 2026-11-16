@@ -465,21 +465,27 @@ export function ComparisonTables({
                         row.left !== null &&
                         row.right !== null && (
                           <span className="comparison-difference-label">
-                            Different
+                            {row.belowDisplayPrecision
+                              ? "Different below display precision"
+                              : "Different"}
                           </span>
                         )}
                     </th>
                     <td>
                       <ComparedValue
                         value={row.left}
-                        valueNumber={row.leftNumber}
+                        valueNumber={
+                          row.belowDisplayPrecision ? null : row.leftNumber
+                        }
                         otherNumber={row.rightNumber}
                       />
                     </td>
                     <td>
                       <ComparedValue
                         value={row.right}
-                        valueNumber={row.rightNumber}
+                        valueNumber={
+                          row.belowDisplayPrecision ? null : row.rightNumber
+                        }
                         otherNumber={row.leftNumber}
                       />
                     </td>
