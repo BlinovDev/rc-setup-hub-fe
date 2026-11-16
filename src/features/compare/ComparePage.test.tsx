@@ -530,3 +530,46 @@ it("keeps refresh focus through a successful recheck without keeping stale table
     screen.getByRole("button", { name: "Refresh comparison" }),
   ).toHaveFocus();
 });
+
+it("formats decimal weight totals and marks subprecision differences without directional arrows", async () => {
+  const measurement = {
+    front_left_g: 234.5,
+    front_right_g: 209.1,
+    rear_left_g: 460.1,
+    rear_right_g: 429.1,
+    body_installed: true,
+    battery_installed: false,
+  };
+  const left = { ...a, data: { weight_distribution: measurement } };
+  const right = {
+    ...b,
+    data: { weight_distribution: { ...measurement, rear_right_g: 429.1001 } },
+  };
+  const user = userEvent.setup();
+  render(
+    <MemoryRouter>
+      <ComparisonTables left={left} right={right} onlyDifferences={true} />
+    </MemoryRouter>,
+  );
+  const region = screen.getByRole("region", {
+    name: "Weight Distribution comparison table",
+  });
+  const total = within(region).getByRole("row", { name: /Total mass \(g\)/ });
+  expect(
+    within(total)
+      .getAllByRole("cell")
+      .map((c) => c.textContent),
+  ).toEqual(["1,332.8", "1,332.8"]);
+  expect(total).toHaveTextContent("Different below display precision");
+  expect(total.querySelector(".comparison-value")).toBeNull();
+  expect(region).not.toHaveTextContent("1332.8000000000002");
+  await user.click(screen.getByRole("button", { name: "Percentages" }));
+  const front = within(region).getByRole("row", { name: /Front \(%\)/ });
+  expect(
+    within(front)
+      .getAllByRole("cell")
+      .map((c) => c.textContent),
+  ).toEqual(["33.3%", "33.3%"]);
+  expect(front).toHaveTextContent("Different below display precision");
+  expect(front.querySelector(".comparison-value")).toBeNull();
+});
